@@ -21,6 +21,7 @@ fun MinkaTheme(
         MaterialTheme(
             colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
             typography = MinkaTypography,
+            shapes = MinkaMaterialShapes,
             content = content,
         )
     }
