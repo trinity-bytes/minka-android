@@ -4,6 +4,7 @@
     <string name="home_subtitle">Economía circular al alcance de tu comunidad</string>
 
     <!-- Design system -->
+    <string name="action_back">Volver</string>
     <string name="strength_weak">Débil</string>
     <string name="strength_medium">Media</string>
     <string name="strength_strong">Fuerte</string>
