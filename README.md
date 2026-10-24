@@ -15,6 +15,7 @@ El plan completo (alcance, arquitectura, stack, backend y fases) está en [PLAN.
 ```bash
 ./gradlew assembleDebug          # compila el APK de debug
 ./gradlew testDebugUnitTest      # tests unitarios
+./gradlew connectedDebugAndroidTest  # tests de UI de Compose (necesita un dispositivo o emulador)
 ./gradlew installDebug           # instala en un dispositivo o emulador conectado
 ```
 

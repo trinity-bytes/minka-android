@@ -21,8 +21,8 @@ Branch: `feat/design-system` (tracker, from `develop`). Delivery strategy: ask-o
 | T3 | S3 | inline | done (4 tests) | f96149f |
 | T4 | S4 | inline | done (verified on emulator) | 69a4812 |
 | T5 | S5 (Button, Text field, Checkbox row, Strength meter) | inline | done (1 unit + 6 instrumented tests) | bb5eaae (dependency), f7dca84, 999c96c (fix) |
-| T6 | S5 (Top app bar, Logo, Badge, Snackbar, Dialog) | inline | done (6 instrumented tests) | see L9 |
-| T7 | S6 | inline | pending | |
+| T6 | S5 (Top app bar, Logo, Badge, Snackbar, Dialog) | inline | done (6 instrumented tests) | 9b165c1 |
+| T7 | S6 | inline | done | last commit of slice 4 |
 
 Route evidence: sequential units sharing the theme files; no parallel writer reason.
 
@@ -47,3 +47,4 @@ Slices (feature-branch-chain; forecast ~1500 authored lines, fonts excluded):
 - **L7:** T4 icon reference: Figma splash 1.01 (`334:6`) shows the logomark in on-brand ink on brand green; the adaptive icon uses that (solid background, launcher masks the shape) plus a monochrome layer. Verified on the API 37 emulator after fixing a malformed pathData that made PackageManager return the default icon. Light and dark themes and Fraunces rendering also checked on the emulator.
 - **L8:** T5 needs `Icons.Rounded.*`, only in `material-icons-extended` (BOM 1.7.8): committed alone as bb5eaae (Risk item 5) and noted in PLAN.md stack. Components follow the Figma bindings: Filled uses `MinkaTheme.colors.brand` (constant in both modes), Ink inverse surface, Tonal secondary container. Known deviations: M3 Checkbox keeps its 2 dp corner (Figma 6 dp) and the unfocused error border is 1 dp (Figma 2 dp). Instrumented tests 6/6 on the API 37 emulator; light and dark snapshots compared against Figma.
 - **L9:** 999c96c: text fields fill with `MinkaTheme.colors.raised` (Figma binds `--color-card`, #172F22 in dark), not container-lowest. T6: dialog uses `MinkaTheme.colors.overlay` and the modal shadow via BasicAlertDialog; app bar actions use onSurface as in Figma; `scrollBehavior` left out because its experimental type would force opt-in on every caller. Logo drawables extracted with an XML parser (white, tinted in Compose). Instrumented 12/12; light/dark snapshots compared against Figma.
+- **L10:** phase closed: `./gradlew assembleDebug testDebugUnitTest` green (12 unit tests), `connectedDebugAndroidTest` 12/12 on the API 37 emulator, `lintDebug` with no errors (new warnings: VectorPath and VectorRaster on the logotype). PLAN.md section 5 documents the design system API and marks phase 1 done; README lists the UI test command. Slice sizes: 1 = 581, 2 = 46, 3 = 568 (+fix), 4 = ~540 authored lines. Push and PRs are pending the user's decision.
