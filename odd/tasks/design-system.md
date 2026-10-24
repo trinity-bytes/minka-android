@@ -19,8 +19,8 @@ Branch: `feat/design-system` (tracker, from `develop`). Delivery strategy: ask-o
 | T1 | S1 | inline | done (3 tests) | 91a67e3 |
 | T2 | S2 | inline | done (4 tests) | 81f6018 |
 | T3 | S3 | inline | done (4 tests) | f96149f |
-| T4 | S4 | inline | done (verified on emulator) | see L7 |
-| T5 | S5 (Button, Text field, Checkbox row, Strength meter) | inline | pending | |
+| T4 | S4 | inline | done (verified on emulator) | 69a4812 |
+| T5 | S5 (Button, Text field, Checkbox row, Strength meter) | inline | done (1 unit + 6 instrumented tests) | bb5eaae (dependency), see L8 |
 | T6 | S5 (Top app bar, Logo, Badge, Snackbar, Dialog) | inline | pending | |
 | T7 | S6 | inline | pending | |
 
@@ -45,3 +45,4 @@ Slices (feature-branch-chain; forecast ~1500 authored lines, fonts excluded):
 - **L5:** Figma Forma/Espaciado/Elevación frames name the Compose API (`shapes.*`, `MinkaShapes.*`, `MinkaSpacing.s<n>`) and add spacing 40–64 and elevations sm and lift; S3 rewritten to match. T1 → 20c3744, T2 → ce13817 on `feat/design-system-01-foundations`.
 - **L6:** slice 1 closed: `./gradlew assembleDebug testDebugUnitTest` green, 11 tests; 581 authored lines (about 170 of tests), over the 400 budget as one cohesive foundations unit. Hashes after rebasing onto the tracker: T1 91a67e3, T2 81f6018, T3 f96149f. RDD off globally, so no native review.
 - **L7:** T4 icon reference: Figma splash 1.01 (`334:6`) shows the logomark in on-brand ink on brand green; the adaptive icon uses that (solid background, launcher masks the shape) plus a monochrome layer. Verified on the API 37 emulator after fixing a malformed pathData that made PackageManager return the default icon. Light and dark themes and Fraunces rendering also checked on the emulator.
+- **L8:** T5 needs `Icons.Rounded.*`, only in `material-icons-extended` (BOM 1.7.8): committed alone as bb5eaae (Risk item 5) and noted in PLAN.md stack. Components follow the Figma bindings: Filled uses `MinkaTheme.colors.brand` (constant in both modes), Ink inverse surface, Tonal secondary container. Known deviations: M3 Checkbox keeps its 2 dp corner (Figma 6 dp) and the unfocused error border is 1 dp (Figma 2 dp). Instrumented tests 6/6 on the API 37 emulator; light and dark snapshots compared against Figma.
