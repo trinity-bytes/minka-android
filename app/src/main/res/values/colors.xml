@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Window background before Compose draws; matches the paper color in MinkaTheme. -->
+    <!-- Window background before Compose draws; matches the light surface in MinkaTheme. -->
     <color name="minka_paper">#FFEEF3EF</color>
 </resources>

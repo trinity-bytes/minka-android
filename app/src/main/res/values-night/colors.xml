@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window background before Compose draws; matches the dark surface in MinkaTheme. -->
+    <color name="minka_paper">#FF0A1D13</color>
+</resources>
