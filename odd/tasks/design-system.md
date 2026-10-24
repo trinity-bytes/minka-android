@@ -7,7 +7,7 @@ Branch: `feat/design-system` (tracker, from `develop`). Delivery strategy: ask-o
 
 - **S1 — Color.** PLAN.md phase 1 deliverable: "Tema completo desde Figma (Light/Dark)". Light and Dark color schemes come from the Figma Color variables (Light mockups `333:2`, Dark mockups `368:5490`), mapped to Material 3 roles; Minka accents with no M3 role (brand, lavender, amber, sky, coral, warning, info) are exposed as extended colors. The theme follows the system dark setting. The window background matches in both modes.
 - **S2 — Typography.** "Fraunces + Inter": the Figma type scale (Display/Headline/Title Large in Fraunces; Title Medium/Small, Body and Label in Inter; plus `Label/Sticker`) as the M3 `Typography`, fonts bundled in the app.
-- **S3 — Shapes, spacing, elevation.** "formas, espaciado": Figma radius tokens (xs 6, sm 10, control 12, md 16, lg 24, card 28, bento 38, full) as M3 `Shapes` plus named tokens; spacing tokens 4–32; Figma elevation effects (md, lg, xl, modal).
+- **S3 — Shapes, spacing, elevation.** "formas, espaciado": Figma radius tokens as M3 `Shapes` (extraSmall 6, small 10, medium 16, large 24, extraLarge 28) plus `MinkaShapes.control` (12), `MinkaShapes.bento` (38) and full (`CircleShape`); spacing `MinkaSpacing.s<n>` on the 4 dp grid (4, 8, 12, 16, 20, 24, 32, 40, 48, 56, 64); Figma elevation effects (sm, md, lg, xl, lift, modal) as ink-tinted drop shadows.
 - **S4 — App icon.** "ícono de la app": adaptive launcher icon from the Figma Logomark (`331:2928`).
 - **S5 — Base components.** User choice: "Base + los de fase 2 (Recommended)" — the custom components onboarding/IAM uses: Button (Filled, Ink, Tonal, Outlined, Text, Destructive), Text field, Checkbox row, Strength meter, Top app bar, Logo, Badge, Snackbar, Dialog. Material 3 components that only need the theme (Switch, Radio, Chip, Slider, Tabs, Navigation bar) are not wrapped. Everything else is built in the phase that first uses it.
 - **S6 — Close.** "Cada fase cierra con `./gradlew assembleDebug testDebugUnitTest` en verde." PLAN.md progress marks phase 1 done.
@@ -16,8 +16,8 @@ Branch: `feat/design-system` (tracker, from `develop`). Delivery strategy: ask-o
 
 | ID | Specs | Route | Status | Commit |
 |---|---|---|---|---|
-| T1 | S1 | inline | pending | |
-| T2 | S2 | inline | pending | |
+| T1 | S1 | inline | done (3 tests) | 20c3744 |
+| T2 | S2 | inline | done (4 tests) | ce13817 |
 | T3 | S3 | inline | pending | |
 | T4 | S4 | inline | pending | |
 | T5 | S5 (Button, Text field, Checkbox row, Strength meter) | inline | pending | |
@@ -42,3 +42,4 @@ Slices (feature-branch-chain; forecast ~1500 authored lines, fonts excluded):
 - **L2 (2026-10-24, user):** scope of components answered "Base + los de fase 2 (Recommended)".
 - **L3:** Figma Color/typography/radius/spacing/elevation variables read for both modes; Components page `291:1299` holds ~50 components in 8 groups.
 - **L4 (2026-10-24, user):** delivery answered "feature-branch-chain (Recommended)".
+- **L5:** Figma Forma/Espaciado/Elevación frames name the Compose API (`shapes.*`, `MinkaShapes.*`, `MinkaSpacing.s<n>`) and add spacing 40–64 and elevations sm and lift; S3 rewritten to match. T1 → 20c3744, T2 → ce13817 on `feat/design-system-01-foundations`.
