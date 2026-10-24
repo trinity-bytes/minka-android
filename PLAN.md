@@ -66,6 +66,7 @@ Versiones fijadas en `gradle/libs.versions.toml`, alineadas con las que ya compi
 |---|---|---|
 | Build | AGP 9 + Kotlin 2.4 (Kotlin integrado en AGP), Gradle 9.6, catálogo de versiones | En el scaffold |
 | UI | Compose BOM + Material 3 | En el scaffold |
+| Íconos | Material Icons Round (`material-icons-extended`, versión del BOM). Pesa varios MB sin minificar: activar R8 en release antes de subir a Play | Fase 1 |
 | Navegación | Navigation Compose con rutas tipadas (kotlinx.serialization) | En el scaffold |
 | Inyección de dependencias | Hilt + KSP | En el scaffold |
 | Concurrencia | Coroutines + Flow | En el scaffold |
