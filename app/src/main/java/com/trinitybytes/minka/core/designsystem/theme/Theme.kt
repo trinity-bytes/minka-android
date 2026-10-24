@@ -1,39 +1,34 @@
 package com.trinitybytes.minka.core.designsystem.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-
-private val LightColors = lightColorScheme(
-    primary = Primary,
-    onPrimary = OnPrimary,
-    primaryContainer = Mint,
-    onPrimaryContainer = Ink,
-    secondary = LavenderInk,
-    onSecondary = OnPrimary,
-    secondaryContainer = LavenderSoft,
-    onSecondaryContainer = OnLavender,
-    background = Paper,
-    onBackground = Ink,
-    surface = Paper,
-    onSurface = Ink,
-    onSurfaceVariant = Ink2,
-    surfaceContainerLowest = Card,
-    outline = Gray400,
-    outlineVariant = Gray100,
-    error = Error,
-    onError = OnPrimary,
-)
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 
 /**
- * Light only for now: the dark scheme and the Fraunces/Inter type scale come from Figma in phase 1.
+ * Minka theme: Material 3 roles plus [MinkaTheme.colors] for the colors Material has no role for.
+ * No dynamic color: the brand palette is part of the identity.
  */
 @Composable
-fun MinkaTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = LightColors,
-        typography = Typography(),
-        content = content,
-    )
+fun MinkaTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(
+        LocalMinkaColors provides if (darkTheme) DarkMinkaColors else LightMinkaColors,
+    ) {
+        MaterialTheme(
+            colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
+            typography = Typography(),
+            content = content,
+        )
+    }
+}
+
+object MinkaTheme {
+    val colors: MinkaColors
+        @Composable @ReadOnlyComposable
+        get() = LocalMinkaColors.current
 }
