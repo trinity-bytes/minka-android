@@ -75,6 +75,8 @@ Versiones fijadas en `gradle/libs.versions.toml`, alineadas con las que ya compi
 | QR | Generación + CameraX/ML Kit para escanear | Se agrega con `exchanges` |
 | Tests | JUnit 4, kotlinx-coroutines-test, Turbine, Compose UI test | JUnit y coroutines-test en el scaffold |
 
+**Compatibilidad mínima: Android 8.0 (`minSdk = 26`).** La landing lo promete ("Requiere Android 8.0 o superior"), así que no se sube sin actualizar la landing. Toda API más nueva que el nivel 26 va detrás de un chequeo de versión (`Build.VERSION.SDK_INT`) o de una alternativa de AndroidX; el lint `NewApi` lo detecta. `compileSdk` y `targetSdk` (37) son independientes: no cambian qué dispositivos pueden instalar la app.
+
 ## 4. Backend
 
 **Contract-first, con fakes primero.**
