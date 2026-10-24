@@ -78,9 +78,10 @@ fun MinkaTextField(
             singleLine = singleLine,
             shape = MaterialTheme.shapes.medium,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = scheme.surfaceContainerLowest,
-                unfocusedContainerColor = scheme.surfaceContainerLowest,
-                errorContainerColor = scheme.surfaceContainerLowest,
+                focusedContainerColor = MinkaTheme.colors.raised,
+                unfocusedContainerColor = MinkaTheme.colors.raised,
+                errorContainerColor = MinkaTheme.colors.raised,
+                disabledContainerColor = MinkaTheme.colors.raised,
                 unfocusedBorderColor = scheme.outline,
                 focusedBorderColor = scheme.primary,
                 errorTrailingIconColor = scheme.error,
