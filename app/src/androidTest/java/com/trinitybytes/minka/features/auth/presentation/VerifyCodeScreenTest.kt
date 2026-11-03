@@ -37,6 +37,7 @@ class VerifyCodeScreenTest {
                     onResend = onResend,
                     onContactSupport = onContactSupport,
                     onMessageShown = {},
+                    onRetry = {},
                 )
             }
         }

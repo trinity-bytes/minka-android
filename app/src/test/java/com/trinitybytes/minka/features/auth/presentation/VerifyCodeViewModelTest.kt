@@ -240,18 +240,34 @@ class VerifyCodeViewModelTest {
         viewModel.verify()
         advanceUntilIdle()
 
-        assertEquals(VerifyMessage.Offline, viewModel.state.message)
+        assertTrue("1.22", viewModel.state.isOffline)
+        assertNull(viewModel.state.message)
         assertEquals("482915", viewModel.state.code)
         assertNull(viewModel.state.codeError)
         assertEquals(5, viewModel.state.attemptsLeft)
         assertTrue(viewModel.state.canVerify)
 
-        viewModel.onMessageShown()
-        assertNull(viewModel.state.message)
-
         repository.verifyAnswer = { Outcome.Failure(AuthError.Unexpected) }
         viewModel.verify()
         advanceUntilIdle()
         assertEquals(VerifyMessage.Unexpected, viewModel.state.message)
+        assertFalse("another error leaves 1.22", viewModel.state.isOffline)
+    }
+
+    @Test
+    fun `reintentar verifies the typed code again and leaves 1_22 once it works`() = runTest(dispatcher) {
+        repository.verifyAnswer = { Outcome.Failure(AuthError.Offline) }
+        val viewModel = viewModel()
+        viewModel.onCodeChange("482915")
+        viewModel.verify()
+        advanceUntilIdle()
+
+        repository.verifyAnswer = { Outcome.Success(TEST_SESSION) }
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertEquals(List(2) { "challenge-1" to "482915" }, repository.verifications)
+        assertFalse(viewModel.state.isOffline)
+        assertEquals(VerifyEvent.Verified, viewModel.events.first())
     }
 }

@@ -261,10 +261,51 @@ class SignInViewModelTest {
         viewModel.submit()
         advanceUntilIdle()
 
-        assertEquals(SignInMessage.Offline, viewModel.state.message)
+        assertTrue("1.22", viewModel.state.isOffline)
+        assertNull(viewModel.state.message)
         assertEquals("ana.quispe@gmail.com", viewModel.state.contact)
         assertEquals("Minka2026!", viewModel.state.password)
         assertTrue(viewModel.state.canSubmit)
+    }
+
+    @Test
+    fun `reintentar signs in again with what was typed and leaves 1_22 once it works`() = runTest(dispatcher) {
+        repository.signInAnswer = { Outcome.Failure(AuthError.Offline) }
+        val viewModel = viewModel()
+        viewModel.onContactChange("ana.quispe@gmail.com")
+        viewModel.onPasswordChange("Minka2026!")
+        viewModel.submit()
+        advanceUntilIdle()
+
+        viewModel.retry()
+        advanceUntilIdle()
+        assertTrue("still offline", viewModel.state.isOffline)
+        assertEquals(2, repository.signInCalls)
+
+        repository.signInAnswer = { Outcome.Success(session) }
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertEquals(List(3) { "ana.quispe@gmail.com" to "Minka2026!" }, repository.signIns)
+        assertFalse(viewModel.state.isOffline)
+        assertEquals(SignInEvent.SignedIn, viewModel.events.first())
+    }
+
+    @Test
+    fun `offline while opening google shows 1_22 and reintentar opens the sheet`() = runTest(dispatcher) {
+        repository.accountsAnswer = { Outcome.Failure(AuthError.Offline) }
+        val viewModel = viewModel()
+        viewModel.openGoogleSheet()
+        advanceUntilIdle()
+        assertTrue(viewModel.state.isOffline)
+        assertNull(viewModel.state.googleAccounts)
+
+        repository.accountsAnswer = { Outcome.Success(accounts) }
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.isOffline)
+        assertEquals(accounts, viewModel.state.googleAccounts)
     }
 
     @Test
@@ -284,6 +325,7 @@ class SignInViewModelTest {
     private inner class FakeRepository : AuthRepository {
         var signInAnswer: suspend () -> AuthOutcome<Session> = { Outcome.Success(session) }
         var googleAnswer: suspend () -> AuthOutcome<Session> = { Outcome.Success(session) }
+        var accountsAnswer: suspend () -> AuthOutcome<List<GoogleAccount>> = { Outcome.Success(accounts) }
         val signIns = mutableListOf<Pair<String, String>>()
         val googleSignIns = mutableListOf<String>()
         val signInCalls get() = signIns.size
@@ -296,7 +338,7 @@ class SignInViewModelTest {
 
         override suspend fun googleAccounts(): AuthOutcome<List<GoogleAccount>> {
             googleAccountCalls++
-            return Outcome.Success(accounts)
+            return accountsAnswer()
         }
 
         override suspend fun signInWithGoogle(accountId: String): AuthOutcome<Session> {

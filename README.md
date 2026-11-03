@@ -31,6 +31,7 @@ La app no tiene backend: responde un mock API que corre dentro de ella (Ktor `Mo
 | Recuperar contraseña | Cualquier correo o teléfono válido recibe la misma respuesta (no revela si la cuenta existe); no se envía ningún enlace real y se puede reenviar a los 60 segundos |
 | "Usar mi ubicación" (perfil) | Pide solo la ubicación aproximada y elige el distrito de Lima más cercano a ella; si el dispositivo no tiene ninguna, preselecciona Miraflores. Distritos e intereses salen del mock |
 | Retomar el perfil | Si cierras la app a mitad del perfil (distrito, intereses, notificaciones), al volver abre el paso pendiente; las cuentas que solo inician sesión van directo a Inicio |
+| Sin conexión (1.22) | Solo en builds de debug: `adb shell run-as com.trinitybytes.minka touch files/mock_offline` hace que el mock responda como si no hubiera red, en cualquier paso; `adb shell run-as com.trinitybytes.minka rm files/mock_offline` la devuelve y "Reintentar" repite lo último con lo que escribiste |
 
 ## Estructura
 

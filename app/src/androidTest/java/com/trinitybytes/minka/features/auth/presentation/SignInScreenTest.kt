@@ -32,6 +32,7 @@ class SignInScreenTest {
         onForgotPassword: () -> Unit = {},
         onDismissLock: () -> Unit = {},
         onChooseGoogleAccount: (String) -> Unit = {},
+        onRetry: () -> Unit = {},
     ) {
         compose.setContent {
             MinkaTheme {
@@ -50,9 +51,23 @@ class SignInScreenTest {
                     onDismissGoogle = {},
                     onDismissLock = onDismissLock,
                     onMessageShown = {},
+                    onRetry = onRetry,
                 )
             }
         }
+    }
+
+    @Test
+    fun offlineShowsSinConexionAndReintentarRetries() {
+        var retries = 0
+        setSignIn(SignInUiState(contact = "ana.quispe@gmail.com", password = "Minka2026!", isOffline = true), onRetry = { retries++ })
+
+        compose.onNodeWithText("Sin conexión").assertIsDisplayed()
+        compose.onNodeWithText("Revisa tu wifi o tus datos móviles. Lo que escribiste se guardó.").assertIsDisplayed()
+        compose.onNodeWithText("Ingresar").assertDoesNotExist()
+        compose.onNodeWithText("Reintentar").performClick()
+
+        assertEquals(1, retries)
     }
 
     @Test

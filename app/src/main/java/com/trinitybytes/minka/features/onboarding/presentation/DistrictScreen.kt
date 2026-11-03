@@ -41,6 +41,7 @@ import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
 import com.trinitybytes.minka.core.designsystem.component.MinkaRadioRow
 import com.trinitybytes.minka.core.designsystem.component.MinkaSearchField
 import com.trinitybytes.minka.core.designsystem.component.MinkaSnackbarHost
+import com.trinitybytes.minka.core.designsystem.component.MinkaOfflineScreen
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBar
 import com.trinitybytes.minka.core.designsystem.component.MinkaWavyProgress
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
@@ -87,6 +88,7 @@ fun DistrictScreen(
             )
         },
         onMessageShown = viewModel::onMessageShown,
+        onRetry = viewModel::retry,
     )
 }
 
@@ -101,8 +103,14 @@ fun DistrictContent(
     onContinue: () -> Unit,
     onOpenSettings: () -> Unit,
     onMessageShown: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 1.22: no connection replaces the step; the typed values stay in [uiState] for the retry.
+    if (uiState.isOffline) {
+        MinkaOfflineScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading || uiState.isSaving || uiState.isLocating)
+        return
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val messageText = uiState.message?.let { setupMessageText(it) }
     val settingsLabel = stringResource(R.string.setup_settings)
@@ -209,7 +217,6 @@ internal fun SetupStepHeader(progress: Float, step: String, title: String) {
 @Composable
 internal fun setupMessageText(message: SetupMessage): String = when (message) {
     SetupMessage.LocationDenied -> stringResource(R.string.setup_location_denied)
-    SetupMessage.Offline -> stringResource(R.string.sign_in_offline)
     SetupMessage.Unexpected -> stringResource(R.string.sign_in_unexpected)
 }
 
@@ -233,6 +240,7 @@ private fun DistrictPreview(uiState: DistrictUiState) {
             onContinue = {},
             onOpenSettings = {},
             onMessageShown = {},
+            onRetry = {},
         )
     }
 }

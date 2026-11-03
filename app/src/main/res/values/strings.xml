@@ -5,6 +5,11 @@
 
     <!-- Design system -->
     <string name="action_back">Volver</string>
+
+    <!-- No connection (Figma 1.22) -->
+    <string name="offline_title">Sin conexión</string>
+    <string name="offline_body">Revisa tu wifi o tus datos móviles. Lo que escribiste se guardó.</string>
+    <string name="offline_retry">Reintentar</string>
     <string name="strength_weak">Débil</string>
     <string name="strength_medium">Media</string>
     <string name="strength_strong">Fuerte</string>
@@ -48,12 +53,11 @@
     <string name="sign_in_locked_ok">Entendido</string>
     <string name="sign_in_google_title">Elige una cuenta</string>
     <string name="sign_in_google_add_account">Agregar otra cuenta</string>
-    <!-- Not in Figma: snackbar copy for failed sign-ins (1.22 sin conexión arrives in T8) -->
+    <!-- Not in Figma: snackbar copy for failed sign-ins (no connection is the 1.22 screen) -->
     <plurals name="sign_in_wrong_credentials">
         <item quantity="one">Los datos no coinciden. Te queda %d intento.</item>
         <item quantity="other">Los datos no coinciden. Te quedan %d intentos.</item>
     </plurals>
-    <string name="sign_in_offline">Sin conexión. Revisa tu internet e inténtalo de nuevo.</string>
     <string name="sign_in_unexpected">Algo salió mal. Inténtalo de nuevo.</string>
 
     <!-- Password recovery (Figma 1.10–1.11) -->

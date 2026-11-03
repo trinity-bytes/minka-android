@@ -219,7 +219,8 @@ class RegisterViewModelTest {
         viewModel.submit()
         advanceUntilIdle()
 
-        assertEquals(RegisterMessage.Offline, viewModel.state.message)
+        assertTrue("1.22", viewModel.state.isOffline)
+        assertNull(viewModel.state.message)
         assertEquals("Luis Mamani", viewModel.state.name)
         assertEquals("luis.mamani@gmail.com", viewModel.state.contact)
         assertEquals("Trueque2026!", viewModel.state.password)
@@ -228,12 +229,26 @@ class RegisterViewModelTest {
         assertFalse(viewModel.state.isLoading)
         assertTrue(viewModel.state.canSubmit)
 
-        viewModel.onMessageShown()
-        assertNull(viewModel.state.message)
-
         repository.registerAnswer = { Outcome.Failure(AuthError.Unexpected) }
         viewModel.submit()
         advanceUntilIdle()
         assertEquals(RegisterMessage.Unexpected, viewModel.state.message)
+        assertFalse("another error leaves 1.22", viewModel.state.isOffline)
+    }
+
+    @Test
+    fun `reintentar registers again with what was typed and leaves 1_22 once it works`() = runTest(dispatcher) {
+        repository.registerAnswer = { Outcome.Failure(AuthError.Offline) }
+        val viewModel = viewModel()
+        viewModel.fillValidForm()
+        viewModel.submit()
+        advanceUntilIdle()
+
+        repository.registerAnswer = { Outcome.Success(TEST_CHALLENGE) }
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.isOffline)
+        assertEquals(RegisterEvent.CodeSent(TEST_CHALLENGE), viewModel.events.first())
     }
 }

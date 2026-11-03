@@ -49,6 +49,7 @@ import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
 import com.trinitybytes.minka.core.designsystem.component.MinkaExpressiveShapes
 import com.trinitybytes.minka.core.designsystem.component.MinkaSnackbarHost
 import com.trinitybytes.minka.core.designsystem.component.MinkaTextField
+import com.trinitybytes.minka.core.designsystem.component.MinkaOfflineScreen
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBar
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBarSize
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
@@ -72,6 +73,7 @@ fun PasswordRecoveryScreen(
         onOpenInbox = { kind -> context.openInbox(kind) },
         onResend = viewModel::resend,
         onMessageShown = viewModel::onMessageShown,
+        onRetry = viewModel::retry,
     )
 }
 
@@ -86,8 +88,14 @@ fun PasswordRecoveryContent(
     onOpenInbox: (ContactKind) -> Unit,
     onResend: () -> Unit,
     onMessageShown: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 1.22: no connection replaces the step; the typed values stay in [uiState] for the retry.
+    if (uiState.isOffline) {
+        MinkaOfflineScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading)
+        return
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val messageText = uiState.message?.let { messageText(it) }
     LaunchedEffect(uiState.message) {
@@ -253,7 +261,6 @@ private fun ColumnScope.SentConfirmation(
 
 @Composable
 private fun messageText(message: RecoveryMessage): String = when (message) {
-    RecoveryMessage.Offline -> stringResource(R.string.sign_in_offline)
     RecoveryMessage.Unexpected -> stringResource(R.string.sign_in_unexpected)
 }
 
@@ -281,6 +288,7 @@ private fun PasswordRecoveryPreview(uiState: PasswordRecoveryUiState) {
             onOpenInbox = {},
             onResend = {},
             onMessageShown = {},
+            onRetry = {},
         )
     }
 }

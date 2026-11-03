@@ -35,6 +35,21 @@ class NavigationFeedbackComponentsTest {
     }
 
     @Test
+    fun offlineScreenShowsFigma122AndReportsRetryAndBack() {
+        var retries = 0
+        var backs = 0
+        compose.setContent { MinkaTheme { MinkaOfflineScreen(onBack = { backs++ }, onRetry = { retries++ }) } }
+
+        compose.onNodeWithText("Sin conexión").assertIsDisplayed()
+        compose.onNodeWithText("Revisa tu wifi o tus datos móviles. Lo que escribiste se guardó.").assertIsDisplayed()
+        compose.onNodeWithText("Reintentar").performClick()
+        compose.onNodeWithContentDescription("Volver").performClick()
+
+        assertEquals(1, retries)
+        assertEquals(1, backs)
+    }
+
+    @Test
     fun largeTopAppBarShowsTheTitle() {
         compose.setContent { MinkaTheme { MinkaTopAppBar(title = "Explorar", size = MinkaTopAppBarSize.Large) } }
 

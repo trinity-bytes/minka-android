@@ -31,6 +31,7 @@ import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
 import com.trinitybytes.minka.core.designsystem.component.MinkaFilterChip
 import com.trinitybytes.minka.core.designsystem.component.MinkaSnackbarHost
+import com.trinitybytes.minka.core.designsystem.component.MinkaOfflineScreen
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBar
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
@@ -59,6 +60,7 @@ fun InterestsScreen(
         onSkip = viewModel::onSkip,
         onContinue = viewModel::onContinue,
         onMessageShown = viewModel::onMessageShown,
+        onRetry = viewModel::retry,
     )
 }
 
@@ -70,8 +72,14 @@ fun InterestsContent(
     onSkip: () -> Unit,
     onContinue: () -> Unit,
     onMessageShown: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 1.22: no connection replaces the step; the typed values stay in [uiState] for the retry.
+    if (uiState.isOffline) {
+        MinkaOfflineScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading || uiState.isSaving)
+        return
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val messageText = uiState.message?.let { setupMessageText(it) }
     LaunchedEffect(uiState.message) {
@@ -175,6 +183,7 @@ private fun InterestsPreview() {
             onSkip = {},
             onContinue = {},
             onMessageShown = {},
+            onRetry = {},
         )
     }
 }

@@ -42,6 +42,7 @@ import com.trinitybytes.minka.core.designsystem.component.MinkaCheckboxRow
 import com.trinitybytes.minka.core.designsystem.component.MinkaSnackbarHost
 import com.trinitybytes.minka.core.designsystem.component.MinkaStrengthMeter
 import com.trinitybytes.minka.core.designsystem.component.MinkaTextField
+import com.trinitybytes.minka.core.designsystem.component.MinkaOfflineScreen
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBar
 import com.trinitybytes.minka.core.designsystem.component.MinkaWavyProgress
 import com.trinitybytes.minka.core.designsystem.component.StrengthLevel
@@ -82,6 +83,7 @@ fun RegisterScreen(
         onConfirmPasswordFocusLost = viewModel::onConfirmPasswordFocusLost,
         onSubmit = viewModel::submit,
         onMessageShown = viewModel::onMessageShown,
+        onRetry = viewModel::retry,
     )
 }
 
@@ -100,8 +102,14 @@ fun RegisterContent(
     onConfirmPasswordFocusLost: () -> Unit,
     onSubmit: () -> Unit,
     onMessageShown: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 1.22: no connection replaces the step; the typed values stay in [uiState] for the retry.
+    if (uiState.isOffline) {
+        MinkaOfflineScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading)
+        return
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val messageText = uiState.message?.let { registerMessageText(it) }
     LaunchedEffect(uiState.message) {
@@ -271,7 +279,6 @@ private fun fieldErrorText(error: RegisterFieldError, contact: String): String =
 
 @Composable
 private fun registerMessageText(message: RegisterMessage): String = when (message) {
-    RegisterMessage.Offline -> stringResource(R.string.sign_in_offline)
     RegisterMessage.Unexpected -> stringResource(R.string.sign_in_unexpected)
 }
 
@@ -309,6 +316,7 @@ private fun RegisterPreview(uiState: RegisterUiState) {
             onConfirmPasswordFocusLost = {},
             onSubmit = {},
             onMessageShown = {},
+            onRetry = {},
         )
     }
 }

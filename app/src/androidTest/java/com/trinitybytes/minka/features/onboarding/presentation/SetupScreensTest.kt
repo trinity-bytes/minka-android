@@ -41,6 +41,7 @@ class SetupScreensTest {
                     onContinue = {},
                     onOpenSettings = {},
                     onMessageShown = { state = state.copy(message = null) },
+                    onRetry = {},
                 )
             }
         }
@@ -66,6 +67,7 @@ class SetupScreensTest {
                     onContinue = {},
                     onOpenSettings = { settingsOpened++ },
                     onMessageShown = {},
+                    onRetry = {},
                 )
             }
         }
@@ -92,6 +94,7 @@ class SetupScreensTest {
                     onSkip = { skipped++ },
                     onContinue = {},
                     onMessageShown = {},
+                    onRetry = {},
                 )
             }
         }

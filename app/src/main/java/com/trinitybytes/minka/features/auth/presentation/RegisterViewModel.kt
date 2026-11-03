@@ -26,7 +26,7 @@ import javax.inject.Inject
 enum class RegisterFieldError { InvalidContact, ContactTaken, ShortPassword, WeakPassword, PasswordMismatch }
 
 /** One-off feedback shown in a snackbar. */
-enum class RegisterMessage { Offline, Unexpected }
+enum class RegisterMessage { Unexpected }
 
 sealed interface RegisterEvent {
     /** The code was sent; the flow continues with its verification (1.14). */
@@ -35,7 +35,8 @@ sealed interface RegisterEvent {
 
 /**
  * Every state of Figma 1.12–1.13: the form with the live strength meter (1.12) and the per-field
- * errors, shown when each field is left (1.13).
+ * errors, shown when each field is left (1.13), and no connection while [isOffline] (1.22), which
+ * keeps what was typed.
  */
 data class RegisterUiState(
     val name: String = "",
@@ -49,6 +50,7 @@ data class RegisterUiState(
     val termsError: Boolean = false,
     val isLoading: Boolean = false,
     val message: RegisterMessage? = null,
+    val isOffline: Boolean = false,
 ) {
     val fieldsEnabled: Boolean get() = !isLoading
 
@@ -127,12 +129,12 @@ class RegisterViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, message = null) }
         viewModelScope.launch {
             val result = register(state.name.trim(), state.contact.trim(), state.password)
-            _uiState.update { it.copy(isLoading = false) }
+            _uiState.update { it.copy(isLoading = false, isOffline = result.isOffline()) }
             when (result) {
                 is Outcome.Success -> _events.send(RegisterEvent.CodeSent(result.value))
                 is Outcome.Failure -> when (result.error) {
                     AuthError.ContactTaken -> _uiState.update { it.copy(contactError = RegisterFieldError.ContactTaken) }
-                    AuthError.Offline -> _uiState.update { it.copy(message = RegisterMessage.Offline) }
+                    AuthError.Offline -> Unit
                     else -> _uiState.update { it.copy(message = RegisterMessage.Unexpected) }
                 }
             }
@@ -140,6 +142,11 @@ class RegisterViewModel @Inject constructor(
     }
 
     fun onMessageShown() = _uiState.update { it.copy(message = null) }
+
+    /** 1.22 "Reintentar": sends the form again as it was typed. */
+    fun retry() {
+        if (_uiState.value.isOffline) submit()
+    }
 
     /** The fields are locked while the request runs. */
     private fun edit(change: (RegisterUiState) -> RegisterUiState) = _uiState.update { state ->

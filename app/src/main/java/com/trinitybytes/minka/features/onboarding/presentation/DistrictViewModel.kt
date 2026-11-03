@@ -8,6 +8,7 @@ import com.trinitybytes.minka.features.onboarding.application.GetDistricts
 import com.trinitybytes.minka.features.onboarding.application.LocateDistrict
 import com.trinitybytes.minka.features.onboarding.domain.District
 import com.trinitybytes.minka.features.onboarding.domain.ProfileError
+import com.trinitybytes.minka.features.onboarding.domain.ProfileOutcome
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -24,7 +25,6 @@ import javax.inject.Inject
 enum class SetupMessage {
     /** 1.18: "Sin permiso de ubicación. Elige tu distrito." with the "Ajustes" action. */
     LocationDenied,
-    Offline,
     Unexpected,
 }
 
@@ -38,7 +38,8 @@ sealed interface DistrictEvent {
 
 /**
  * Every state of Figma 1.16–1.18: the district list filtered by [query], the choice (by hand or
- * preselected from the approximate location) and the denied-permission snackbar.
+ * preselected from the approximate location), the denied-permission snackbar and no connection while
+ * [isOffline] (1.22), which keeps the search and the choice.
  */
 data class DistrictUiState(
     val districts: List<District> = emptyList(),
@@ -48,6 +49,7 @@ data class DistrictUiState(
     val isLocating: Boolean = false,
     val isSaving: Boolean = false,
     val message: SetupMessage? = null,
+    val isOffline: Boolean = false,
 ) {
     val visibleDistricts: List<District>
         get() = query.searchKey().let { key -> if (key.isEmpty()) districts else districts.filter { key in it.name.searchKey() } }
@@ -73,11 +75,22 @@ class DistrictViewModel @Inject constructor(
     private val _events = Channel<DistrictEvent>(Channel.BUFFERED)
     val events: Flow<DistrictEvent> = _events.receiveAsFlow()
 
+    /** The last request, which "Reintentar" (1.22) sends again. */
+    private var lastRequest: (() -> Unit)? = null
+
     init {
+        loadDistricts()
+    }
+
+    private fun loadDistricts() {
+        lastRequest = ::loadDistricts
+        _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-            when (val result = getDistricts()) {
-                is Outcome.Success -> _uiState.update { it.copy(districts = result.value, isLoading = false) }
-                is Outcome.Failure -> _uiState.update { it.copy(isLoading = false, message = result.error.toMessage()) }
+            val result = getDistricts()
+            _uiState.update { it.copy(isLoading = false, isOffline = result.isOffline()) }
+            when (result) {
+                is Outcome.Success -> _uiState.update { it.copy(districts = result.value) }
+                is Outcome.Failure -> _uiState.update { it.copy(message = result.error.toMessage()) }
             }
         }
     }
@@ -99,9 +112,16 @@ class DistrictViewModel @Inject constructor(
             _uiState.update { it.copy(message = SetupMessage.LocationDenied) }
             return
         }
+        locate()
+    }
+
+    private fun locate() {
+        lastRequest = ::locate
         _uiState.update { it.copy(isLocating = true, message = null) }
         viewModelScope.launch {
-            when (val result = locateDistrict()) {
+            val result = locateDistrict()
+            _uiState.update { it.copy(isOffline = result.isOffline()) }
+            when (result) {
                 is Outcome.Success -> _uiState.update { state ->
                     val district = result.value
                     state.copy(
@@ -120,10 +140,11 @@ class DistrictViewModel @Inject constructor(
         val state = _uiState.value
         val districtId = state.selectedId
         if (!state.canContinue || districtId == null) return
+        lastRequest = ::onContinue
         _uiState.update { it.copy(isSaving = true, message = null) }
         viewModelScope.launch {
             val result = chooseDistrict(districtId)
-            _uiState.update { it.copy(isSaving = false) }
+            _uiState.update { it.copy(isSaving = false, isOffline = result.isOffline()) }
             when (result) {
                 is Outcome.Success -> _events.send(DistrictEvent.Chosen)
                 // Offline (1.22) keeps the list, the search and the choice.
@@ -133,9 +154,19 @@ class DistrictViewModel @Inject constructor(
     }
 
     fun onMessageShown() = _uiState.update { it.copy(message = null) }
+
+    /** 1.22 "Reintentar": sends the last request again. */
+    fun retry() {
+        val state = _uiState.value
+        if (state.isOffline && !state.isSaving && !state.isLocating) lastRequest?.invoke()
+    }
 }
 
-internal fun ProfileError.toMessage(): SetupMessage = when (this) {
-    ProfileError.Offline -> SetupMessage.Offline
+/** Offline shows 1.22 instead of a message. */
+internal fun ProfileError.toMessage(): SetupMessage? = when (this) {
+    ProfileError.Offline -> null
     ProfileError.Unexpected -> SetupMessage.Unexpected
 }
+
+/** Whether the request failed for lack of connection, which the setup steps show as Figma 1.22. */
+internal fun ProfileOutcome<*>.isOffline(): Boolean = this is Outcome.Failure && error == ProfileError.Offline

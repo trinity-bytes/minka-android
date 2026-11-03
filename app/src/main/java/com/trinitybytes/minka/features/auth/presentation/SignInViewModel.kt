@@ -31,7 +31,6 @@ enum class SignInFieldError { InvalidContact, ShortPassword }
 /** One-off feedback shown in a snackbar. */
 sealed interface SignInMessage {
     data class WrongCredentials(val attemptsLeft: Int) : SignInMessage
-    data object Offline : SignInMessage
     data object Unexpected : SignInMessage
 }
 
@@ -42,7 +41,8 @@ sealed interface SignInEvent {
 
 /**
  * Every state of Figma 1.05–1.09: empty (1.05), field errors (1.06), loading (1.07), locked
- * account while [lockSecondsLeft] is set (1.08) and the Google sheet while [googleAccounts] is set (1.09).
+ * account while [lockSecondsLeft] is set (1.08), the Google sheet while [googleAccounts] is set (1.09)
+ * and no connection while [isOffline] (1.22), which keeps what was typed.
  */
 data class SignInUiState(
     val contact: String = "",
@@ -53,6 +53,7 @@ data class SignInUiState(
     val lockSecondsLeft: Long? = null,
     val googleAccounts: List<GoogleAccount>? = null,
     val message: SignInMessage? = null,
+    val isOffline: Boolean = false,
 ) {
     /** 1.07: the fields are locked while signing in. */
     val fieldsEnabled: Boolean get() = !isLoading
@@ -79,6 +80,9 @@ class SignInViewModel @Inject constructor(
 
     private var started = false
     private var countdown: Job? = null
+
+    /** The last request, which "Reintentar" (1.22) sends again. */
+    private var lastRequest: (() -> Unit)? = null
 
     /** Called once per screen; with [withGoogle] the account sheet opens right away. */
     fun onStart(withGoogle: Boolean) {
@@ -120,10 +124,11 @@ class SignInViewModel @Inject constructor(
     }
 
     fun openGoogleSheet() {
+        lastRequest = ::openGoogleSheet
         viewModelScope.launch {
             when (val result = getGoogleAccounts()) {
-                is Outcome.Success -> _uiState.update { it.copy(googleAccounts = result.value) }
-                is Outcome.Failure -> _uiState.update { it.copy(message = result.error.toMessage()) }
+                is Outcome.Success -> _uiState.update { it.copy(googleAccounts = result.value, isOffline = false) }
+                is Outcome.Failure -> report(result.error)
             }
         }
     }
@@ -149,18 +154,35 @@ class SignInViewModel @Inject constructor(
 
     fun onMessageShown() = _uiState.update { it.copy(message = null) }
 
+    /** 1.22 "Reintentar": sends the last request again with what was typed. */
+    fun retry() {
+        val state = _uiState.value
+        if (state.isOffline && !state.isLoading) lastRequest?.invoke()
+    }
+
     private fun authenticate(request: suspend () -> AuthOutcome<Session>) {
+        lastRequest = { authenticate(request) }
         _uiState.update { it.copy(isLoading = true, message = null) }
         viewModelScope.launch {
             val result = request()
             _uiState.update { it.copy(isLoading = false) }
             when (result) {
-                is Outcome.Success -> _events.send(SignInEvent.SignedIn)
-                is Outcome.Failure -> when (val error = result.error) {
-                    is AuthError.AccountLocked -> startLock(error.retryAfterSeconds)
-                    else -> _uiState.update { it.copy(message = error.toMessage()) }
+                is Outcome.Success -> {
+                    _uiState.update { it.copy(isOffline = false) }
+                    _events.send(SignInEvent.SignedIn)
                 }
+                is Outcome.Failure -> report(result.error)
             }
+        }
+    }
+
+    /** Offline shows 1.22; anything else leaves it for the lock dialog or a snackbar. */
+    private fun report(error: AuthError) {
+        _uiState.update { it.copy(isOffline = error == AuthError.Offline) }
+        when (error) {
+            AuthError.Offline -> Unit
+            is AuthError.AccountLocked -> startLock(error.retryAfterSeconds)
+            else -> _uiState.update { it.copy(message = error.toMessage()) }
         }
     }
 
@@ -185,7 +207,6 @@ class SignInViewModel @Inject constructor(
 
     private fun AuthError.toMessage(): SignInMessage = when (this) {
         is AuthError.InvalidCredentials -> SignInMessage.WrongCredentials(attemptsLeft)
-        AuthError.Offline -> SignInMessage.Offline
         else -> SignInMessage.Unexpected
     }
 }

@@ -154,14 +154,29 @@ class PasswordRecoveryViewModelTest {
         viewModel.submit()
         advanceUntilIdle()
 
-        assertEquals(RecoveryMessage.Offline, viewModel.state.message)
+        assertTrue("1.22", viewModel.state.isOffline)
+        assertNull(viewModel.state.message)
         assertEquals("ana.quispe@gmail.com", viewModel.state.contact)
         assertNull(viewModel.state.sent)
         assertFalse(viewModel.state.isLoading)
         assertTrue(viewModel.state.canSubmit)
+    }
 
-        viewModel.onMessageShown()
-        assertNull(viewModel.state.message)
+    @Test
+    fun `reintentar sends the link again to what was typed and leaves 1_22 once it works`() = runTest(dispatcher) {
+        repository.answer = { Outcome.Failure(AuthError.Offline) }
+        val viewModel = viewModel()
+        viewModel.onContactChange("987654321")
+        viewModel.submit()
+        advanceUntilIdle()
+
+        repository.answer = { Outcome.Success(PasswordReset("987654321", 30, 60)) }
+        viewModel.retry()
+        runCurrent()
+
+        assertEquals(listOf("987654321", "987654321"), repository.resets)
+        assertFalse(viewModel.state.isOffline)
+        assertEquals(RecoverySent("987654321", ContactKind.Phone, 30), viewModel.state.sent)
     }
 
     @Test
@@ -191,7 +206,7 @@ class PasswordRecoveryViewModelTest {
         viewModel.resend()
         runCurrent()
 
-        assertEquals(RecoveryMessage.Offline, viewModel.state.message)
+        assertTrue("1.22", viewModel.state.isOffline)
         assertEquals(RecoverySent("ana.quispe@gmail.com", ContactKind.Email, 30), viewModel.state.sent)
         assertTrue(viewModel.state.canResend)
     }

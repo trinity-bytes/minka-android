@@ -30,6 +30,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -119,11 +120,48 @@ class SetupStepsViewModelTest {
         viewModel.onContinue()
         advanceUntilIdle()
 
-        assertEquals(SetupMessage.Offline, viewModel.uiState.value.message)
+        assertTrue("1.22", viewModel.uiState.value.isOffline)
+        assertNull(viewModel.uiState.value.message)
         assertEquals(setOf("libros"), viewModel.uiState.value.selectedIds)
         assertTrue(viewModel.uiState.value.canContinue)
         assertTrue(events.isEmpty())
         assertEquals(OnboardingProgress.Pending(ANA.user.id, SetupStep.Interests), progress.progress.value)
+    }
+
+    @Test
+    fun `reintentar saves the chosen interests again and leaves 1_22 once it works`() = runTest(dispatcher) {
+        repository.saveAnswer = { Outcome.Failure(ProfileError.Offline) }
+        val progress = progressAt(SetupStep.Interests)
+        val viewModel = interestsViewModel(progress)
+        advanceUntilIdle()
+        val events = mutableListOf<InterestsEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.events.toList(events) }
+        viewModel.onInterestToggled("libros")
+        viewModel.onContinue()
+        advanceUntilIdle()
+
+        repository.saveAnswer = { Outcome.Success(Unit) }
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isOffline)
+        assertEquals(listOf<InterestsEvent>(InterestsEvent.Done), events)
+        assertEquals(OnboardingProgress.Pending(ANA.user.id, SetupStep.Notifications), progress.progress.value)
+    }
+
+    @Test
+    fun `offline while loading the interests shows 1_22 and reintentar loads them`() = runTest(dispatcher) {
+        repository.interestsAnswer = { Outcome.Failure(ProfileError.Offline) }
+        val viewModel = interestsViewModel(progressAt(SetupStep.Interests))
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isOffline)
+
+        repository.interestsAnswer = { Outcome.Success(TEST_INTERESTS) }
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isOffline)
+        assertEquals(TEST_INTERESTS, viewModel.uiState.value.interests)
     }
 
     @Test

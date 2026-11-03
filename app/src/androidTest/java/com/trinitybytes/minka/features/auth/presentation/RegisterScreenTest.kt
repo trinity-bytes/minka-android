@@ -47,6 +47,7 @@ class RegisterScreenTest {
                     onConfirmPasswordFocusLost = {},
                     onSubmit = onSubmit,
                     onMessageShown = {},
+                    onRetry = {},
                 )
             }
         }

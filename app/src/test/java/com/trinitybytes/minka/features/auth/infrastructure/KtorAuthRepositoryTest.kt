@@ -4,6 +4,7 @@ import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.core.network.InMemoryMockStorage
 import com.trinitybytes.minka.core.network.MinkaJson
 import com.trinitybytes.minka.core.network.MockApi
+import com.trinitybytes.minka.core.network.MockConnection
 import com.trinitybytes.minka.core.network.minkaHttpClient
 import com.trinitybytes.minka.features.auth.domain.AuthError
 import com.trinitybytes.minka.features.auth.domain.PasswordReset
@@ -177,5 +178,19 @@ class KtorAuthRepositoryTest {
         val restarted = repository()
 
         assertEquals("Luis Mamani", restarted.signIn("luis.mamani@gmail.com", "Trueque2026!").value().user.name)
+    }
+
+    @Test
+    fun `with the no-connection switch on the mock answers the offline error`() = runTest {
+        var offline = true
+        val repo = KtorAuthRepository(
+            minkaHttpClient(MockApi(MockAuthServer(storage, clock).routes(), KotlinDuration.ZERO, MockConnection { offline }).engine()),
+        )
+
+        assertEquals(AuthError.Offline, repo.signIn("ana.quispe@gmail.com", "Minka2026!").error())
+        assertEquals(AuthError.Offline, repo.requestPasswordReset("ana.quispe@gmail.com").error())
+
+        offline = false
+        assertEquals("ana.quispe@gmail.com", repo.signIn("ana.quispe@gmail.com", "Minka2026!").value().user.contact)
     }
 }

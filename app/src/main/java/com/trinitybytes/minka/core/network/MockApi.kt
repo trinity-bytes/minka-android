@@ -13,21 +13,26 @@ import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import kotlinx.coroutines.delay
 import kotlinx.serialization.encodeToString
+import java.io.File
+import java.io.IOException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * The in-app "server" behind the Ktor client. Minka has no backend (PLAN.md section 4): every
  * request is answered by the [MockRoute] whose method and path match, after a short [latency]
- * so loading states are visible.
+ * so loading states are visible. While [connection] is offline, every request fails with an
+ * [IOException], as a real client does without a network.
  */
 class MockApi(
     private val routes: Set<MockRoute>,
     private val latency: Duration = DEFAULT_LATENCY,
+    private val connection: MockConnection = MockConnection.Online,
 ) {
 
     fun engine(): HttpClientEngine = MockEngine { request ->
         delay(latency)
+        if (connection.isOffline()) throw IOException("No connection (mock API switch)")
         val reply = dispatch(request)
         respond(
             content = reply.body,
@@ -107,4 +112,21 @@ class MockReply(val status: HttpStatusCode, val body: String) {
             attemptsLeft: Int? = null,
         ) = json(status, ApiError(code, retryAfterSeconds, attemptsLeft))
     }
+}
+
+/** Whether the mock API answers as if the device had no connection (Figma 1.22). */
+fun interface MockConnection {
+    fun isOffline(): Boolean
+
+    companion object {
+        val Online = MockConnection { false }
+    }
+}
+
+/**
+ * Debug switch: the connection is off while [flag] exists. On a debug build, from a computer:
+ * `adb shell run-as com.trinitybytes.minka touch files/mock_offline` (and `rm` to turn it back on).
+ */
+class FileMockConnection(private val flag: File) : MockConnection {
+    override fun isOffline(): Boolean = flag.exists()
 }

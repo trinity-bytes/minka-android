@@ -1,6 +1,7 @@
 package com.trinitybytes.minka.core.network
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.preferencesDataStoreFile
 import dagger.Module
@@ -11,7 +12,11 @@ import java.time.Clock
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.Multibinds
 import io.ktor.client.HttpClient
+import java.io.File
 import javax.inject.Singleton
+
+/** File under `filesDir` whose presence turns the mock API offline on debug builds. */
+const val MOCK_OFFLINE_FLAG = "mock_offline"
 
 /**
  * Wires the Ktor client to the in-app [MockApi]. Each feature contributes its endpoints with
@@ -35,9 +40,18 @@ abstract class NetworkModule {
             PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("mock_api") },
         )
 
+        /** The "no connection" switch (Figma 1.22) only exists on debuggable builds. */
         @Provides
         @Singleton
-        fun provideMockApi(routes: Set<@JvmSuppressWildcards MockRoute>): MockApi = MockApi(routes)
+        fun provideMockConnection(@ApplicationContext context: Context): MockConnection {
+            val debuggable = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+            return if (debuggable) FileMockConnection(File(context.filesDir, MOCK_OFFLINE_FLAG)) else MockConnection.Online
+        }
+
+        @Provides
+        @Singleton
+        fun provideMockApi(routes: Set<@JvmSuppressWildcards MockRoute>, connection: MockConnection): MockApi =
+            MockApi(routes, connection = connection)
 
         @Provides
         @Singleton

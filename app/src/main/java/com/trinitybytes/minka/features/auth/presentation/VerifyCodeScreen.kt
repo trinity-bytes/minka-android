@@ -37,6 +37,7 @@ import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
 import com.trinitybytes.minka.core.designsystem.component.MinkaCodeInput
 import com.trinitybytes.minka.core.designsystem.component.MinkaSnackbarHost
+import com.trinitybytes.minka.core.designsystem.component.MinkaOfflineScreen
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBar
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
@@ -69,6 +70,7 @@ fun VerifyCodeScreen(
         onResend = viewModel::resend,
         onContactSupport = onContactSupport,
         onMessageShown = viewModel::onMessageShown,
+        onRetry = viewModel::retry,
     )
 }
 
@@ -82,8 +84,14 @@ fun VerifyCodeContent(
     onResend: () -> Unit,
     onContactSupport: () -> Unit,
     onMessageShown: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 1.22: no connection replaces the step; the typed values stay in [uiState] for the retry.
+    if (uiState.isOffline) {
+        MinkaOfflineScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading)
+        return
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val messageText = uiState.message?.let { verifyMessageText(it) }
     LaunchedEffect(uiState.message) {
@@ -201,7 +209,6 @@ private fun CodeGroup(uiState: VerifyCodeUiState, onCodeChange: (String) -> Unit
 
 @Composable
 private fun verifyMessageText(message: VerifyMessage): String = when (message) {
-    VerifyMessage.Offline -> stringResource(R.string.sign_in_offline)
     VerifyMessage.Unexpected -> stringResource(R.string.sign_in_unexpected)
 }
 
@@ -216,6 +223,7 @@ private fun VerifyCodePreview(uiState: VerifyCodeUiState) {
             onResend = {},
             onContactSupport = {},
             onMessageShown = {},
+            onRetry = {},
         )
     }
 }

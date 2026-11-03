@@ -157,11 +157,49 @@ class DistrictViewModelTest {
         viewModel.onContinue()
         advanceUntilIdle()
 
-        assertEquals(SetupMessage.Offline, viewModel.state.message)
+        assertTrue("1.22", viewModel.state.isOffline)
+        assertNull(viewModel.state.message)
         assertEquals(SAN_ISIDRO.id, viewModel.state.selectedId)
         assertEquals("san", viewModel.state.query)
         assertTrue(viewModel.state.canContinue)
         assertTrue(events.isEmpty())
         assertEquals(OnboardingProgress.Pending(ANA.user.id, SetupStep.District), progress.progress.value)
+    }
+
+    @Test
+    fun `reintentar saves the chosen district again and leaves 1_22 once it works`() = runTest(dispatcher) {
+        repository.saveAnswer = { Outcome.Failure(ProfileError.Offline) }
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onDistrictSelected(SAN_ISIDRO.id)
+        val events = mutableListOf<DistrictEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.events.toList(events) }
+        viewModel.onContinue()
+        advanceUntilIdle()
+
+        repository.saveAnswer = { Outcome.Success(Unit) }
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertEquals(listOf(ANA.user.id to SAN_ISIDRO.id), repository.savedDistricts)
+        assertFalse(viewModel.state.isOffline)
+        assertEquals(listOf<DistrictEvent>(DistrictEvent.Chosen), events)
+    }
+
+    @Test
+    fun `offline while loading the districts shows 1_22 and reintentar loads them`() = runTest(dispatcher) {
+        repository.districtsAnswer = { Outcome.Failure(ProfileError.Offline) }
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        assertTrue(viewModel.state.isOffline)
+        assertNull(viewModel.state.message)
+
+        repository.districtsAnswer = { Outcome.Success(TEST_DISTRICTS) }
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.isOffline)
+        assertFalse(viewModel.state.isLoading)
+        assertEquals(TEST_DISTRICTS, viewModel.state.visibleDistricts)
     }
 }

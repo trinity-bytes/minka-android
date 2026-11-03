@@ -23,13 +23,17 @@ sealed interface InterestsEvent {
     data object Done : InterestsEvent
 }
 
-/** Figma 1.19: category chips; "Continuar" waits for one, "Omitir" skips them. */
+/**
+ * Figma 1.19: category chips; "Continuar" waits for one, "Omitir" skips them. No connection shows
+ * 1.22 while [isOffline], which keeps the choice.
+ */
 data class InterestsUiState(
     val interests: List<Interest> = emptyList(),
     val selectedIds: Set<String> = emptySet(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val message: SetupMessage? = null,
+    val isOffline: Boolean = false,
 ) {
     /** "Elige al menos una categoría". */
     val canContinue: Boolean get() = selectedIds.isNotEmpty() && !isSaving
@@ -48,11 +52,22 @@ class InterestsViewModel @Inject constructor(
     private val _events = Channel<InterestsEvent>(Channel.BUFFERED)
     val events: Flow<InterestsEvent> = _events.receiveAsFlow()
 
+    /** The last request, which "Reintentar" (1.22) sends again. */
+    private var lastRequest: (() -> Unit)? = null
+
     init {
+        loadInterests()
+    }
+
+    private fun loadInterests() {
+        lastRequest = ::loadInterests
+        _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-            when (val result = getInterests()) {
-                is Outcome.Success -> _uiState.update { it.copy(interests = result.value, isLoading = false) }
-                is Outcome.Failure -> _uiState.update { it.copy(isLoading = false, message = result.error.toMessage()) }
+            val result = getInterests()
+            _uiState.update { it.copy(isLoading = false, isOffline = result.isOffline()) }
+            when (result) {
+                is Outcome.Success -> _uiState.update { it.copy(interests = result.value) }
+                is Outcome.Failure -> _uiState.update { it.copy(message = result.error.toMessage()) }
             }
         }
     }
@@ -65,12 +80,13 @@ class InterestsViewModel @Inject constructor(
     fun onContinue() {
         val state = _uiState.value
         if (!state.canContinue) return
+        lastRequest = ::onContinue
         _uiState.update { it.copy(isSaving = true, message = null) }
         viewModelScope.launch {
             // Saved in the catalog order, whatever order they were tapped in.
             val ids = state.interests.map { it.id }.filter { it in state.selectedIds }
             val result = saveInterests(ids)
-            _uiState.update { it.copy(isSaving = false) }
+            _uiState.update { it.copy(isSaving = false, isOffline = result.isOffline()) }
             when (result) {
                 is Outcome.Success -> _events.send(InterestsEvent.Done)
                 is Outcome.Failure -> _uiState.update { it.copy(message = result.error.toMessage()) }
@@ -88,4 +104,10 @@ class InterestsViewModel @Inject constructor(
     }
 
     fun onMessageShown() = _uiState.update { it.copy(message = null) }
+
+    /** 1.22 "Reintentar": sends the last request again. */
+    fun retry() {
+        val state = _uiState.value
+        if (state.isOffline && !state.isSaving) lastRequest?.invoke()
+    }
 }
