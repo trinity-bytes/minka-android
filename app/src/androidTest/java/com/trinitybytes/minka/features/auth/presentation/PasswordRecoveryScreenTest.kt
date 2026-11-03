@@ -71,6 +71,16 @@ class PasswordRecoveryScreenTest {
     }
 
     @Test
+    fun aPhoneContactShowsTheSmsVariantOf111b() {
+        val bySms = RecoverySent("987654321", ContactKind.Phone, 30)
+        setRecovery(PasswordRecoveryUiState(contact = bySms.destination, sent = bySms, resendSecondsLeft = 45))
+
+        compose.onNodeWithText("Revisa tus mensajes").assertIsDisplayed()
+        compose.onNodeWithText("Enviamos un enlace por SMS al 987 654 321. Vence en 30 minutos.").assertIsDisplayed()
+        compose.onNodeWithText("Abrir mensajes").assertIsDisplayed()
+    }
+
+    @Test
     fun reenviarAndAbrirCorreoWorkOnceTheCountdownEnds() {
         var resends = 0
         var opened: ContactKind? = null

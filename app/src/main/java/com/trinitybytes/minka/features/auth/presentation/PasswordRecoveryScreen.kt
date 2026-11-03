@@ -218,7 +218,11 @@ private fun ColumnScope.SentConfirmation(
             textAlign = TextAlign.Center,
         )
         Text(
-            text = stringResource(R.string.password_recovery_sent_text, sent.destination, sent.expiresInMinutes),
+            text = if (isPhone) {
+                stringResource(R.string.password_recovery_sent_phone_text, groupPhoneDigits(sent.destination), sent.expiresInMinutes)
+            } else {
+                stringResource(R.string.password_recovery_sent_text, sent.destination, sent.expiresInMinutes)
+            },
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
