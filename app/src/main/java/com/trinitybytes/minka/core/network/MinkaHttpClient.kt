@@ -28,4 +28,5 @@ fun minkaHttpClient(engine: HttpClientEngine): HttpClient = HttpClient(engine) {
 data class ApiError(
     val code: String,
     val retryAfterSeconds: Long? = null,
+    val attemptsLeft: Int? = null,
 )

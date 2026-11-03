@@ -100,7 +100,11 @@ class MockReply(val status: HttpStatusCode, val body: String) {
         inline fun <reified T> json(status: HttpStatusCode, value: T) =
             MockReply(status, MinkaJson.encodeToString(value))
 
-        fun error(status: HttpStatusCode, code: String, retryAfterSeconds: Long? = null) =
-            json(status, ApiError(code, retryAfterSeconds))
+        fun error(
+            status: HttpStatusCode,
+            code: String,
+            retryAfterSeconds: Long? = null,
+            attemptsLeft: Int? = null,
+        ) = json(status, ApiError(code, retryAfterSeconds, attemptsLeft))
     }
 }

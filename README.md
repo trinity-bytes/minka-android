@@ -19,6 +19,16 @@ El plan completo (alcance, arquitectura, stack, backend y fases) está en [PLAN.
 ./gradlew installDebug           # instala en un dispositivo o emulador conectado
 ```
 
+## Mock API
+
+La app no tiene backend: responde un mock API que corre dentro de ella (Ktor `MockEngine`, ver [PLAN.md](PLAN.md#4-backend)). Lo que se crea en la app (cuentas, etc.) queda guardado en el dispositivo; para empezar de cero, borra los datos de la app.
+
+| Para | Usa |
+|---|---|
+| Iniciar sesión | `ana.quispe@gmail.com` o `987654321`, contraseña `Minka2026!` |
+| Código de verificación del registro | `482915` (el mock no envía correos ni SMS) |
+| Bloqueo de cuenta | 5 contraseñas incorrectas seguidas bloquean el acceso 15 minutos |
+
 ## Estructura
 
 ```text

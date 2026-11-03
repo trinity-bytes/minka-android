@@ -1,8 +1,13 @@
 package com.trinitybytes.minka.core.network
 
+import android.content.Context
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.preferencesDataStoreFile
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.time.Clock
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.Multibinds
 import io.ktor.client.HttpClient
@@ -20,6 +25,16 @@ abstract class NetworkModule {
     abstract fun mockRoutes(): Set<MockRoute>
 
     companion object {
+        @Provides
+        @Singleton
+        fun provideClock(): Clock = Clock.systemUTC()
+
+        @Provides
+        @Singleton
+        fun provideMockStorage(@ApplicationContext context: Context): MockStorage = DataStoreMockStorage(
+            PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("mock_api") },
+        )
+
         @Provides
         @Singleton
         fun provideMockApi(routes: Set<@JvmSuppressWildcards MockRoute>): MockApi = MockApi(routes)
