@@ -36,7 +36,7 @@ Branch: `feat/onboarding-iam` (from `develop`). Delivery strategy: ask-on-risk â
 | T5 | S5 C | delegated (context backstop) | done (9 unit + 5 UI tests, UI not run: no emulator) | 6ba4c4c |
 | T6 | S5 D | delegated (context backstop) | done (19 unit + 6 UI tests, UI not run: no emulator) | 9d9bf19 |
 | T7 | S5 E, S4 | delegated (context backstop) | done (25 unit + 5 UI tests, UI not run: no emulator) | 0c3ec86 |
-| T8 | S5 F, S6 | delegated (context backstop) | done (12 unit + 2 UI tests, UI not run: no emulator) | |
+| T8 | S5 F, S6 | delegated (context backstop) | done (12 unit + 2 UI tests, UI not run: no emulator) | 6409805 |
 
 Route evidence: sequential units sharing navigation and the auth module; no parallel writer reason.
 
