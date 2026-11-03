@@ -1,7 +1,7 @@
 package com.trinitybytes.minka.features.auth.infrastructure
 
 import android.content.Context
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import com.trinitybytes.minka.core.datastore.minkaPreferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.trinitybytes.minka.core.network.MockRoute
 import com.trinitybytes.minka.core.network.MockStorage
@@ -28,7 +28,7 @@ abstract class AuthModule {
         @Provides
         @Singleton
         fun provideSessionStore(@ApplicationContext context: Context): SessionStore = DataStoreSessionStore(
-            PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("session") },
+            minkaPreferencesDataStore { context.preferencesDataStoreFile("session") },
         )
 
         @Provides

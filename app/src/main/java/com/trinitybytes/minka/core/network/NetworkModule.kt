@@ -2,7 +2,7 @@ package com.trinitybytes.minka.core.network
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import com.trinitybytes.minka.core.datastore.minkaPreferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
 import dagger.Module
 import dagger.Provides
@@ -37,7 +37,7 @@ abstract class NetworkModule {
         @Provides
         @Singleton
         fun provideMockStorage(@ApplicationContext context: Context): MockStorage = DataStoreMockStorage(
-            PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("mock_api") },
+            minkaPreferencesDataStore { context.preferencesDataStoreFile("mock_api") },
         )
 
         /** The "no connection" switch (Figma 1.22) only exists on debuggable builds. */
