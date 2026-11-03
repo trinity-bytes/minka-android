@@ -29,6 +29,8 @@ La app no tiene backend: responde un mock API que corre dentro de ella (Ktor `Mo
 | Código de verificación del registro | `482915` (el mock no envía correos ni SMS) |
 | Bloqueo de cuenta | 5 contraseñas incorrectas seguidas bloquean el acceso 15 minutos |
 | Recuperar contraseña | Cualquier correo o teléfono válido recibe la misma respuesta (no revela si la cuenta existe); no se envía ningún enlace real y se puede reenviar a los 60 segundos |
+| "Usar mi ubicación" (perfil) | Pide solo la ubicación aproximada y elige el distrito de Lima más cercano a ella; si el dispositivo no tiene ninguna, preselecciona Miraflores. Distritos e intereses salen del mock |
+| Retomar el perfil | Si cierras la app a mitad del perfil (distrito, intereses, notificaciones), al volver abre el paso pendiente; las cuentas que solo inician sesión van directo a Inicio |
 
 ## Estructura
 

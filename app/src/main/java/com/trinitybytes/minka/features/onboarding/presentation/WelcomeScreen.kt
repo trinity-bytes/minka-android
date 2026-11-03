@@ -237,7 +237,7 @@ private fun PhotoStage(content: WelcomeStepContent, modifier: Modifier = Modifie
  * Lays the photo out at ([x], [y]) inside the stage, larger than the stage by [extraWidth] ×
  * [extraHeight], so the stage clips it as in Figma.
  */
-private fun Modifier.overflowing(x: Dp, y: Dp, extraWidth: Dp, extraHeight: Dp) = layout { measurable, constraints ->
+internal fun Modifier.overflowing(x: Dp, y: Dp, extraWidth: Dp, extraHeight: Dp) = layout { measurable, constraints ->
     val width = constraints.maxWidth + extraWidth.roundToPx()
     val height = constraints.maxHeight + extraHeight.roundToPx() - y.roundToPx()
     val placeable = measurable.measure(Constraints.fixed(width, height.coerceAtLeast(0)))

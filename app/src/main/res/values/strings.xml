@@ -111,6 +111,34 @@
     <string name="verify_support_action">Contáctanos</string>
     <string name="verify_submit">Verificar</string>
 
-    <!-- Onboarding placeholder (Figma 1.16 headline), replaced by T7 -->
-    <string name="district_placeholder">¿Dónde intercambias?</string>
+    <!-- Profile setup (Figma 1.16–1.21) -->
+    <string name="setup_continue">Continuar</string>
+    <string name="setup_district_step">Paso 2 de 3 · Ubicación</string>
+    <string name="setup_district_title">¿Dónde intercambias?</string>
+    <string name="setup_district_body">Te mostramos trueques cerca. Solo se ve tu distrito, nunca tu dirección.</string>
+    <string name="setup_use_location">Usar mi ubicación</string>
+    <string name="setup_district_search">Buscar distrito</string>
+    <string name="setup_location_denied">Sin permiso de ubicación. Elige tu distrito.</string>
+    <string name="setup_settings">Ajustes</string>
+    <string name="setup_interests_step">Paso 3 de 3 · Intereses</string>
+    <string name="setup_interests_title">¿Qué te interesa?</string>
+    <string name="setup_interests_body">Elige al menos una categoría para personalizar tu inicio.</string>
+    <plurals name="setup_interests_selected">
+        <item quantity="one">%d seleccionado</item>
+        <item quantity="other">%d seleccionados</item>
+    </plurals>
+    <string name="setup_skip">Omitir</string>
+    <string name="setup_notifications_sticker">Nueva propuesta</string>
+    <string name="setup_notifications_title">Entérate de cada propuesta</string>
+    <string name="setup_notifications_body">Te avisamos cuando alguien quiera tu objeto, responda en el chat o confirme un trueque.</string>
+    <string name="setup_notifications_enable">Activar notificaciones</string>
+    <string name="setup_notifications_not_now">Ahora no</string>
+    <string name="setup_all_set_sticker">¡Bienvenida!</string>
+    <string name="setup_all_set_title">¡Todo listo, %1$s!</string>
+    <!-- Not in Figma: 1.21 without a known first name. -->
+    <string name="setup_all_set_title_no_name">¡Todo listo!</string>
+    <string name="setup_all_set_body">Ya puedes publicar tu primer objeto o buscar trueques en %1$s.</string>
+    <!-- Not in Figma: 1.21 when the profile district cannot be read. -->
+    <string name="setup_all_set_body_no_district">Ya puedes publicar tu primer objeto o buscar trueques cerca de ti.</string>
+    <string name="setup_explore">Explorar Mink\'a</string>
 </resources>

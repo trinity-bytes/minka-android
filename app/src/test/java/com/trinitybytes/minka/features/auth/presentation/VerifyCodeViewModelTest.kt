@@ -7,6 +7,10 @@ import com.trinitybytes.minka.features.auth.application.VerifyRegistration
 import com.trinitybytes.minka.features.auth.domain.AuthError
 import com.trinitybytes.minka.features.auth.domain.AuthOutcome
 import com.trinitybytes.minka.features.auth.domain.Session
+import com.trinitybytes.minka.features.onboarding.FakeProgressStore
+import com.trinitybytes.minka.features.onboarding.application.BeginOnboarding
+import com.trinitybytes.minka.features.onboarding.domain.OnboardingProgress
+import com.trinitybytes.minka.features.onboarding.domain.SetupStep
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,6 +36,7 @@ class VerifyCodeViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val repository = FakeRegistrationRepository()
     private val sessionStore = FakeSessionStore()
+    private val progressStore = FakeProgressStore()
 
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
@@ -50,6 +55,7 @@ class VerifyCodeViewModelTest {
         ),
         VerifyRegistration(repository, sessionStore),
         ResendCode(repository),
+        BeginOnboarding(progressStore),
     )
 
     private val VerifyCodeViewModel.state get() = uiState.value
@@ -93,6 +99,30 @@ class VerifyCodeViewModelTest {
         assertEquals(listOf("challenge-1" to "482915"), repository.verifications)
         assertEquals(TEST_SESSION, sessionStore.session.value)
         assertEquals(VerifyEvent.Verified, viewModel.events.first())
+    }
+
+    @Test
+    fun `a verified account starts the profile setup at the district step`() = runTest(dispatcher) {
+        val viewModel = viewModel()
+        viewModel.onCodeChange("482915")
+
+        viewModel.verify()
+        advanceUntilIdle()
+
+        assertEquals(OnboardingProgress.Pending(TEST_SESSION.user.id, SetupStep.District), progressStore.progress.value)
+        assertEquals(VerifyEvent.Verified, viewModel.events.first())
+    }
+
+    @Test
+    fun `a wrong code does not start the profile setup`() = runTest(dispatcher) {
+        wrongCodes()
+        val viewModel = viewModel()
+        viewModel.onCodeChange("111111")
+
+        viewModel.verify()
+        advanceUntilIdle()
+
+        assertNull(progressStore.progress.value)
     }
 
     @Test

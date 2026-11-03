@@ -7,6 +7,7 @@ import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.features.auth.application.ResendCode
 import com.trinitybytes.minka.features.auth.application.VerifyRegistration
 import com.trinitybytes.minka.features.auth.domain.AuthError
+import com.trinitybytes.minka.features.onboarding.application.BeginOnboarding
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -65,6 +66,7 @@ class VerifyCodeViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val verifyRegistration: VerifyRegistration,
     private val resendCode: ResendCode,
+    private val beginOnboarding: BeginOnboarding,
 ) : ViewModel() {
 
     private val challengeId: String = checkNotNull(savedStateHandle[ARG_CHALLENGE_ID])
@@ -101,7 +103,10 @@ class VerifyCodeViewModel @Inject constructor(
             val result = verifyRegistration(challengeId, state.code)
             _uiState.update { it.copy(isLoading = false) }
             when (result) {
-                is Outcome.Success -> _events.send(VerifyEvent.Verified)
+                is Outcome.Success -> {
+                    beginOnboarding(result.value.user.id)
+                    _events.send(VerifyEvent.Verified)
+                }
                 is Outcome.Failure -> when (val error = result.error) {
                     is AuthError.WrongCode -> _uiState.update {
                         it.copy(attemptsLeft = error.attemptsLeft, codeError = CodeError.Wrong(error.attemptsLeft))

@@ -3,14 +3,19 @@ package com.trinitybytes.minka.navigation
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.trinitybytes.minka.features.auth.presentation.DistrictPlaceholderScreen
 import com.trinitybytes.minka.features.auth.presentation.PasswordRecoveryScreen
 import com.trinitybytes.minka.features.auth.presentation.RegisterScreen
 import com.trinitybytes.minka.features.auth.presentation.SignInScreen
 import com.trinitybytes.minka.features.auth.presentation.VerifyCodeScreen
 import com.trinitybytes.minka.features.home.presentation.HomeScreen
+import com.trinitybytes.minka.features.onboarding.domain.SetupStep
+import com.trinitybytes.minka.features.onboarding.presentation.AllSetScreen
+import com.trinitybytes.minka.features.onboarding.presentation.DistrictScreen
+import com.trinitybytes.minka.features.onboarding.presentation.InterestsScreen
+import com.trinitybytes.minka.features.onboarding.presentation.NotificationsScreen
 import com.trinitybytes.minka.features.onboarding.presentation.SplashDestination
 import com.trinitybytes.minka.features.onboarding.presentation.SplashScreen
 import com.trinitybytes.minka.features.onboarding.presentation.WelcomeScreen
@@ -46,9 +51,21 @@ data class VerifyCodeRoute(
     val resendAfterSeconds: Int,
 )
 
-/** Onboarding profile, district step (Figma 1.16); a placeholder until T7. */
+/** Profile setup, district (Figma 1.16–1.18). */
 @Serializable
 data object DistrictRoute
+
+/** Profile setup, interests (Figma 1.19). */
+@Serializable
+data object InterestsRoute
+
+/** Profile setup, notifications (Figma 1.20). */
+@Serializable
+data object NotificationsRoute
+
+/** Profile setup, "Todo listo" (Figma 1.21). */
+@Serializable
+data object AllSetRoute
 
 @Serializable
 data object HomeRoute
@@ -63,6 +80,7 @@ fun MinkaNavHost() {
                     val route: Any = when (destination) {
                         SplashDestination.Home -> HomeRoute
                         SplashDestination.Welcome -> WelcomeRoute
+                        is SplashDestination.Setup -> destination.step.route()
                     }
                     navController.navigate(route) {
                         popUpTo<SplashRoute> { inclusive = true }
@@ -124,7 +142,45 @@ fun MinkaNavHost() {
                 onContactSupport = {},
             )
         }
-        composable<DistrictRoute> { DistrictPlaceholderScreen() }
+        composable<DistrictRoute> {
+            DistrictScreen(
+                // After verification nothing is behind; a resumed setup may have nothing either.
+                onBack = navController.previousBackStackEntry?.let { { navController.popBackStack() } },
+                onChosen = { navController.navigate(InterestsRoute) },
+            )
+        }
+        composable<InterestsRoute> {
+            InterestsScreen(
+                onBack = {
+                    // A setup resumed at this step (S4) has no district screen below: open it in its place.
+                    if (navController.previousBackStackEntry != null) {
+                        navController.popBackStack()
+                    } else {
+                        navController.replaceAll(DistrictRoute)
+                    }
+                },
+                onDone = { navController.replaceAll(NotificationsRoute) },
+            )
+        }
+        composable<NotificationsRoute> {
+            NotificationsScreen(onDone = { navController.replaceAll(AllSetRoute) })
+        }
+        composable<AllSetRoute> {
+            // 1.21 "lleva a Inicio": onboarding is over, nothing stays behind.
+            AllSetScreen(onGoHome = { navController.replaceAll(HomeRoute) })
+        }
         composable<HomeRoute> { HomeScreen() }
     }
+}
+
+/** Opens [route] with an empty back stack. */
+private fun NavHostController.replaceAll(route: Any) = navigate(route) {
+    popUpTo(graph.id) { inclusive = true }
+}
+
+private fun SetupStep.route(): Any = when (this) {
+    SetupStep.District -> DistrictRoute
+    SetupStep.Interests -> InterestsRoute
+    SetupStep.Notifications -> NotificationsRoute
+    SetupStep.AllSet -> AllSetRoute
 }
