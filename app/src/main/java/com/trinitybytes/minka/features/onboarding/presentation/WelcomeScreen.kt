@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
@@ -279,16 +278,13 @@ private fun WelcomeAccent.colors(): AccentColors {
     return when (this) {
         WelcomeAccent.Lavender -> AccentColors(minka.lavenderContainer, scheme.secondaryContainer, scheme.onSecondaryContainer)
         WelcomeAccent.Amber -> AccentColors(scheme.tertiaryContainer, minka.amber, minka.onAmber)
-        // Figma color/mint has no theme token yet: #D7F5E3 in Light, primary-container in Dark.
         WelcomeAccent.Mint -> AccentColors(
-            stage = if (scheme.background.luminance() > 0.5f) MintLight else scheme.primaryContainer,
+            stage = minka.mint,
             disc = minka.brand,
             onDisc = minka.onBrand,
         )
     }
 }
-
-private val MintLight = Color(0xFFD7F5E3)
 
 private data class WelcomeStepContent(
     @StringRes val title: Int,

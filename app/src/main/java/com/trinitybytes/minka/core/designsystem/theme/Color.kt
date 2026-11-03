@@ -98,6 +98,8 @@ data class MinkaColors(
     val coralContainer: Color,
     val onCoralContainer: Color,
     val lavenderContainer: Color,
+    /** Figma `brand/mint`: soft green stage behind brand content. */
+    val mint: Color,
     /** Cards that sit above the page. */
     val raised: Color,
     /** Sheets, menus and dialogs. */
@@ -119,6 +121,7 @@ internal val LightMinkaColors = MinkaColors(
     coralContainer = Color(0xFFFBE3E0),
     onCoralContainer = Color(0xFF5C1A12),
     lavenderContainer = Color(0xFFECE6FD),
+    mint = Color(0xFFD7F5E3),
     raised = Color(0xFFFFFFFF),
     overlay = Color(0xFFFFFFFF),
 )
@@ -138,6 +141,7 @@ internal val DarkMinkaColors = MinkaColors(
     coralContainer = Color(0xFF5C1A12),
     onCoralContainer = Color(0xFFFBE3E0),
     lavenderContainer = Color(0xFF3F2A7A),
+    mint = Color(0xFF0E4A28),
     raised = Color(0xFF172F22),
     overlay = Color(0xFF213428),
 )

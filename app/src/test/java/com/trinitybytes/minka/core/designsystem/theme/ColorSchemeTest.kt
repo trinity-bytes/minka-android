@@ -58,4 +58,10 @@ class ColorSchemeTest {
         assertEquals(Color(0xFF172F22), DarkMinkaColors.raised)
         assertEquals(Color(0xFF213428), DarkMinkaColors.overlay)
     }
+
+    @Test
+    fun `mint follows the Figma brand-mint token in both themes`() {
+        assertEquals(Color(0xFFD7F5E3), LightMinkaColors.mint)
+        assertEquals(Color(0xFF0E4A28), DarkMinkaColors.mint)
+    }
 }

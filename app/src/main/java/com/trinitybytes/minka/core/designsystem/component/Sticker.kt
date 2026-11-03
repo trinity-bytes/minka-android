@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.tooling.preview.PreviewLightDark
-import androidx.compose.ui.unit.em
 import com.trinitybytes.minka.core.designsystem.theme.MinkaShapes
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
@@ -48,13 +47,10 @@ fun MinkaSticker(
             .background(container, MinkaShapes.full)
             .padding(horizontal = MinkaSpacing.s16, vertical = MinkaSpacing.s8),
         color = content,
-        // Figma tracks the sticker at 6 % of the font size (0.78 px at 13 px).
-        style = MinkaTheme.typography.sticker.copy(letterSpacing = StickerTracking),
+        style = MinkaTheme.typography.sticker,
         maxLines = 1,
     )
 }
-
-private val StickerTracking = 0.06.em
 
 // The Ink tone stays light-mode ink in every theme (Figma surface/inverse in Light).
 private val InkPaper = Color(0xFF10291C)

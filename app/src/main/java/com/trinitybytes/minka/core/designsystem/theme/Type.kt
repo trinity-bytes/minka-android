@@ -7,6 +7,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.trinitybytes.minka.R
 
@@ -84,5 +85,6 @@ data class MinkaTextStyles(
 )
 
 internal val MinkaTextStyleTokens = MinkaTextStyles(
-    sticker = interStyle(FontWeight.ExtraBold, 13, 18, 6f),
+    // Figma tracks Label/Sticker at 6 % of the font size, a relative value: em, not sp.
+    sticker = interStyle(FontWeight.ExtraBold, 13, 18, 0f).copy(letterSpacing = 0.06.em),
 )
