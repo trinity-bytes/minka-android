@@ -5,8 +5,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.trinitybytes.minka.features.auth.presentation.PasswordRecoveryPlaceholderScreen
 import com.trinitybytes.minka.features.auth.presentation.RegisterPlaceholderScreen
-import com.trinitybytes.minka.features.auth.presentation.SignInPlaceholderScreen
+import com.trinitybytes.minka.features.auth.presentation.SignInScreen
 import com.trinitybytes.minka.features.home.presentation.HomeScreen
 import com.trinitybytes.minka.features.onboarding.presentation.SplashDestination
 import com.trinitybytes.minka.features.onboarding.presentation.SplashScreen
@@ -22,6 +23,10 @@ data object WelcomeRoute
 /** Sign-in (Figma 1.05–1.09); [withGoogle] opens the Google account picker right away. */
 @Serializable
 data class SignInRoute(val withGoogle: Boolean = false)
+
+/** Password recovery (Figma 1.10–1.11). */
+@Serializable
+data object PasswordRecoveryRoute
 
 /** Registration (Figma 1.12–1.15). */
 @Serializable
@@ -55,8 +60,20 @@ fun MinkaNavHost() {
             )
         }
         composable<SignInRoute> { entry ->
-            SignInPlaceholderScreen(withGoogle = entry.toRoute<SignInRoute>().withGoogle)
+            SignInScreen(
+                withGoogle = entry.toRoute<SignInRoute>().withGoogle,
+                onBack = { navController.popBackStack() },
+                onSignedIn = {
+                    // A signed-in user never goes back to the welcome or sign-in screens.
+                    navController.navigate(HomeRoute) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                },
+                onRecoverPassword = { navController.navigate(PasswordRecoveryRoute) },
+                onRegister = { navController.navigate(RegisterRoute) },
+            )
         }
+        composable<PasswordRecoveryRoute> { PasswordRecoveryPlaceholderScreen() }
         composable<RegisterRoute> { RegisterPlaceholderScreen() }
         composable<HomeRoute> { HomeScreen() }
     }

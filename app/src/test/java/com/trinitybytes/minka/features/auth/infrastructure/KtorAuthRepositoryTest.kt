@@ -131,6 +131,17 @@ class KtorAuthRepositoryTest {
     }
 
     @Test
+    fun `the google picker offers the accounts drawn in figma 1_09`() = runTest {
+        val accounts = repo.googleAccounts().value()
+
+        assertEquals(
+            listOf("Ana Quispe" to DEMO_EMAIL, "Ana Q. · Trabajo" to "ana@reflowtech.pe"),
+            accounts.map { it.name to it.email },
+        )
+        assertEquals("Ana Q. · Trabajo", repo.signInWithGoogle(accounts[1].id).value().user.name)
+    }
+
+    @Test
     fun `the mock server state survives a restart`() = runTest {
         val challenge = repo.register(registration).value()
         repo.verifyCode(challenge.id, DEMO_VERIFICATION_CODE).value()

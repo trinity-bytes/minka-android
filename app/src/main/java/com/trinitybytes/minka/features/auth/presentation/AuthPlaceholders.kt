@@ -12,16 +12,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.trinitybytes.minka.R
 
-// TEMPORARY: placeholders so the welcome access group navigates end to end.
-// SignInPlaceholderScreen is replaced by T4 (Figma 1.05–1.09) and RegisterPlaceholderScreen by
-// T6 (Figma 1.12–1.15); delete this file then.
+// TEMPORARY: placeholders so the auth screens navigate end to end.
+// PasswordRecoveryPlaceholderScreen is replaced by T5 (Figma 1.10–1.11) and
+// RegisterPlaceholderScreen by T6 (Figma 1.12–1.15); delete this file then.
 
 @Composable
-fun SignInPlaceholderScreen(withGoogle: Boolean, modifier: Modifier = Modifier) {
-    PlaceholderScreen(
-        title = stringResource(R.string.sign_in_placeholder) + if (withGoogle) " · Google" else "",
-        modifier = modifier,
-    )
+fun PasswordRecoveryPlaceholderScreen(modifier: Modifier = Modifier) {
+    PlaceholderScreen(title = stringResource(R.string.password_recovery_placeholder), modifier = modifier)
 }
 
 @Composable

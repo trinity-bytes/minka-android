@@ -196,7 +196,7 @@ class MockAuthServer(
         /** Accounts the mock Google picker shows (Figma 1.09). */
         val GOOGLE_ACCOUNTS = listOf(
             GoogleAccountDto("google-ana", "Ana Quispe", DEMO_EMAIL),
-            GoogleAccountDto("google-ana-work", "Ana Quispe", "ana@trinitybytes.pe"),
+            GoogleAccountDto("google-ana-work", "Ana Q. · Trabajo", "ana@reflowtech.pe"),
         )
     }
 }

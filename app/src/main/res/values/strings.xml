@@ -27,7 +27,36 @@
     <string name="welcome_3_body">Cada trueque le da otra vida a un objeto y suma Eco-Puntos a tu perfil.</string>
     <string name="welcome_3_sticker">Segunda vida</string>
 
-    <!-- Auth placeholders, replaced by T4 (sign-in) and T6 (registration) -->
-    <string name="sign_in_placeholder">Iniciar sesión</string>
+    <!-- Sign-in (Figma 1.05–1.09) -->
+    <string name="sign_in_title">Iniciar sesión</string>
+    <string name="sign_in_intro">Qué bueno verte de nuevo. Ingresa para seguir truequeando.</string>
+    <string name="sign_in_contact_label">Correo o teléfono</string>
+    <string name="sign_in_contact_placeholder">nombre@correo.com</string>
+    <string name="sign_in_contact_error">Ingresa un correo o teléfono válido</string>
+    <string name="sign_in_password_label">Contraseña</string>
+    <string name="sign_in_password_placeholder">Ingresa tu contraseña</string>
+    <string name="sign_in_password_error">Mínimo 8 caracteres</string>
+    <string name="sign_in_forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="sign_in_submit">Ingresar</string>
+    <string name="sign_in_or">o</string>
+    <string name="sign_in_google">Continuar con Google</string>
+    <string name="sign_in_no_account">¿No tienes cuenta?</string>
+    <string name="sign_in_register">Regístrate</string>
+    <string name="sign_in_locked_title">Cuenta bloqueada</string>
+    <string name="sign_in_locked_text">Por seguridad bloqueamos el acceso tras 5 intentos fallidos. Vuelve a intentarlo en %1$s o recupera tu contraseña.</string>
+    <string name="sign_in_locked_recover">Recuperar</string>
+    <string name="sign_in_locked_ok">Entendido</string>
+    <string name="sign_in_google_title">Elige una cuenta</string>
+    <string name="sign_in_google_add_account">Agregar otra cuenta</string>
+    <!-- Not in Figma: snackbar copy for failed sign-ins (1.22 sin conexión arrives in T8) -->
+    <plurals name="sign_in_wrong_credentials">
+        <item quantity="one">Los datos no coinciden. Te queda %d intento.</item>
+        <item quantity="other">Los datos no coinciden. Te quedan %d intentos.</item>
+    </plurals>
+    <string name="sign_in_offline">Sin conexión. Revisa tu internet e inténtalo de nuevo.</string>
+    <string name="sign_in_unexpected">Algo salió mal. Inténtalo de nuevo.</string>
+
+    <!-- Auth placeholders, replaced by T5 (password recovery) and T6 (registration) -->
+    <string name="password_recovery_placeholder">Recuperar contraseña</string>
     <string name="register_placeholder">Crear cuenta</string>
 </resources>
