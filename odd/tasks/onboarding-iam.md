@@ -31,7 +31,7 @@ Branch: `feat/onboarding-iam` (from `develop`). Delivery strategy: ask-on-risk �
 |---|---|---|---|---|
 | T1 | S2 | inline | done (3 tests) | 296b81b (dependencies), c3930b4 |
 | T2 | S3, S4 | inline | done (16 tests) | 5e93de0 (domain, session), dafa2fc (adapter, mock server) |
-| T3 | S5 A | inline | pending | |
+| T3 | S5 A | delegated (context backstop) | done (6 unit + 4 UI tests, UI not run: no emulator) | d59f4ce |
 | T4 | S5 B | inline | pending | |
 | T5 | S5 C | inline | pending | |
 | T6 | S5 D | inline | pending | |
@@ -48,6 +48,7 @@ Slices (feature-branch-chain):
 | 1 | `feat/onboarding-iam-01-network` | tracker | T1 | ~250 |
 | 2 | `feat/onboarding-iam-02-auth-domain` | PR 1 | T2 domain, session store, use cases | 364 |
 | 3 | `feat/onboarding-iam-03-auth-mock-api` | PR 2 | T2 Ktor adapter, mock auth server, Hilt, README | 664 (size:exception: adapter and server are tested together) |
+| 4 | `feat/onboarding-iam-04-welcome` | PR 3 | T3 | ~1150 incl. 3 photos and vector shapes (size:exception: one screen flow) |
 
 ## Log
 
@@ -56,3 +57,4 @@ Slices (feature-branch-chain):
 - **L3 (2026-11-03, user):** delivery answered "feature-branch-chain (Recommended)".
 - **L4:** Figma 1.08 dialog: "Por seguridad bloqueamos el acceso tras 5 intentos fallidos. Vuelve a intentarlo en 14:59 o recupera tu contraseña." → 15-minute lock. 1.12/1.13: terms "Acepto los términos y la privacidad (v1.0)"; errors "Este correo ya está registrado", "Las contraseñas no coinciden", "Debes aceptar los términos".
 - **L5:** T1 + T2 green: `./gradlew assembleDebug testDebugUnitTest` 31 tests. Mock decisions: unknown contacts get the same `invalid_credentials` answer and password reset always answers 202 (no account discovery); demo account `ana.quispe@gmail.com` / `987654321` / `Minka2026!`, code `482915`, resend after 60 s (README). Risk: item 5 (new dependencies, 296b81b); independent verifier deferred to the feature end per verification timing. RDD off globally.
+- **L6:** T3 by a delegated writer (d59f4ce): 37 unit tests green, UI tests compile, not run (no emulator). Deviations: M3 1.4.0 in BOM 2026.09.00 has no `MaterialShapes`/Expressive `LoadingIndicator` → Figma vector shapes (`PathShape`) and a spinning/pulsing shape; "Omitir" hidden on step 3; `SignInRoute(withGoogle)`; mint accent local (#D7F5E3 light, primaryContainer dark). Open: dark Filled buttons use primaryContainer in Figma vs brand in `MinkaButton`; sticker letter spacing `6.sp` in theme should be 6 % (`0.06.em`); no `mint` theme token.
