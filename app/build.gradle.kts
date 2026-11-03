@@ -69,6 +69,15 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
 
+    // Network: Ktor client over the in-app MockEngine (no real backend)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.mock)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
+    // Local storage
+    implementation(libs.androidx.datastore.preferences)
+
     // Unit tests
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
