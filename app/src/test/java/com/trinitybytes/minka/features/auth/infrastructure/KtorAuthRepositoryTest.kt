@@ -5,6 +5,7 @@ import com.trinitybytes.minka.core.network.InMemoryMockStorage
 import com.trinitybytes.minka.core.network.MockApi
 import com.trinitybytes.minka.core.network.minkaHttpClient
 import com.trinitybytes.minka.features.auth.domain.AuthError
+import com.trinitybytes.minka.features.auth.domain.PasswordReset
 import com.trinitybytes.minka.features.auth.domain.Registration
 import com.trinitybytes.minka.features.auth.domain.Session
 import com.trinitybytes.minka.features.auth.domain.TERMS_VERSION
@@ -79,6 +80,15 @@ class KtorAuthRepositoryTest {
         assertEquals(DEMO_EMAIL, known.destination)
         assertEquals(30, known.expiresInMinutes)
         assertEquals("nadie@minka.pe", unknown.destination)
+    }
+
+    @Test
+    fun `a password reset by phone answers the normalized number and can be requested again after 60 seconds`() = runTest {
+        val first = repo.requestPasswordReset("+51 987 654 321").value()
+        val again = repo.requestPasswordReset("+51 987 654 321").value()
+
+        assertEquals(PasswordReset("987654321", expiresInMinutes = 30, resendAfterSeconds = 60), first)
+        assertEquals(first, again)
     }
 
     @Test

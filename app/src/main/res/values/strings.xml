@@ -56,7 +56,21 @@
     <string name="sign_in_offline">Sin conexión. Revisa tu internet e inténtalo de nuevo.</string>
     <string name="sign_in_unexpected">Algo salió mal. Inténtalo de nuevo.</string>
 
-    <!-- Auth placeholders, replaced by T5 (password recovery) and T6 (registration) -->
-    <string name="password_recovery_placeholder">Recuperar contraseña</string>
+    <!-- Password recovery (Figma 1.10–1.11) -->
+    <string name="password_recovery_title">Recupera tu contraseña</string>
+    <string name="password_recovery_intro">Te enviaremos un enlace para crear una nueva. Usa el correo o teléfono de tu cuenta.</string>
+    <string name="password_recovery_contact_label">Correo o teléfono</string>
+    <string name="password_recovery_submit">Enviar enlace</string>
+    <string name="password_recovery_sent_email_title">Revisa tu correo</string>
+    <!-- Not in Figma: 1.11 only draws the email case. -->
+    <string name="password_recovery_sent_phone_title">Revisa tus mensajes</string>
+    <string name="password_recovery_sent_text">Enviamos un enlace a %1$s. Vence en %2$d minutos.</string>
+    <string name="password_recovery_open_email">Abrir correo</string>
+    <!-- Not in Figma: 1.11 only draws the email case. -->
+    <string name="password_recovery_open_messages">Abrir mensajes</string>
+    <string name="password_recovery_resend">Reenviar</string>
+    <string name="password_recovery_resend_in">Reenviar en %1$s</string>
+
+    <!-- Auth placeholder, replaced by T6 (registration) -->
     <string name="register_placeholder">Crear cuenta</string>
 </resources>

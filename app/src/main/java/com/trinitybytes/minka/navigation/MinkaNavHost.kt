@@ -5,7 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.trinitybytes.minka.features.auth.presentation.PasswordRecoveryPlaceholderScreen
+import com.trinitybytes.minka.features.auth.presentation.PasswordRecoveryScreen
 import com.trinitybytes.minka.features.auth.presentation.RegisterPlaceholderScreen
 import com.trinitybytes.minka.features.auth.presentation.SignInScreen
 import com.trinitybytes.minka.features.home.presentation.HomeScreen
@@ -73,7 +73,10 @@ fun MinkaNavHost() {
                 onRegister = { navController.navigate(RegisterRoute) },
             )
         }
-        composable<PasswordRecoveryRoute> { PasswordRecoveryPlaceholderScreen() }
+        composable<PasswordRecoveryRoute> {
+            // Back, from either 1.10 or 1.11, returns to sign-in, which is right below on the stack.
+            PasswordRecoveryScreen(onBack = { navController.popBackStack() })
+        }
         composable<RegisterRoute> { RegisterPlaceholderScreen() }
         composable<HomeRoute> { HomeScreen() }
     }
