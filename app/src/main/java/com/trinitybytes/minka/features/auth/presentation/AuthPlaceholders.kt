@@ -12,12 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.trinitybytes.minka.R
 
-// TEMPORARY: placeholder so the auth screens navigate end to end.
-// RegisterPlaceholderScreen is replaced by T6 (Figma 1.12–1.15); delete this file then.
+// TEMPORARY: placeholder so registration continues into the onboarding end to end.
+// DistrictPlaceholderScreen is replaced by T7 (Figma 1.16 and on); delete this file then.
 
 @Composable
-fun RegisterPlaceholderScreen(modifier: Modifier = Modifier) {
-    PlaceholderScreen(title = stringResource(R.string.register_placeholder), modifier = modifier)
+fun DistrictPlaceholderScreen(modifier: Modifier = Modifier) {
+    PlaceholderScreen(title = stringResource(R.string.district_placeholder), modifier = modifier)
 }
 
 @Composable

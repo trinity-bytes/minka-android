@@ -5,9 +5,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.trinitybytes.minka.features.auth.presentation.DistrictPlaceholderScreen
 import com.trinitybytes.minka.features.auth.presentation.PasswordRecoveryScreen
-import com.trinitybytes.minka.features.auth.presentation.RegisterPlaceholderScreen
+import com.trinitybytes.minka.features.auth.presentation.RegisterScreen
 import com.trinitybytes.minka.features.auth.presentation.SignInScreen
+import com.trinitybytes.minka.features.auth.presentation.VerifyCodeScreen
 import com.trinitybytes.minka.features.home.presentation.HomeScreen
 import com.trinitybytes.minka.features.onboarding.presentation.SplashDestination
 import com.trinitybytes.minka.features.onboarding.presentation.SplashScreen
@@ -28,9 +30,25 @@ data class SignInRoute(val withGoogle: Boolean = false)
 @Serializable
 data object PasswordRecoveryRoute
 
-/** Registration (Figma 1.12–1.15). */
+/** Registration data (Figma 1.12–1.13). */
 @Serializable
 data object RegisterRoute
+
+/**
+ * Code verification (Figma 1.14–1.15) of the registration [challengeId]. The property names are
+ * the keys `VerifyCodeViewModel` reads from its SavedStateHandle.
+ */
+@Serializable
+data class VerifyCodeRoute(
+    val challengeId: String,
+    val destination: String,
+    val attemptsLeft: Int,
+    val resendAfterSeconds: Int,
+)
+
+/** Onboarding profile, district step (Figma 1.16); a placeholder until T7. */
+@Serializable
+data object DistrictRoute
 
 @Serializable
 data object HomeRoute
@@ -77,7 +95,36 @@ fun MinkaNavHost() {
             // Back, from either 1.10 or 1.11, returns to sign-in, which is right below on the stack.
             PasswordRecoveryScreen(onBack = { navController.popBackStack() })
         }
-        composable<RegisterRoute> { RegisterPlaceholderScreen() }
+        composable<RegisterRoute> {
+            RegisterScreen(
+                onBack = { navController.popBackStack() },
+                onCodeSent = { challenge ->
+                    navController.navigate(
+                        VerifyCodeRoute(
+                            challengeId = challenge.id,
+                            destination = challenge.destination,
+                            attemptsLeft = challenge.attemptsLeft,
+                            resendAfterSeconds = challenge.resendAfterSeconds,
+                        ),
+                    )
+                },
+            )
+        }
+        composable<VerifyCodeRoute> {
+            VerifyCodeScreen(
+                // Back returns to the form, which keeps what was typed.
+                onBack = { navController.popBackStack() },
+                onVerified = {
+                    // The account is signed in: the welcome and registration screens are left behind.
+                    navController.navigate(DistrictRoute) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                },
+                // Placeholder: there is no support channel yet.
+                onContactSupport = {},
+            )
+        }
+        composable<DistrictRoute> { DistrictPlaceholderScreen() }
         composable<HomeRoute> { HomeScreen() }
     }
 }

@@ -71,6 +71,47 @@
     <string name="password_recovery_resend">Reenviar</string>
     <string name="password_recovery_resend_in">Reenviar en %1$s</string>
 
-    <!-- Auth placeholder, replaced by T6 (registration) -->
-    <string name="register_placeholder">Crear cuenta</string>
+    <!-- Registration (Figma 1.12–1.13) -->
+    <string name="register_step">Paso 1 de 3 · Cuenta</string>
+    <string name="register_title">Crea tu cuenta</string>
+    <string name="register_name_label">Nombre completo</string>
+    <string name="register_contact_label">Correo o teléfono</string>
+    <string name="register_password_label">Contraseña</string>
+    <string name="register_confirm_password_label">Confirmar contraseña</string>
+    <!-- %1$s is the terms version (TERMS_VERSION): "Acepto los términos y la privacidad (v1.0)" -->
+    <string name="register_terms">Acepto los términos y la privacidad (v%1$s)</string>
+    <string name="register_submit">Continuar</string>
+    <string name="register_email_taken">Este correo ya está registrado</string>
+    <!-- Not in Figma: 1.13 only draws the email case. -->
+    <string name="register_phone_taken">Este teléfono ya está registrado</string>
+    <!-- Not in Figma: the meter says "Débil"; this explains why the button waits. -->
+    <string name="register_weak_password">Elige una contraseña más segura</string>
+    <string name="register_password_mismatch">Las contraseñas no coinciden</string>
+    <string name="register_terms_error">Debes aceptar los términos</string>
+
+    <!-- Code verification (Figma 1.14–1.15) -->
+    <string name="verify_title">Ingresa el código</string>
+    <string name="verify_sent_to">Enviamos un código de 6 dígitos a %1$s.</string>
+    <!-- Not in Figma: accessibility label of the code boxes. -->
+    <string name="verify_code_label">Código de verificación</string>
+    <!-- "one" is not in Figma (it draws "Tienes 5 intentos"). -->
+    <plurals name="verify_attempts">
+        <item quantity="one">Tienes %d intento</item>
+        <item quantity="other">Tienes %d intentos</item>
+    </plurals>
+    <!-- "one" is not in Figma (it draws "te quedan 2 intentos"). -->
+    <plurals name="verify_wrong_code">
+        <item quantity="one">Código incorrecto · te queda %d intento</item>
+        <item quantity="other">Código incorrecto · te quedan %d intentos</item>
+    </plurals>
+    <!-- Not in Figma: 1.15 note "Al agotar los 5 intentos se pide un código nuevo." -->
+    <string name="verify_exhausted">Agotaste los intentos · pide un código nuevo</string>
+    <string name="verify_resend">Reenviar código</string>
+    <string name="verify_resend_in">Reenviar código en %1$s</string>
+    <string name="verify_support_question">¿Aún tienes problemas?</string>
+    <string name="verify_support_action">Contáctanos</string>
+    <string name="verify_submit">Verificar</string>
+
+    <!-- Onboarding placeholder (Figma 1.16 headline), replaced by T7 -->
+    <string name="district_placeholder">¿Dónde intercambias?</string>
 </resources>

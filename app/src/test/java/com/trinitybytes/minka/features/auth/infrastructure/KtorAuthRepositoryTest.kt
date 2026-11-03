@@ -2,6 +2,7 @@ package com.trinitybytes.minka.features.auth.infrastructure
 
 import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.core.network.InMemoryMockStorage
+import com.trinitybytes.minka.core.network.MinkaJson
 import com.trinitybytes.minka.core.network.MockApi
 import com.trinitybytes.minka.core.network.minkaHttpClient
 import com.trinitybytes.minka.features.auth.domain.AuthError
@@ -10,6 +11,9 @@ import com.trinitybytes.minka.features.auth.domain.Registration
 import com.trinitybytes.minka.features.auth.domain.Session
 import com.trinitybytes.minka.features.auth.domain.TERMS_VERSION
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -101,6 +105,20 @@ class KtorAuthRepositoryTest {
 
         assertEquals("Luis Mamani", session.user.name)
         assertEquals("Luis Mamani", repo.signIn("luis.mamani@gmail.com", "Trueque2026!").value().user.name)
+    }
+
+    @Test
+    fun `the accepted terms version and date are kept with the new account`() = runTest {
+        val challenge = repo.register(registration).value()
+        repo.verifyCode(challenge.id, DEMO_VERIFICATION_CODE).value()
+
+        val saved = MinkaJson.parseToJsonElement(checkNotNull(storage.read("auth"))).jsonObject
+        val account = saved.getValue("accounts").jsonArray
+            .map { it.jsonObject }
+            .single { it["email"]?.jsonPrimitive?.content == "luis.mamani@gmail.com" }
+
+        assertEquals(TERMS_VERSION, account.getValue("termsVersion").jsonPrimitive.content)
+        assertEquals("2026-11-03T11:59:00Z", account.getValue("termsAcceptedAt").jsonPrimitive.content)
     }
 
     @Test

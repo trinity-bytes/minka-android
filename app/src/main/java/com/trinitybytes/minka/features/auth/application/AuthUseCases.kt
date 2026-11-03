@@ -8,8 +8,10 @@ import com.trinitybytes.minka.features.auth.domain.PasswordReset
 import com.trinitybytes.minka.features.auth.domain.Registration
 import com.trinitybytes.minka.features.auth.domain.Session
 import com.trinitybytes.minka.features.auth.domain.SessionStore
+import com.trinitybytes.minka.features.auth.domain.TERMS_VERSION
 import com.trinitybytes.minka.features.auth.domain.VerificationChallenge
 import kotlinx.coroutines.flow.Flow
+import java.time.Clock
 import javax.inject.Inject
 
 /** Signs in with contact and password; on success the session is kept on the device. */
@@ -38,9 +40,16 @@ class RequestPasswordReset @Inject constructor(private val repository: AuthRepos
         repository.requestPasswordReset(contact)
 }
 
-class Register @Inject constructor(private val repository: AuthRepository) {
+class Register @Inject constructor(
+    private val repository: AuthRepository,
+    private val clock: Clock,
+) {
     suspend operator fun invoke(registration: Registration): AuthOutcome<VerificationChallenge> =
         repository.register(registration)
+
+    /** Registers with the current terms (1.12): their version and the moment they were accepted are sent. */
+    suspend operator fun invoke(name: String, contact: String, password: String): AuthOutcome<VerificationChallenge> =
+        invoke(Registration(name, contact, password, TERMS_VERSION, clock.instant()))
 }
 
 /** Confirms a registration with its code; the new account is signed in right away. */
