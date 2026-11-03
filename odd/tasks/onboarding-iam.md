@@ -34,7 +34,7 @@ Branch: `feat/onboarding-iam` (from `develop`). Delivery strategy: ask-on-risk â
 | T3 | S5 A | delegated (context backstop) | done (6 unit + 4 UI tests, UI not run: no emulator) | d59f4ce |
 | T4 | S5 B | delegated (context backstop: parent context loaded with Figma work) | done (15 unit + 5 UI tests, UI not run: no emulator) | 1a4cdd0 |
 | T5 | S5 C | delegated (context backstop) | done (9 unit + 5 UI tests, UI not run: no emulator) | 6ba4c4c |
-| T6 | S5 D | delegated (context backstop) | done (19 unit + 6 UI tests, UI not run: no emulator) | |
+| T6 | S5 D | delegated (context backstop) | done (19 unit + 6 UI tests, UI not run: no emulator) | 9d9bf19 |
 | T7 | S5 E | inline | pending | |
 | T8 | S5 F, S6 | inline | pending | |
 
