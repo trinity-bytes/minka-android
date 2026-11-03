@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -49,7 +50,16 @@ enum class MinkaButtonStyle {
     Destructive,
 }
 
-/** Pill button, 40 dp tall, with an optional 18 dp leading icon. */
+/** Heights of the Figma Button. */
+enum class MinkaButtonSize {
+    /** 40 dp with Label/Large: the default. */
+    Medium,
+
+    /** 56 dp with Title/Medium: the main actions at the bottom of a screen. */
+    Large,
+}
+
+/** Pill button, 40 dp tall (56 dp when [size] is Large), with an optional 18 dp leading icon. */
 @Composable
 fun MinkaButton(
     text: String,
@@ -58,11 +68,13 @@ fun MinkaButton(
     style: MinkaButtonStyle = MinkaButtonStyle.Filled,
     enabled: Boolean = true,
     leadingIcon: ImageVector? = null,
+    size: MinkaButtonSize = MinkaButtonSize.Medium,
 ) {
     val isOutlined = style == MinkaButtonStyle.Outlined
+    val isLarge = size == MinkaButtonSize.Large
     Button(
         onClick = onClick,
-        modifier = modifier,
+        modifier = if (isLarge) modifier.heightIn(min = LargeHeight) else modifier,
         enabled = enabled,
         shape = MinkaShapes.full,
         colors = buttonColors(style),
@@ -73,9 +85,11 @@ fun MinkaButton(
             Icon(leadingIcon, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
             Spacer(Modifier.width(ButtonDefaults.IconSpacing))
         }
-        Text(text, style = MaterialTheme.typography.labelLarge)
+        Text(text, style = if (isLarge) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge)
     }
 }
+
+private val LargeHeight = 56.dp
 
 private val TextContentPadding = PaddingValues(horizontal = MinkaSpacing.s12, vertical = MinkaSpacing.s8)
 
@@ -127,6 +141,7 @@ private fun MinkaButtonPreview() {
                     MinkaButton(text = "Proponer trueque", onClick = {}, style = style, leadingIcon = Icons.Rounded.Add)
                 }
                 MinkaButton(text = "Proponer trueque", onClick = {}, enabled = false)
+                MinkaButton(text = "Crear cuenta", onClick = {}, size = MinkaButtonSize.Large)
             }
         }
     }

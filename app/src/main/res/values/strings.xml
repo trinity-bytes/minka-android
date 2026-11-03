@@ -8,4 +8,26 @@
     <string name="strength_weak">Débil</string>
     <string name="strength_medium">Media</string>
     <string name="strength_strong">Fuerte</string>
+
+    <!-- Onboarding: splash and welcome (Figma 1.01–1.04) -->
+    <string name="splash_loading">Restaurando tu sesión</string>
+    <string name="welcome_skip">Omitir</string>
+    <string name="welcome_next">Siguiente</string>
+    <string name="welcome_create_account">Crear cuenta</string>
+    <string name="welcome_sign_in">Iniciar sesión</string>
+    <string name="welcome_google">Continuar con Google</string>
+    <string name="welcome_step_indicator">Paso %1$d de %2$d</string>
+    <string name="welcome_1_title">Truequea lo que ya no usas, sin dinero</string>
+    <string name="welcome_1_body">Cambia objetos y servicios con tu comunidad. Aquí nadie paga: todo es trueque.</string>
+    <string name="welcome_1_sticker">Sin dinero de por medio</string>
+    <string name="welcome_2_title">Encuentra trueques cerca de ti</string>
+    <string name="welcome_2_body">Mira publicaciones de tu distrito y acuerda la entrega en un punto seguro.</string>
+    <string name="welcome_2_sticker">Directo con vecinos</string>
+    <string name="welcome_3_title">Cuida el planeta con cada trueque</string>
+    <string name="welcome_3_body">Cada trueque le da otra vida a un objeto y suma Eco-Puntos a tu perfil.</string>
+    <string name="welcome_3_sticker">Segunda vida</string>
+
+    <!-- Auth placeholders, replaced by T4 (sign-in) and T6 (registration) -->
+    <string name="sign_in_placeholder">Iniciar sesión</string>
+    <string name="register_placeholder">Crear cuenta</string>
 </resources>

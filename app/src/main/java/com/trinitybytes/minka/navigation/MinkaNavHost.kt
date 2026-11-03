@@ -4,8 +4,28 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import com.trinitybytes.minka.features.auth.presentation.RegisterPlaceholderScreen
+import com.trinitybytes.minka.features.auth.presentation.SignInPlaceholderScreen
 import com.trinitybytes.minka.features.home.presentation.HomeScreen
+import com.trinitybytes.minka.features.onboarding.presentation.SplashDestination
+import com.trinitybytes.minka.features.onboarding.presentation.SplashScreen
+import com.trinitybytes.minka.features.onboarding.presentation.WelcomeScreen
 import kotlinx.serialization.Serializable
+
+@Serializable
+data object SplashRoute
+
+@Serializable
+data object WelcomeRoute
+
+/** Sign-in (Figma 1.05–1.09); [withGoogle] opens the Google account picker right away. */
+@Serializable
+data class SignInRoute(val withGoogle: Boolean = false)
+
+/** Registration (Figma 1.12–1.15). */
+@Serializable
+data object RegisterRoute
 
 @Serializable
 data object HomeRoute
@@ -13,7 +33,31 @@ data object HomeRoute
 @Composable
 fun MinkaNavHost() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = HomeRoute) {
+    NavHost(navController = navController, startDestination = SplashRoute) {
+        composable<SplashRoute> {
+            SplashScreen(
+                onNavigate = { destination ->
+                    val route: Any = when (destination) {
+                        SplashDestination.Home -> HomeRoute
+                        SplashDestination.Welcome -> WelcomeRoute
+                    }
+                    navController.navigate(route) {
+                        popUpTo<SplashRoute> { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable<WelcomeRoute> {
+            WelcomeScreen(
+                onCreateAccount = { navController.navigate(RegisterRoute) },
+                onSignIn = { navController.navigate(SignInRoute()) },
+                onContinueWithGoogle = { navController.navigate(SignInRoute(withGoogle = true)) },
+            )
+        }
+        composable<SignInRoute> { entry ->
+            SignInPlaceholderScreen(withGoogle = entry.toRoute<SignInRoute>().withGoogle)
+        }
+        composable<RegisterRoute> { RegisterPlaceholderScreen() }
         composable<HomeRoute> { HomeScreen() }
     }
 }
