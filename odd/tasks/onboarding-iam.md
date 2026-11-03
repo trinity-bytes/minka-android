@@ -1,7 +1,7 @@
 # Onboarding + IAM (phase 2)
 
 Objective: phase 2 of PLAN.md — Figma flow 01 (states 1.01–1.22) over an in-app Ktor mock API, with the session kept in DataStore.
-Branch: `feat/onboarding-iam` (from `develop`). Delivery strategy: ask-on-risk (chain strategy pending, asked before the first slice exceeds ~400 lines). Test runner: JUnit 4 via `./gradlew testDebugUnitTest`; Compose UI via `./gradlew connectedDebugAndroidTest`.
+Branch: `feat/onboarding-iam` (from `develop`). Delivery strategy: ask-on-risk → chain strategy `feature-branch-chain`. Test runner: JUnit 4 via `./gradlew testDebugUnitTest`; Compose UI via `./gradlew connectedDebugAndroidTest`.
 
 ## Specs
 
@@ -29,8 +29,8 @@ Branch: `feat/onboarding-iam` (from `develop`). Delivery strategy: ask-on-risk (
 
 | ID | Specs | Route | Status | Commit |
 |---|---|---|---|---|
-| T1 | S2 | inline | pending | |
-| T2 | S3, S4 | inline | pending | |
+| T1 | S2 | inline | done (3 tests) | 296b81b (dependencies), c3930b4 |
+| T2 | S3, S4 | inline | done (16 tests) | 5e93de0 (domain, session), dafa2fc (adapter, mock server) |
 | T3 | S5 A | inline | pending | |
 | T4 | S5 B | inline | pending | |
 | T5 | S5 C | inline | pending | |
@@ -40,7 +40,19 @@ Branch: `feat/onboarding-iam` (from `develop`). Delivery strategy: ask-on-risk (
 
 Route evidence: sequential units sharing navigation and the auth module; no parallel writer reason.
 
+Slices (feature-branch-chain):
+
+| PR | Branch | Base | Tasks | Size |
+|---|---|---|---|---|
+| tracker (draft) | `feat/onboarding-iam` | `develop` | feature document | — |
+| 1 | `feat/onboarding-iam-01-network` | tracker | T1 | ~250 |
+| 2 | `feat/onboarding-iam-02-auth-domain` | PR 1 | T2 domain, session store, use cases | 364 |
+| 3 | `feat/onboarding-iam-03-auth-mock-api` | PR 2 | T2 Ktor adapter, mock auth server, Hilt, README | 664 (size:exception: adapter and server are tested together) |
+
 ## Log
 
 - **L1 (2026-11-03, user):** "va" (start phase 2), then "si, de hecho la decision es usar un mock api local, asi que hasta un futuro indefinido la ap no tendra backend", then "vamos con ktor".
 - **L2:** versions checked on Maven: Ktor 3.6.1, DataStore 1.3.0. Forecast ~3000 authored lines → chain strategy question before slice 1 closes.
+- **L3 (2026-11-03, user):** delivery answered "feature-branch-chain (Recommended)".
+- **L4:** Figma 1.08 dialog: "Por seguridad bloqueamos el acceso tras 5 intentos fallidos. Vuelve a intentarlo en 14:59 o recupera tu contraseña." → 15-minute lock. 1.12/1.13: terms "Acepto los términos y la privacidad (v1.0)"; errors "Este correo ya está registrado", "Las contraseñas no coinciden", "Debes aceptar los términos".
+- **L5:** T1 + T2 green: `./gradlew assembleDebug testDebugUnitTest` 31 tests. Mock decisions: unknown contacts get the same `invalid_credentials` answer and password reset always answers 202 (no account discovery); demo account `ana.quispe@gmail.com` / `987654321` / `Minka2026!`, code `482915`, resend after 60 s (README). Risk: item 5 (new dependencies, 296b81b); independent verifier deferred to the feature end per verification timing. RDD off globally.
