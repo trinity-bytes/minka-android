@@ -14,12 +14,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 
@@ -43,6 +44,7 @@ fun MinkaTopAppBar(
     modifier: Modifier = Modifier,
     size: MinkaTopAppBarSize = MinkaTopAppBarSize.Small,
     onBack: (() -> Unit)? = null,
+    scrollBehavior: TopAppBarScrollBehavior? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val navigationIcon: @Composable () -> Unit = {
@@ -68,11 +70,12 @@ fun MinkaTopAppBar(
             navigationIcon = navigationIcon,
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(actionIconContentColor = onSurface),
+            scrollBehavior = scrollBehavior,
         )
     }
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun MinkaTopAppBarPreview() {
     MinkaTheme {

@@ -14,7 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.trinitybytes.minka.core.designsystem.theme.MinkaElevation
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
@@ -71,7 +71,7 @@ fun MinkaSnackbar(data: SnackbarData, modifier: Modifier = Modifier) {
     )
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun MinkaSnackbarPreview() {
     MinkaTheme {

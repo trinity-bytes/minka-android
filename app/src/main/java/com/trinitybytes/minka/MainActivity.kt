@@ -3,6 +3,7 @@ package com.trinitybytes.minka
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
@@ -24,7 +25,8 @@ class MainActivity : ComponentActivity() {
         // Figma 1.01 (design A1): the system splash stays up while the session is restored.
         installSplashScreen().setKeepOnScreenCondition { launchViewModel.keepSplashOnScreen }
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        val lightBars = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
+        enableEdgeToEdge(statusBarStyle = lightBars, navigationBarStyle = lightBars)
         setContent {
             MinkaTheme {
                 val launch by launchViewModel.uiState.collectAsStateWithLifecycle()

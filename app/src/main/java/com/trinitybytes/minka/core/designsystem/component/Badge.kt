@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import com.trinitybytes.minka.core.designsystem.theme.MinkaShapes
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
@@ -46,7 +46,7 @@ private fun MinkaBadgeTone.colors(): Pair<Color, Color> {
     }
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun MinkaBadgePreview() {
     MinkaTheme {

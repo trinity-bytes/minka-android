@@ -35,7 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trinitybytes.minka.R
@@ -273,11 +273,11 @@ private fun DistrictPreview(uiState: DistrictUiState) {
     }
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun DistrictEmptyPreview() = DistrictPreview(DistrictUiState(districts = PreviewDistricts, isLoading = false))
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun DistrictChosenPreview() =
     DistrictPreview(DistrictUiState(districts = PreviewDistricts, selectedId = "miraflores", isLoading = false))

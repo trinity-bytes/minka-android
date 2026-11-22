@@ -23,7 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
@@ -166,7 +166,7 @@ private val ErrorStateMaxWidth = 340.dp
 private val IllustrationSize = 96.dp
 private val IllustrationIconSize = 40.dp
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun MinkaOfflineScreenPreview() {
     MinkaTheme { MinkaOfflineScreen(onBack = {}, onRetry = {}) }

@@ -14,7 +14,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.toUpperCase
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import com.trinitybytes.minka.core.designsystem.theme.MinkaShapes
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
@@ -62,7 +62,7 @@ private fun MinkaStickerTone.colors(): Pair<Color, Color> = when (this) {
     MinkaStickerTone.Ink -> InkPaper to MinkaTheme.colors.brand
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun MinkaStickerPreview() {
     MinkaTheme {

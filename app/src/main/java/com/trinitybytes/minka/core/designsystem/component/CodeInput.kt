@@ -29,7 +29,7 @@ import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.trinitybytes.minka.core.designsystem.theme.MinkaShapes
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
@@ -99,7 +99,7 @@ fun MinkaCodeInput(
     )
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun MinkaCodeInputPreview() {
     MinkaTheme {
