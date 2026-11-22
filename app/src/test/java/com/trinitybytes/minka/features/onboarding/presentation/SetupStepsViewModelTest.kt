@@ -108,7 +108,24 @@ class SetupStepsViewModelTest {
     }
 
     @Test
-    fun `offline keeps the chosen interests`() = runTest(dispatcher) {
+    fun `omitir twice skips once`() = runTest(dispatcher) {
+        val viewModel = interestsViewModel(progressAt(SetupStep.Interests))
+        advanceUntilIdle()
+        val events = mutableListOf<InterestsEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.events.toList(events) }
+
+        viewModel.onSkip()
+        viewModel.onSkip()
+        viewModel.onInterestToggled("libros")
+        viewModel.onContinue()
+        advanceUntilIdle()
+
+        assertTrue(repository.savedInterests.isEmpty())
+        assertEquals(listOf<InterestsEvent>(InterestsEvent.Done), events)
+    }
+
+    @Test
+    fun `offline keeps the chosen interests and offers reintentar in a snackbar`() = runTest(dispatcher) {
         repository.saveAnswer = { Outcome.Failure(ProfileError.Offline) }
         val progress = progressAt(SetupStep.Interests)
         val viewModel = interestsViewModel(progress)
@@ -120,8 +137,8 @@ class SetupStepsViewModelTest {
         viewModel.onContinue()
         advanceUntilIdle()
 
-        assertTrue("1.22", viewModel.uiState.value.isOffline)
-        assertNull(viewModel.uiState.value.message)
+        assertEquals("1.22", SetupMessage.Offline, viewModel.uiState.value.message)
+        assertNull("the chips stay", viewModel.uiState.value.loadError)
         assertEquals(setOf("libros"), viewModel.uiState.value.selectedIds)
         assertTrue(viewModel.uiState.value.canContinue)
         assertTrue(events.isEmpty())
@@ -129,7 +146,7 @@ class SetupStepsViewModelTest {
     }
 
     @Test
-    fun `reintentar saves the chosen interests again and leaves 1_22 once it works`() = runTest(dispatcher) {
+    fun `reintentar saves the interests chosen now, once`() = runTest(dispatcher) {
         repository.saveAnswer = { Outcome.Failure(ProfileError.Offline) }
         val progress = progressAt(SetupStep.Interests)
         val viewModel = interestsViewModel(progress)
@@ -140,11 +157,14 @@ class SetupStepsViewModelTest {
         viewModel.onContinue()
         advanceUntilIdle()
 
+        viewModel.onInterestToggled("plantas")
         repository.saveAnswer = { Outcome.Success(Unit) }
+        viewModel.retry()
         viewModel.retry()
         advanceUntilIdle()
 
-        assertFalse(viewModel.uiState.value.isOffline)
+        assertEquals(listOf(ANA.user.id to listOf("libros", "plantas")), repository.savedInterests)
+        assertNull(viewModel.uiState.value.message)
         assertEquals(listOf<InterestsEvent>(InterestsEvent.Done), events)
         assertEquals(OnboardingProgress.Pending(ANA.user.id, SetupStep.Notifications), progress.progress.value)
     }
@@ -154,13 +174,29 @@ class SetupStepsViewModelTest {
         repository.interestsAnswer = { Outcome.Failure(ProfileError.Offline) }
         val viewModel = interestsViewModel(progressAt(SetupStep.Interests))
         advanceUntilIdle()
-        assertTrue(viewModel.uiState.value.isOffline)
+        assertEquals(LoadError.Offline, viewModel.uiState.value.loadError)
 
         repository.interestsAnswer = { Outcome.Success(TEST_INTERESTS) }
         viewModel.retry()
         advanceUntilIdle()
 
-        assertFalse(viewModel.uiState.value.isOffline)
+        assertNull(viewModel.uiState.value.loadError)
+        assertEquals(TEST_INTERESTS, viewModel.uiState.value.interests)
+    }
+
+    @Test
+    fun `any other failed load of the interests also shows the full-screen error`() = runTest(dispatcher) {
+        repository.interestsAnswer = { Outcome.Failure(ProfileError.Unexpected) }
+        val viewModel = interestsViewModel(progressAt(SetupStep.Interests))
+        advanceUntilIdle()
+        assertEquals(LoadError.Unexpected, viewModel.uiState.value.loadError)
+        assertNull(viewModel.uiState.value.message)
+
+        repository.interestsAnswer = { Outcome.Success(TEST_INTERESTS) }
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.loadError)
         assertEquals(TEST_INTERESTS, viewModel.uiState.value.interests)
     }
 

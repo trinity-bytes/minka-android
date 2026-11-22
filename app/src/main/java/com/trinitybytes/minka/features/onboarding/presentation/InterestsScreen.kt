@@ -1,9 +1,12 @@
 package com.trinitybytes.minka.features.onboarding.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -30,9 +33,12 @@ import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
 import com.trinitybytes.minka.core.designsystem.component.MinkaFilterChip
+import com.trinitybytes.minka.core.designsystem.component.MinkaLoadErrorScreen
+import com.trinitybytes.minka.core.designsystem.component.MinkaMessageEffect
 import com.trinitybytes.minka.core.designsystem.component.MinkaSnackbarHost
 import com.trinitybytes.minka.core.designsystem.component.MinkaOfflineScreen
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBar
+import com.trinitybytes.minka.core.designsystem.component.formColumnWidth
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 import com.trinitybytes.minka.features.onboarding.domain.Interest
@@ -75,89 +81,105 @@ fun InterestsContent(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 1.22: no connection replaces the step; the typed values stay in [uiState] for the retry.
-    if (uiState.isOffline) {
-        MinkaOfflineScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading || uiState.isSaving)
-        return
+    // A list that could not load leaves nothing to show: full-screen error with "Reintentar" (1.22 offline).
+    when (uiState.loadError) {
+        LoadError.Offline -> {
+            MinkaOfflineScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading)
+            return
+        }
+        LoadError.Unexpected -> {
+            MinkaLoadErrorScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading)
+            return
+        }
+        null -> Unit
     }
     val snackbarHostState = remember { SnackbarHostState() }
-    val messageText = uiState.message?.let { setupMessageText(it) }
-    LaunchedEffect(uiState.message) {
-        if (messageText != null) {
-            snackbarHostState.showSnackbar(messageText)
-            onMessageShown()
-        }
-    }
-    Scaffold(
-        modifier = modifier,
-        topBar = { MinkaTopAppBar(title = "", onBack = onBack) },
-        snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
-            verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
-        ) {
+    // 1.22: a failed save keeps the chips and the snackbar offers "Reintentar".
+    MinkaMessageEffect(
+        hostState = snackbarHostState,
+        message = uiState.message,
+        text = uiState.message?.let { setupMessageText(it) },
+        onShown = onMessageShown,
+        actionLabel = stringResource(R.string.offline_retry).takeIf { uiState.message == SetupMessage.Offline },
+        onAction = onRetry,
+    )
+    // Design B5: the step keeps a centered column of at most 480 dp.
+    Box(
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Scaffold(
+            modifier = Modifier.formColumnWidth(),
+            topBar = { MinkaTopAppBar(title = "", onBack = onBack) },
+            snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
+        ) { padding ->
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
+                    .fillMaxSize()
+                    .padding(padding)
+                    .consumeWindowInsets(padding)
+                    .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
                 verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
             ) {
-                SetupStepHeader(
-                    progress = 1f,
-                    step = stringResource(R.string.setup_interests_step),
-                    title = stringResource(R.string.setup_interests_title),
-                )
-                Text(
-                    text = stringResource(R.string.setup_interests_body),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s8),
-                    verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s8),
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
                 ) {
-                    uiState.interests.forEach { interest ->
-                        MinkaFilterChip(
-                            label = interest.name,
-                            selected = interest.id in uiState.selectedIds,
-                            onClick = { onInterestToggled(interest.id) },
-                            enabled = !uiState.isSaving,
-                        )
+                    SetupStepHeader(
+                        progress = 1f,
+                        step = stringResource(R.string.setup_interests_step),
+                        title = stringResource(R.string.setup_interests_title),
+                    )
+                    Text(
+                        text = stringResource(R.string.setup_interests_body),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s8),
+                        verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s8),
+                    ) {
+                        uiState.interests.forEach { interest ->
+                            MinkaFilterChip(
+                                label = interest.name,
+                                selected = interest.id in uiState.selectedIds,
+                                onClick = { onInterestToggled(interest.id) },
+                                enabled = !uiState.isSaving,
+                            )
+                        }
                     }
                 }
-            }
-            val count = uiState.selectedIds.size
-            if (count > 0) {
-                Text(
-                    text = pluralStringResource(R.plurals.setup_interests_selected, count, count),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s8),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                MinkaButton(
-                    text = stringResource(R.string.setup_skip),
-                    onClick = onSkip,
-                    style = MinkaButtonStyle.Text,
-                    enabled = !uiState.isSaving,
-                    size = MinkaButtonSize.Large,
-                )
-                MinkaButton(
-                    text = stringResource(R.string.setup_continue),
-                    onClick = onContinue,
-                    modifier = Modifier.weight(1f),
-                    enabled = uiState.canContinue,
-                    size = MinkaButtonSize.Large,
-                    loading = uiState.isSaving,
-                )
+                val count = uiState.selectedIds.size
+                if (count > 0) {
+                    Text(
+                        text = pluralStringResource(R.plurals.setup_interests_selected, count, count),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s8),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    MinkaButton(
+                        text = stringResource(R.string.setup_skip),
+                        onClick = onSkip,
+                        style = MinkaButtonStyle.Text,
+                        enabled = !uiState.isSaving,
+                        size = MinkaButtonSize.Large,
+                    )
+                    MinkaButton(
+                        text = stringResource(R.string.setup_continue),
+                        onClick = onContinue,
+                        modifier = Modifier.weight(1f),
+                        enabled = uiState.canContinue,
+                        size = MinkaButtonSize.Large,
+                        loading = uiState.isSaving,
+                    )
+                }
             }
         }
     }

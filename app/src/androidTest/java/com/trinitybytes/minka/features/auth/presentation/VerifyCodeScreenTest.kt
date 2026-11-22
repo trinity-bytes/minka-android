@@ -26,6 +26,7 @@ class VerifyCodeScreenTest {
         onVerify: () -> Unit = {},
         onResend: () -> Unit = {},
         onContactSupport: () -> Unit = {},
+        onRetry: () -> Unit = {},
     ) {
         compose.setContent {
             MinkaTheme {
@@ -37,7 +38,7 @@ class VerifyCodeScreenTest {
                     onResend = onResend,
                     onContactSupport = onContactSupport,
                     onMessageShown = {},
-                    onRetry = {},
+                    onRetry = onRetry,
                 )
             }
         }
@@ -79,5 +80,18 @@ class VerifyCodeScreenTest {
 
         assertEquals(1, verifies)
         assertEquals(1, support)
+    }
+
+    @Test
+    fun offlineKeepsTheCodeStepAndTheSnackbarRetries() {
+        var retries = 0
+        setVerify(entering.copy(code = "482915", message = VerifyMessage.Offline), onRetry = { retries++ })
+
+        compose.onNodeWithText("Sin conexión. Lo escrito sigue aquí.").assertIsDisplayed()
+        compose.onNodeWithText("Verificar").assertExists()
+        compose.onNodeWithText("Reintentar").performClick()
+        compose.waitForIdle()
+
+        assertEquals(1, retries)
     }
 }

@@ -33,8 +33,8 @@ sealed interface CodeError {
     data object Exhausted : CodeError
 }
 
-/** One-off feedback shown in a snackbar. */
-enum class VerifyMessage { Unexpected }
+/** One-off feedback shown in a snackbar; [Offline] (1.22) offers "Reintentar" over the kept code. */
+enum class VerifyMessage { Offline, Unexpected }
 
 sealed interface VerifyEvent {
     /** The account exists and its session is saved; onboarding continues. */
@@ -44,7 +44,7 @@ sealed interface VerifyEvent {
 /**
  * Every state of Figma 1.14–1.15: the code sent to [destination] with its [attemptsLeft], the wrong
  * code (1.15), "Reenviar código", which waits for [resendSecondsLeft] to run out, and no connection
- * while [isOffline] (1.22), which keeps the typed code.
+ * (1.22) as a snackbar over the kept code.
  */
 data class VerifyCodeUiState(
     val destination: String,
@@ -54,7 +54,6 @@ data class VerifyCodeUiState(
     val isLoading: Boolean = false,
     val resendSecondsLeft: Long? = null,
     val message: VerifyMessage? = null,
-    val isOffline: Boolean = false,
 ) {
     /** "Verificar" waits for the 6 digits; after a wrong code, for an edited one (1.15). */
     val canVerify: Boolean get() = !isLoading && code.length == CODE_LENGTH && codeError == null
@@ -86,7 +85,7 @@ class VerifyCodeViewModel @Inject constructor(
 
     private var countdown: Job? = null
 
-    /** The last request, which "Reintentar" (1.22) sends again. */
+    /** The last request, which "Reintentar" (1.22) sends again; both read the state when they run. */
     private var lastRequest: (() -> Unit)? = null
 
     init {
@@ -108,7 +107,7 @@ class VerifyCodeViewModel @Inject constructor(
         viewModelScope.launch {
             // The setup is saved before the session: a crash in between lands on Welcome, never past the setup (S4).
             val result = verifyRegistration(challengeId, state.code) { beginOnboarding(it.user.id) }
-            _uiState.update { it.copy(isLoading = false, isOffline = result.isOffline()) }
+            _uiState.update { it.copy(isLoading = false) }
             when (result) {
                 is Outcome.Success -> _events.send(VerifyEvent.Verified)
                 is Outcome.Failure -> when (val error = result.error) {
@@ -129,7 +128,7 @@ class VerifyCodeViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, message = null) }
         viewModelScope.launch {
             val result = resendCode(challengeId)
-            _uiState.update { it.copy(isLoading = false, isOffline = result.isOffline()) }
+            _uiState.update { it.copy(isLoading = false) }
             when (result) {
                 is Outcome.Success -> {
                     val challenge = result.value
@@ -146,9 +145,10 @@ class VerifyCodeViewModel @Inject constructor(
 
     fun onMessageShown() = _uiState.update { it.copy(message = null) }
 
-    /** 1.22 "Reintentar": sends the last request again with the typed code. */
+    /** 1.22 "Reintentar": sends the last request again with the code the boxes hold now. */
     fun retry() {
-        if (_uiState.value.isOffline) lastRequest?.invoke()
+        if (_uiState.value.isLoading) return
+        lastRequest?.invoke()
     }
 
     /** Same timing as 1.08 and 1.11: one tick per second, cleared when it reaches zero. */
@@ -165,8 +165,8 @@ class VerifyCodeViewModel @Inject constructor(
         }
     }
 
-    /** Offline shows 1.22 instead of a message. */
-    private fun AuthError.toMessage(): VerifyMessage? = if (this == AuthError.Offline) null else VerifyMessage.Unexpected
+    private fun AuthError.toMessage(): VerifyMessage =
+        if (this == AuthError.Offline) VerifyMessage.Offline else VerifyMessage.Unexpected
 
     companion object {
         // Must match the property names of the navigation route (VerifyCodeRoute).

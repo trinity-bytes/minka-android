@@ -6,8 +6,11 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -19,18 +22,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,12 +42,15 @@ import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
+import com.trinitybytes.minka.core.designsystem.component.MinkaLoadErrorScreen
+import com.trinitybytes.minka.core.designsystem.component.MinkaMessageEffect
 import com.trinitybytes.minka.core.designsystem.component.MinkaRadioRow
 import com.trinitybytes.minka.core.designsystem.component.MinkaSearchField
 import com.trinitybytes.minka.core.designsystem.component.MinkaSnackbarHost
 import com.trinitybytes.minka.core.designsystem.component.MinkaOfflineScreen
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBar
 import com.trinitybytes.minka.core.designsystem.component.MinkaWavyProgress
+import com.trinitybytes.minka.core.designsystem.component.formColumnWidth
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 import com.trinitybytes.minka.features.onboarding.domain.District
@@ -106,81 +113,96 @@ fun DistrictContent(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 1.22: no connection replaces the step; the typed values stay in [uiState] for the retry.
-    if (uiState.isOffline) {
-        MinkaOfflineScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading || uiState.isSaving || uiState.isLocating)
-        return
+    // A list that could not load leaves nothing to show: full-screen error with "Reintentar" (1.22 offline).
+    when (uiState.loadError) {
+        LoadError.Offline -> {
+            MinkaOfflineScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading)
+            return
+        }
+        LoadError.Unexpected -> {
+            MinkaLoadErrorScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading)
+            return
+        }
+        null -> Unit
     }
     val snackbarHostState = remember { SnackbarHostState() }
-    val messageText = uiState.message?.let { setupMessageText(it) }
-    val settingsLabel = stringResource(R.string.setup_settings)
-    LaunchedEffect(uiState.message) {
-        if (messageText != null) {
-            val denied = uiState.message == SetupMessage.LocationDenied
-            val result = snackbarHostState.showSnackbar(
-                message = messageText,
-                actionLabel = settingsLabel.takeIf { denied },
-                duration = if (denied) SnackbarDuration.Long else SnackbarDuration.Short,
-            )
-            if (result == SnackbarResult.ActionPerformed) onOpenSettings()
-            onMessageShown()
-        }
+    // 1.18 offers "Ajustes"; 1.22 keeps the step and offers "Reintentar".
+    val actionLabel = when (uiState.message) {
+        SetupMessage.LocationDenied -> stringResource(R.string.setup_settings)
+        SetupMessage.Offline -> stringResource(R.string.offline_retry)
+        else -> null
     }
-    Scaffold(
-        modifier = modifier,
-        topBar = { MinkaTopAppBar(title = "", onBack = onBack) },
-        snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .imePadding()
-                .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
-            verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
-        ) {
+    val denied = uiState.message == SetupMessage.LocationDenied
+    MinkaMessageEffect(
+        hostState = snackbarHostState,
+        message = uiState.message,
+        text = uiState.message?.let { setupMessageText(it) },
+        onShown = onMessageShown,
+        actionLabel = actionLabel,
+        onAction = if (denied) onOpenSettings else onRetry,
+    )
+    // Design B5: the form keeps a centered column of at most 480 dp.
+    Box(
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Scaffold(
+            modifier = Modifier.formColumnWidth(),
+            topBar = { MinkaTopAppBar(title = "", onBack = onBack) },
+            snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
+        ) { padding ->
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
+                    .fillMaxSize()
+                    .padding(padding)
+                    .consumeWindowInsets(padding)
+                    .imePadding()
+                    .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
                 verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
             ) {
-                SetupStepHeader(
-                    progress = 2f / 3,
-                    step = stringResource(R.string.setup_district_step),
-                    title = stringResource(R.string.setup_district_title),
-                )
-                Text(
-                    text = stringResource(R.string.setup_district_body),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
+                ) {
+                    SetupStepHeader(
+                        progress = 2f / 3,
+                        step = stringResource(R.string.setup_district_step),
+                        title = stringResource(R.string.setup_district_title),
+                    )
+                    Text(
+                        text = stringResource(R.string.setup_district_body),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    MinkaButton(
+                        text = stringResource(R.string.setup_use_location),
+                        onClick = onUseMyLocation,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MinkaButtonStyle.Outlined,
+                        enabled = !uiState.isSaving,
+                        leadingIcon = Icons.Rounded.MyLocation,
+                        size = MinkaButtonSize.Large,
+                        loading = uiState.isLocating,
+                    )
+                    MinkaSearchField(
+                        value = uiState.query,
+                        onValueChange = onQueryChange,
+                        placeholder = stringResource(R.string.setup_district_search),
+                        enabled = !uiState.isSaving,
+                    )
+                    DistrictList(uiState.visibleDistricts, uiState.selectedId, !uiState.isSaving, onDistrictSelected)
+                }
                 MinkaButton(
-                    text = stringResource(R.string.setup_use_location),
-                    onClick = onUseMyLocation,
+                    text = stringResource(R.string.setup_continue),
+                    onClick = onContinue,
                     modifier = Modifier.fillMaxWidth(),
-                    style = MinkaButtonStyle.Outlined,
-                    enabled = !uiState.isSaving,
-                    leadingIcon = Icons.Rounded.MyLocation,
+                    enabled = uiState.canContinue,
                     size = MinkaButtonSize.Large,
-                    loading = uiState.isLocating,
+                    loading = uiState.isSaving,
                 )
-                MinkaSearchField(
-                    value = uiState.query,
-                    onValueChange = onQueryChange,
-                    placeholder = stringResource(R.string.setup_district_search),
-                    enabled = !uiState.isSaving,
-                )
-                DistrictList(uiState.visibleDistricts, uiState.selectedId, !uiState.isSaving, onDistrictSelected)
             }
-            MinkaButton(
-                text = stringResource(R.string.setup_continue),
-                onClick = onContinue,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = uiState.canContinue,
-                size = MinkaButtonSize.Large,
-                loading = uiState.isSaving,
-            )
         }
     }
 }
@@ -211,12 +233,18 @@ internal fun SetupStepHeader(progress: Float, step: String, title: String) {
         MinkaWavyProgress(progress = progress)
         Text(text = step, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
-    Text(text = title, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onSurface)
+    Text(
+        text = title,
+        modifier = Modifier.semantics { heading() },
+        style = MaterialTheme.typography.headlineLarge,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
 }
 
 @Composable
 internal fun setupMessageText(message: SetupMessage): String = when (message) {
     SetupMessage.LocationDenied -> stringResource(R.string.setup_location_denied)
+    SetupMessage.Offline -> stringResource(R.string.offline_snackbar)
     SetupMessage.Unexpected -> stringResource(R.string.sign_in_unexpected)
 }
 

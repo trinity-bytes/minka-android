@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
@@ -77,6 +78,63 @@ class SetupScreensTest {
         compose.waitForIdle()
 
         assertEquals(1, settingsOpened)
+    }
+
+    @Test
+    fun aDistrictListThatFailedToLoadShowsTheFullScreenErrorWithReintentar() {
+        var retries = 0
+        compose.setContent {
+            MinkaTheme {
+                DistrictContent(
+                    uiState = DistrictUiState(isLoading = false, loadError = LoadError.Unexpected),
+                    onBack = null,
+                    onUseMyLocation = {},
+                    onQueryChange = {},
+                    onDistrictSelected = {},
+                    onContinue = {},
+                    onOpenSettings = {},
+                    onMessageShown = {},
+                    onRetry = { retries++ },
+                )
+            }
+        }
+        compose.onNodeWithText("No pudimos cargar esta lista").assertIsDisplayed()
+
+        compose.onNodeWithText("Reintentar").performClick()
+
+        assertEquals(1, retries)
+    }
+
+    @Test
+    fun aDistrictSaveOfflineKeepsTheListAndTheSnackbarRetries() {
+        var retries = 0
+        compose.setContent {
+            MinkaTheme {
+                DistrictContent(
+                    uiState = DistrictUiState(
+                        districts = districts,
+                        selectedId = "miraflores",
+                        isLoading = false,
+                        message = SetupMessage.Offline,
+                    ),
+                    onBack = null,
+                    onUseMyLocation = {},
+                    onQueryChange = {},
+                    onDistrictSelected = {},
+                    onContinue = {},
+                    onOpenSettings = {},
+                    onMessageShown = {},
+                    onRetry = { retries++ },
+                )
+            }
+        }
+        compose.onNodeWithText("Sin conexión. Lo escrito sigue aquí.").assertExists()
+        compose.onNodeWithText("Miraflores").assertIsSelected()
+
+        compose.onNodeWithText("Reintentar").performClick()
+        compose.waitForIdle()
+
+        assertEquals(1, retries)
     }
 
     @Test

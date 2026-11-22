@@ -24,8 +24,8 @@ sealed interface InterestsEvent {
 }
 
 /**
- * Figma 1.19: category chips; "Continuar" waits for one, "Omitir" skips them. No connection shows
- * 1.22 while [isOffline], which keeps the choice.
+ * Figma 1.19: category chips; "Continuar" waits for one, "Omitir" skips them. A failed save shows a
+ * snackbar that keeps the choice (1.22); a list that could not load shows [loadError] full screen.
  */
 data class InterestsUiState(
     val interests: List<Interest> = emptyList(),
@@ -33,7 +33,7 @@ data class InterestsUiState(
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val message: SetupMessage? = null,
-    val isOffline: Boolean = false,
+    val loadError: LoadError? = null,
 ) {
     /** "Elige al menos una categoría". */
     val canContinue: Boolean get() = selectedIds.isNotEmpty() && !isSaving
@@ -52,22 +52,19 @@ class InterestsViewModel @Inject constructor(
     private val _events = Channel<InterestsEvent>(Channel.BUFFERED)
     val events: Flow<InterestsEvent> = _events.receiveAsFlow()
 
-    /** The last request, which "Reintentar" (1.22) sends again. */
-    private var lastRequest: (() -> Unit)? = null
-
     init {
         loadInterests()
     }
 
     private fun loadInterests() {
-        lastRequest = ::loadInterests
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             val result = getInterests()
-            _uiState.update { it.copy(isLoading = false, isOffline = result.isOffline()) }
-            when (result) {
-                is Outcome.Success -> _uiState.update { it.copy(interests = result.value) }
-                is Outcome.Failure -> _uiState.update { it.copy(message = result.error.toMessage()) }
+            _uiState.update {
+                when (result) {
+                    is Outcome.Success -> it.copy(isLoading = false, loadError = null, interests = result.value)
+                    is Outcome.Failure -> it.copy(isLoading = false, loadError = result.error.toLoadError())
+                }
             }
         }
     }
@@ -80,13 +77,12 @@ class InterestsViewModel @Inject constructor(
     fun onContinue() {
         val state = _uiState.value
         if (!state.canContinue) return
-        lastRequest = ::onContinue
         _uiState.update { it.copy(isSaving = true, message = null) }
         viewModelScope.launch {
             // Saved in the catalog order, whatever order they were tapped in.
             val ids = state.interests.map { it.id }.filter { it in state.selectedIds }
             val result = saveInterests(ids)
-            _uiState.update { it.copy(isSaving = false, isOffline = result.isOffline()) }
+            _uiState.update { it.copy(isSaving = false) }
             when (result) {
                 is Outcome.Success -> _events.send(InterestsEvent.Done)
                 is Outcome.Failure -> _uiState.update { it.copy(message = result.error.toMessage()) }
@@ -94,20 +90,26 @@ class InterestsViewModel @Inject constructor(
         }
     }
 
-    /** 1.19 "Se puede omitir". */
+    /** 1.19 "Se puede omitir". Busy like a save, so a second tap or "Continuar" waits for it. */
     fun onSkip() {
         if (_uiState.value.isSaving) return
+        _uiState.update { it.copy(isSaving = true, message = null) }
         viewModelScope.launch {
             skipInterests()
+            _uiState.update { it.copy(isSaving = false) }
             _events.send(InterestsEvent.Done)
         }
     }
 
     fun onMessageShown() = _uiState.update { it.copy(message = null) }
 
-    /** 1.22 "Reintentar": sends the last request again. */
+    /** "Reintentar": loads the list again if it failed, else saves the interests chosen now. */
     fun retry() {
         val state = _uiState.value
-        if (state.isOffline && !state.isSaving) lastRequest?.invoke()
+        when {
+            state.isLoading || state.isSaving -> Unit
+            state.loadError != null -> loadInterests()
+            else -> onContinue()
+        }
     }
 }

@@ -145,7 +145,7 @@ class DistrictViewModelTest {
     }
 
     @Test
-    fun `offline keeps the selection and the step`() = runTest(dispatcher) {
+    fun `offline keeps the selection and the step and offers reintentar in a snackbar`() = runTest(dispatcher) {
         repository.saveAnswer = { Outcome.Failure(ProfileError.Offline) }
         val viewModel = viewModel()
         advanceUntilIdle()
@@ -157,8 +157,8 @@ class DistrictViewModelTest {
         viewModel.onContinue()
         advanceUntilIdle()
 
-        assertTrue("1.22", viewModel.state.isOffline)
-        assertNull(viewModel.state.message)
+        assertEquals("1.22", SetupMessage.Offline, viewModel.state.message)
+        assertNull("the list stays", viewModel.state.loadError)
         assertEquals(SAN_ISIDRO.id, viewModel.state.selectedId)
         assertEquals("san", viewModel.state.query)
         assertTrue(viewModel.state.canContinue)
@@ -167,7 +167,7 @@ class DistrictViewModelTest {
     }
 
     @Test
-    fun `reintentar saves the chosen district again and leaves 1_22 once it works`() = runTest(dispatcher) {
+    fun `reintentar saves the district chosen now`() = runTest(dispatcher) {
         repository.saveAnswer = { Outcome.Failure(ProfileError.Offline) }
         val viewModel = viewModel()
         advanceUntilIdle()
@@ -177,13 +177,32 @@ class DistrictViewModelTest {
         viewModel.onContinue()
         advanceUntilIdle()
 
+        viewModel.onDistrictSelected(BARRANCO.id)
         repository.saveAnswer = { Outcome.Success(Unit) }
+        viewModel.retry()
         viewModel.retry()
         advanceUntilIdle()
 
-        assertEquals(listOf(ANA.user.id to SAN_ISIDRO.id), repository.savedDistricts)
-        assertFalse(viewModel.state.isOffline)
+        assertEquals(listOf(ANA.user.id to BARRANCO.id), repository.savedDistricts)
+        assertNull(viewModel.state.message)
         assertEquals(listOf<DistrictEvent>(DistrictEvent.Chosen), events)
+    }
+
+    @Test
+    fun `offline while locating offers reintentar, which locates again`() = runTest(dispatcher) {
+        repository.nearestAnswer = { Outcome.Failure(ProfileError.Offline) }
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onLocationPermissionResult(granted = true)
+        advanceUntilIdle()
+        assertEquals(SetupMessage.Offline, viewModel.state.message)
+
+        repository.nearestAnswer = { Outcome.Success(BARRANCO) }
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertEquals(BARRANCO.id, viewModel.state.selectedId)
+        assertEquals(2, location.calls)
     }
 
     @Test
@@ -191,15 +210,32 @@ class DistrictViewModelTest {
         repository.districtsAnswer = { Outcome.Failure(ProfileError.Offline) }
         val viewModel = viewModel()
         advanceUntilIdle()
-        assertTrue(viewModel.state.isOffline)
+        assertEquals(LoadError.Offline, viewModel.state.loadError)
         assertNull(viewModel.state.message)
 
         repository.districtsAnswer = { Outcome.Success(TEST_DISTRICTS) }
         viewModel.retry()
         advanceUntilIdle()
 
-        assertFalse(viewModel.state.isOffline)
+        assertNull(viewModel.state.loadError)
         assertFalse(viewModel.state.isLoading)
+        assertEquals(TEST_DISTRICTS, viewModel.state.visibleDistricts)
+    }
+
+    @Test
+    fun `any other failed load also shows the full-screen error with reintentar`() = runTest(dispatcher) {
+        repository.districtsAnswer = { Outcome.Failure(ProfileError.Unexpected) }
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        assertEquals(LoadError.Unexpected, viewModel.state.loadError)
+        assertNull("no snackbar on top of the error state", viewModel.state.message)
+
+        repository.districtsAnswer = { Outcome.Success(TEST_DISTRICTS) }
+        viewModel.retry()
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertNull(viewModel.state.loadError)
         assertEquals(TEST_DISTRICTS, viewModel.state.visibleDistricts)
     }
 }

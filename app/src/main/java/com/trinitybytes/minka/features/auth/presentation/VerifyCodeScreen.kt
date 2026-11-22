@@ -1,8 +1,11 @@
 package com.trinitybytes.minka.features.auth.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -37,7 +40,8 @@ import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
 import com.trinitybytes.minka.core.designsystem.component.MinkaCodeInput
 import com.trinitybytes.minka.core.designsystem.component.MinkaSnackbarHost
-import com.trinitybytes.minka.core.designsystem.component.MinkaOfflineScreen
+import com.trinitybytes.minka.core.designsystem.component.MinkaMessageEffect
+import com.trinitybytes.minka.core.designsystem.component.formColumnWidth
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBar
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
@@ -87,79 +91,83 @@ fun VerifyCodeContent(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 1.22: no connection replaces the step; the typed values stay in [uiState] for the retry.
-    if (uiState.isOffline) {
-        MinkaOfflineScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading)
-        return
-    }
     val snackbarHostState = remember { SnackbarHostState() }
-    val messageText = uiState.message?.let { verifyMessageText(it) }
-    LaunchedEffect(uiState.message) {
-        if (messageText != null) {
-            snackbarHostState.showSnackbar(messageText)
-            onMessageShown()
-        }
-    }
-    Scaffold(
-        modifier = modifier,
-        topBar = { MinkaTopAppBar(title = "", onBack = onBack) },
-        snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .imePadding()
-                .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
-            verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
-        ) {
+    // 1.22: without connection the code stays as typed and the snackbar offers "Reintentar".
+    MinkaMessageEffect(
+        hostState = snackbarHostState,
+        message = uiState.message,
+        text = uiState.message?.let { verifyMessageText(it) },
+        onShown = onMessageShown,
+        actionLabel = stringResource(R.string.offline_retry).takeIf { uiState.message == VerifyMessage.Offline },
+        onAction = onRetry,
+    )
+    // Design B5: the form keeps a centered column of at most 480 dp.
+    Box(
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Scaffold(
+            modifier = Modifier.formColumnWidth(),
+            topBar = { MinkaTopAppBar(title = "", onBack = onBack) },
+            snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
+        ) { padding ->
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
+                    .fillMaxSize()
+                    .padding(padding)
+                    .consumeWindowInsets(padding)
+                    .imePadding()
+                    .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
                 verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
             ) {
-                AccountStepHeader(title = stringResource(R.string.verify_title))
-                Text(
-                    text = stringResource(R.string.verify_sent_to, uiState.destination),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                CodeGroup(uiState, onCodeChange, onVerify)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
+                ) {
+                    AccountStepHeader(title = stringResource(R.string.verify_title))
+                    Text(
+                        text = stringResource(R.string.verify_sent_to, uiState.destination),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    CodeGroup(uiState, onCodeChange, onVerify)
+                    MinkaButton(
+                        text = uiState.resendSecondsLeft
+                            ?.let { stringResource(R.string.verify_resend_in, formatCountdown(it)) }
+                            ?: stringResource(R.string.verify_resend),
+                        onClick = onResend,
+                        style = MinkaButtonStyle.Text,
+                        enabled = uiState.canResend,
+                        leadingIcon = Icons.Rounded.Refresh,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.verify_support_question),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    MinkaButton(
+                        text = stringResource(R.string.verify_support_action),
+                        onClick = onContactSupport,
+                        style = MinkaButtonStyle.Text,
+                    )
+                }
                 MinkaButton(
-                    text = uiState.resendSecondsLeft
-                        ?.let { stringResource(R.string.verify_resend_in, formatCountdown(it)) }
-                        ?: stringResource(R.string.verify_resend),
-                    onClick = onResend,
-                    style = MinkaButtonStyle.Text,
-                    enabled = uiState.canResend,
-                    leadingIcon = Icons.Rounded.Refresh,
+                    text = stringResource(R.string.verify_submit),
+                    onClick = onVerify,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = uiState.canVerify,
+                    size = MinkaButtonSize.Large,
+                    loading = uiState.isLoading,
                 )
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.verify_support_question),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                MinkaButton(
-                    text = stringResource(R.string.verify_support_action),
-                    onClick = onContactSupport,
-                    style = MinkaButtonStyle.Text,
-                )
-            }
-            MinkaButton(
-                text = stringResource(R.string.verify_submit),
-                onClick = onVerify,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = uiState.canVerify,
-                size = MinkaButtonSize.Large,
-                loading = uiState.isLoading,
-            )
         }
     }
 }
@@ -209,6 +217,7 @@ private fun CodeGroup(uiState: VerifyCodeUiState, onCodeChange: (String) -> Unit
 
 @Composable
 private fun verifyMessageText(message: VerifyMessage): String = when (message) {
+    VerifyMessage.Offline -> stringResource(R.string.offline_snackbar)
     VerifyMessage.Unexpected -> stringResource(R.string.sign_in_unexpected)
 }
 

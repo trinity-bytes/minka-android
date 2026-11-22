@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -26,7 +27,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -35,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -47,11 +49,12 @@ import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
 import com.trinitybytes.minka.core.designsystem.component.MinkaExpressiveShapes
+import com.trinitybytes.minka.core.designsystem.component.MinkaMessageEffect
 import com.trinitybytes.minka.core.designsystem.component.MinkaSnackbarHost
 import com.trinitybytes.minka.core.designsystem.component.MinkaTextField
-import com.trinitybytes.minka.core.designsystem.component.MinkaOfflineScreen
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBar
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBarSize
+import com.trinitybytes.minka.core.designsystem.component.formColumnWidth
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 import com.trinitybytes.minka.features.auth.domain.ContactKind
@@ -91,48 +94,52 @@ fun PasswordRecoveryContent(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 1.22: no connection replaces the step; the typed values stay in [uiState] for the retry.
-    if (uiState.isOffline) {
-        MinkaOfflineScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading)
-        return
-    }
     val snackbarHostState = remember { SnackbarHostState() }
-    val messageText = uiState.message?.let { messageText(it) }
-    LaunchedEffect(uiState.message) {
-        if (messageText != null) {
-            snackbarHostState.showSnackbar(messageText)
-            onMessageShown()
-        }
-    }
+    // 1.22: without connection the step stays as it was and the snackbar offers "Reintentar".
+    MinkaMessageEffect(
+        hostState = snackbarHostState,
+        message = uiState.message,
+        text = uiState.message?.let { messageText(it) },
+        onShown = onMessageShown,
+        actionLabel = stringResource(R.string.offline_retry).takeIf { uiState.message == RecoveryMessage.Offline },
+        onAction = onRetry,
+    )
     val sent = uiState.sent
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            // 1.10 uses the large bar with its headline; 1.11 a small bar with only the back arrow.
-            if (sent == null) {
-                MinkaTopAppBar(
-                    title = stringResource(R.string.password_recovery_title),
-                    size = MinkaTopAppBarSize.Large,
-                    onBack = onBack,
-                )
-            } else {
-                MinkaTopAppBar(title = "", onBack = onBack)
-            }
-        },
-        snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .imePadding()
-                .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
-            verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
-        ) {
-            if (sent == null) {
-                RequestForm(uiState, onContactChange, onContactFocusLost, onSubmit)
-            } else {
-                SentConfirmation(uiState, sent, onOpenInbox, onResend)
+    // Design B5: top app bar and form share one centered column of at most 480 dp.
+    Box(
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Scaffold(
+            modifier = Modifier.formColumnWidth(),
+            topBar = {
+                // 1.10 uses the large bar with its headline; 1.11 a small bar with only the back arrow.
+                if (sent == null) {
+                    MinkaTopAppBar(
+                        title = stringResource(R.string.password_recovery_title),
+                        size = MinkaTopAppBarSize.Large,
+                        onBack = onBack,
+                    )
+                } else {
+                    MinkaTopAppBar(title = "", onBack = onBack)
+                }
+            },
+            snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .consumeWindowInsets(padding)
+                    .imePadding()
+                    .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
+                verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
+            ) {
+                if (sent == null) {
+                    RequestForm(uiState, onContactChange, onContactFocusLost, onSubmit)
+                } else {
+                    SentConfirmation(uiState, sent, onOpenInbox, onResend)
+                }
             }
         }
     }
@@ -221,6 +228,7 @@ private fun ColumnScope.SentConfirmation(
             text = stringResource(
                 if (isPhone) R.string.password_recovery_sent_phone_title else R.string.password_recovery_sent_email_title,
             ),
+            modifier = Modifier.semantics { heading() },
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
@@ -261,6 +269,7 @@ private fun ColumnScope.SentConfirmation(
 
 @Composable
 private fun messageText(message: RecoveryMessage): String = when (message) {
+    RecoveryMessage.Offline -> stringResource(R.string.offline_snackbar)
     RecoveryMessage.Unexpected -> stringResource(R.string.sign_in_unexpected)
 }
 

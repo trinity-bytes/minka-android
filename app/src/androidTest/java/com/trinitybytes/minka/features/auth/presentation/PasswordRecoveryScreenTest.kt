@@ -29,6 +29,7 @@ class PasswordRecoveryScreenTest {
         onBack: () -> Unit = {},
         onOpenInbox: (ContactKind) -> Unit = {},
         onResend: () -> Unit = {},
+        onRetry: () -> Unit = {},
     ) {
         compose.setContent {
             MinkaTheme {
@@ -41,7 +42,7 @@ class PasswordRecoveryScreenTest {
                     onOpenInbox = onOpenInbox,
                     onResend = onResend,
                     onMessageShown = {},
-                    onRetry = {},
+                    onRetry = onRetry,
                 )
             }
         }
@@ -106,5 +107,18 @@ class PasswordRecoveryScreenTest {
         compose.onNodeWithContentDescription("Volver").performClick()
 
         assertTrue(back)
+    }
+
+    @Test
+    fun offlineKeepsTheFieldAndTheSnackbarRetries() {
+        var retries = 0
+        setRecovery(PasswordRecoveryUiState(contact = "987654321", message = RecoveryMessage.Offline), onRetry = { retries++ })
+
+        compose.onNodeWithText("Sin conexión. Lo escrito sigue aquí.").assertIsDisplayed()
+        compose.onNodeWithText("987654321").assertExists()
+        compose.onNodeWithText("Reintentar").performClick()
+        compose.waitForIdle()
+
+        assertEquals(1, retries)
     }
 }

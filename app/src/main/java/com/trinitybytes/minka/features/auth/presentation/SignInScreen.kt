@@ -1,10 +1,16 @@
 package com.trinitybytes.minka.features.auth.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -32,7 +38,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,13 +47,15 @@ import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
 import com.trinitybytes.minka.core.designsystem.component.MinkaDialog
+import com.trinitybytes.minka.core.designsystem.component.MinkaGoogleButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaListGroup
 import com.trinitybytes.minka.core.designsystem.component.MinkaListItem
+import com.trinitybytes.minka.core.designsystem.component.MinkaMessageEffect
 import com.trinitybytes.minka.core.designsystem.component.MinkaSnackbarHost
 import com.trinitybytes.minka.core.designsystem.component.MinkaTextField
-import com.trinitybytes.minka.core.designsystem.component.MinkaOfflineScreen
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBar
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBarSize
+import com.trinitybytes.minka.core.designsystem.component.formColumnWidth
 import com.trinitybytes.minka.core.designsystem.component.initialsOf
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
@@ -84,7 +91,6 @@ fun SignInScreen(
         onContactChange = viewModel::onContactChange,
         onPasswordChange = viewModel::onPasswordChange,
         onContactFocusLost = viewModel::onContactFocusLost,
-        onPasswordFocusLost = viewModel::onPasswordFocusLost,
         onSubmit = viewModel::submit,
         onForgotPassword = viewModel::recoverPassword,
         onGoogle = viewModel::openGoogleSheet,
@@ -105,7 +111,6 @@ fun SignInContent(
     onContactChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onContactFocusLost: () -> Unit,
-    onPasswordFocusLost: () -> Unit,
     onSubmit: () -> Unit,
     onForgotPassword: () -> Unit,
     onGoogle: () -> Unit,
@@ -117,59 +122,71 @@ fun SignInContent(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 1.22: no connection replaces the step; the typed values stay in [uiState] for the retry.
-    if (uiState.isOffline) {
-        MinkaOfflineScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading)
-        return
-    }
     val snackbarHostState = remember { SnackbarHostState() }
-    val messageText = uiState.message?.let { messageText(it) }
-    LaunchedEffect(uiState.message) {
-        if (messageText != null) {
-            snackbarHostState.showSnackbar(messageText)
-            onMessageShown()
-        }
-    }
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            MinkaTopAppBar(
-                title = stringResource(R.string.sign_in_title),
-                size = MinkaTopAppBarSize.Large,
-                onBack = onBack,
-            )
-        },
-        snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .imePadding()
-                .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
-            verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
-        ) {
-            Column(
+    // 1.22: without connection the form stays as typed and the snackbar offers "Reintentar".
+    MinkaMessageEffect(
+        hostState = snackbarHostState,
+        message = uiState.message,
+        text = uiState.message?.let { messageText(it) },
+        onShown = onMessageShown,
+        actionLabel = stringResource(R.string.offline_retry).takeIf { uiState.message == SignInMessage.Offline },
+        onAction = onRetry,
+    )
+    // Design B5: top app bar and form share one centered column of at most 480 dp.
+    Box(
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Scaffold(
+            modifier = Modifier.formColumnWidth(),
+            topBar = {
+                MinkaTopAppBar(
+                    title = stringResource(R.string.sign_in_title),
+                    size = MinkaTopAppBarSize.Large,
+                    onBack = onBack,
+                )
+            },
+            snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
+        ) { padding ->
+            BoxWithConstraints(
                 modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
+                    .fillMaxSize()
+                    .padding(padding)
+                    .consumeWindowInsets(padding)
+                    .imePadding(),
             ) {
-                Text(
-                    text = stringResource(R.string.sign_in_intro),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                SignInForm(uiState, onContactChange, onPasswordChange, onContactFocusLost, onPasswordFocusLost, onSubmit)
-                MinkaButton(
-                    text = stringResource(R.string.sign_in_forgot_password),
-                    onClick = onForgotPassword,
-                    modifier = Modifier.align(Alignment.End),
-                    style = MinkaButtonStyle.Text,
-                    enabled = uiState.fieldsEnabled,
-                )
+                val viewportHeight = maxHeight
+                // The actions scroll with the form, so they stay reachable in landscape with the
+                // keyboard open; when everything fits they sit at the bottom.
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .heightIn(min = viewportHeight)
+                            .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
+                        verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.sign_in_intro),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        SignInForm(uiState, onContactChange, onPasswordChange, onContactFocusLost, onSubmit)
+                        MinkaButton(
+                            text = stringResource(R.string.sign_in_forgot_password),
+                            onClick = onForgotPassword,
+                            modifier = Modifier.align(Alignment.End),
+                            style = MinkaButtonStyle.Text,
+                            enabled = uiState.fieldsEnabled,
+                        )
+                        Spacer(Modifier.weight(1f))
+                        SignInActions(uiState, onSubmit, onGoogle, onRegister)
+                    }
+                }
             }
-            SignInActions(uiState, onSubmit, onGoogle, onRegister)
         }
     }
     uiState.lockSecondsLeft?.let { seconds ->
@@ -178,6 +195,8 @@ fun SignInContent(
             text = stringResource(R.string.sign_in_locked_text, formatCountdown(seconds)),
             confirmText = stringResource(R.string.sign_in_locked_ok),
             onConfirm = onDismissLock,
+            // Design B3: both actions of 1.08 are text buttons.
+            confirmStyle = MinkaButtonStyle.Text,
             onDismiss = onDismissLock,
             dismissText = stringResource(R.string.sign_in_locked_recover),
             onDismissClick = onForgotPassword,
@@ -196,7 +215,6 @@ private fun SignInForm(
     onContactChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onContactFocusLost: () -> Unit,
-    onPasswordFocusLost: () -> Unit,
     onSubmit: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s12)) {
@@ -215,12 +233,9 @@ private fun SignInForm(
             value = uiState.password,
             onValueChange = onPasswordChange,
             label = stringResource(R.string.sign_in_password_label),
-            modifier = Modifier.onFocusLost(onPasswordFocusLost),
             placeholder = stringResource(R.string.sign_in_password_placeholder),
-            supportingText = uiState.passwordError?.let { stringResource(R.string.sign_in_password_error) },
-            isError = uiState.passwordError != null,
             enabled = uiState.fieldsEnabled,
-            visualTransformation = PasswordVisualTransformation(),
+            secure = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onSubmit() }),
         )
@@ -250,13 +265,11 @@ private fun SignInActions(uiState: SignInUiState, onSubmit: () -> Unit, onGoogle
             )
             HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
         }
-        MinkaButton(
+        MinkaGoogleButton(
             text = stringResource(R.string.sign_in_google),
             onClick = onGoogle,
             modifier = Modifier.fillMaxWidth(),
-            style = MinkaButtonStyle.Outlined,
             enabled = uiState.fieldsEnabled,
-            size = MinkaButtonSize.Large,
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -305,6 +318,7 @@ private fun GoogleAccountSheet(accounts: List<GoogleAccount>, onChoose: (String)
 private fun messageText(message: SignInMessage): String = when (message) {
     is SignInMessage.WrongCredentials ->
         pluralStringResource(R.plurals.sign_in_wrong_credentials, message.attemptsLeft, message.attemptsLeft)
+    SignInMessage.Offline -> stringResource(R.string.offline_snackbar)
     SignInMessage.Unexpected -> stringResource(R.string.sign_in_unexpected)
 }
 
@@ -329,7 +343,6 @@ private fun SignInPreview(uiState: SignInUiState) {
             onContactChange = {},
             onPasswordChange = {},
             onContactFocusLost = {},
-            onPasswordFocusLost = {},
             onSubmit = {},
             onForgotPassword = {},
             onGoogle = {},
@@ -354,7 +367,6 @@ private fun SignInErrorPreview() = SignInPreview(
         contact = "ana.quispe@",
         password = "1234",
         contactError = SignInFieldError.InvalidContact,
-        passwordError = SignInFieldError.ShortPassword,
     ),
 )
 

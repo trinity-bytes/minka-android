@@ -17,8 +17,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** One-off feedback shown in a snackbar. */
-enum class RecoveryMessage { Unexpected }
+/** One-off feedback shown in a snackbar; [Offline] (1.22) offers "Reintentar" over the kept step. */
+enum class RecoveryMessage { Offline, Unexpected }
 
 /** The link was sent to [destination] (Figma 1.11). */
 data class RecoverySent(val destination: String, val kind: ContactKind, val expiresInMinutes: Int)
@@ -26,7 +26,7 @@ data class RecoverySent(val destination: String, val kind: ContactKind, val expi
 /**
  * Every state of Figma 1.10–1.11: the single contact field (1.10) and, once [sent] is set, the
  * confirmation whose "Reenviar" waits for [resendSecondsLeft] to run out (1.11), and no connection
- * while [isOffline] (1.22), which keeps what was typed.
+ * (1.22) as a snackbar over the untouched step.
  */
 data class PasswordRecoveryUiState(
     val contact: String = "",
@@ -35,7 +35,6 @@ data class PasswordRecoveryUiState(
     val sent: RecoverySent? = null,
     val resendSecondsLeft: Long? = null,
     val message: RecoveryMessage? = null,
-    val isOffline: Boolean = false,
 ) {
     val fieldsEnabled: Boolean get() = !isLoading
 
@@ -55,9 +54,6 @@ class PasswordRecoveryViewModel @Inject constructor(
     val uiState: StateFlow<PasswordRecoveryUiState> = _uiState.asStateFlow()
 
     private var countdown: Job? = null
-
-    /** The contact of the last request, which "Reintentar" (1.22) sends again. */
-    private var lastContact: String? = null
 
     fun onContactChange(value: String) = _uiState.update { state ->
         if (!state.fieldsEnabled) return@update state
@@ -85,15 +81,12 @@ class PasswordRecoveryViewModel @Inject constructor(
 
     fun onMessageShown() = _uiState.update { it.copy(message = null) }
 
-    /** 1.22 "Reintentar": sends the last request again. */
+    /** 1.22 "Reintentar": the request again with the field as it is now, or the resend once sent. */
     fun retry() {
-        val state = _uiState.value
-        val contact = lastContact
-        if (state.isOffline && !state.isLoading && contact != null) send(contact)
+        if (_uiState.value.sent == null) submit() else resend()
     }
 
     private fun send(contact: String) {
-        lastContact = contact
         _uiState.update { it.copy(isLoading = true, message = null) }
         viewModelScope.launch {
             when (val result = requestPasswordReset(contact)) {
@@ -103,15 +96,14 @@ class PasswordRecoveryViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            isOffline = false,
                             sent = RecoverySent(reset.destination, kind, reset.expiresInMinutes),
                         )
                     }
                     startCountdown(reset.resendAfterSeconds.toLong())
                 }
                 is Outcome.Failure -> _uiState.update {
-                    val offline = result.error == AuthError.Offline
-                    it.copy(isLoading = false, isOffline = offline, message = if (offline) null else RecoveryMessage.Unexpected)
+                    val message = if (result.error == AuthError.Offline) RecoveryMessage.Offline else RecoveryMessage.Unexpected
+                    it.copy(isLoading = false, message = message)
                 }
             }
         }

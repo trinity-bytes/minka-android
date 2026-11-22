@@ -9,7 +9,6 @@ import com.trinitybytes.minka.features.auth.application.SignInWithGoogle
 import com.trinitybytes.minka.features.auth.domain.AuthError
 import com.trinitybytes.minka.features.auth.domain.AuthOutcome
 import com.trinitybytes.minka.features.auth.domain.GoogleAccount
-import com.trinitybytes.minka.features.auth.domain.MIN_PASSWORD_LENGTH
 import com.trinitybytes.minka.features.auth.domain.Session
 import com.trinitybytes.minka.features.auth.domain.contactKindOf
 import com.trinitybytes.minka.features.onboarding.application.LaunchTarget
@@ -28,12 +27,18 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** Message shown under a field of the sign-in form (Figma 1.06). */
-enum class SignInFieldError { InvalidContact, ShortPassword }
+/**
+ * Message shown under a field of the sign-in form (Figma 1.06). Only the contact format is checked:
+ * the password is never validated by length at sign-in (design B1), wrong credentials say so.
+ */
+enum class SignInFieldError { InvalidContact }
 
 /** One-off feedback shown in a snackbar. */
 sealed interface SignInMessage {
     data class WrongCredentials(val attemptsLeft: Int) : SignInMessage
+
+    /** 1.22: "Sin conexión. Lo escrito sigue aquí." with "Reintentar"; the form stays as it was. */
+    data object Offline : SignInMessage
     data object Unexpected : SignInMessage
 }
 
@@ -46,18 +51,16 @@ sealed interface SignInEvent {
 /**
  * Every state of Figma 1.05–1.09: empty (1.05), field errors (1.06), loading (1.07), locked
  * account while [lockSecondsLeft] is set (1.08), the Google sheet while [googleAccounts] is set (1.09)
- * and no connection while [isOffline] (1.22), which keeps what was typed.
+ * and no connection (1.22) as a [SignInMessage.Offline] snackbar over the untouched form.
  */
 data class SignInUiState(
     val contact: String = "",
     val password: String = "",
     val contactError: SignInFieldError? = null,
-    val passwordError: SignInFieldError? = null,
     val isLoading: Boolean = false,
     val lockSecondsLeft: Long? = null,
     val googleAccounts: List<GoogleAccount>? = null,
     val message: SignInMessage? = null,
-    val isOffline: Boolean = false,
 ) {
     /** 1.07: the fields are locked while signing in. */
     val fieldsEnabled: Boolean get() = !isLoading
@@ -86,8 +89,8 @@ class SignInViewModel @Inject constructor(
     private var started = false
     private var countdown: Job? = null
 
-    /** The last request, which "Reintentar" (1.22) sends again. */
-    private var lastRequest: (() -> Unit)? = null
+    /** What "Reintentar" (1.22) sends again, with what the form holds when it is tapped. */
+    private var retryAction: RetryAction? = null
 
     /** Called once per screen; with [withGoogle] the account sheet opens right away. */
     fun onStart(withGoogle: Boolean) {
@@ -104,7 +107,7 @@ class SignInViewModel @Inject constructor(
 
     fun onPasswordChange(value: String) = _uiState.update { state ->
         if (!state.fieldsEnabled) return@update state
-        state.copy(password = value, passwordError = state.passwordError?.let { passwordError(value) })
+        state.copy(password = value)
     }
 
     /** 1.06: validation happens when the field loses focus; an untouched empty field is not flagged. */
@@ -112,27 +115,23 @@ class SignInViewModel @Inject constructor(
         if (it.contact.isBlank()) it else it.copy(contactError = contactError(it.contact))
     }
 
-    fun onPasswordFocusLost() = _uiState.update {
-        if (it.password.isEmpty()) it else it.copy(passwordError = passwordError(it.password))
-    }
-
     fun submit() {
         val state = _uiState.value
         if (!state.canSubmit) return
         val contactError = contactError(state.contact)
-        val passwordError = passwordError(state.password)
-        if (contactError != null || passwordError != null) {
-            _uiState.update { it.copy(contactError = contactError, passwordError = passwordError) }
+        if (contactError != null) {
+            _uiState.update { it.copy(contactError = contactError) }
             return
         }
-        authenticate { signIn(state.contact.trim(), state.password) }
+        authenticate(RetryAction.Submit) { signIn(state.contact.trim(), state.password) }
     }
 
     fun openGoogleSheet() {
-        lastRequest = ::openGoogleSheet
+        retryAction = RetryAction.GoogleSheet
+        _uiState.update { it.copy(message = null) }
         viewModelScope.launch {
             when (val result = getGoogleAccounts()) {
-                is Outcome.Success -> _uiState.update { it.copy(googleAccounts = result.value, isOffline = false) }
+                is Outcome.Success -> _uiState.update { it.copy(googleAccounts = result.value) }
                 is Outcome.Failure -> report(result.error)
             }
         }
@@ -143,7 +142,7 @@ class SignInViewModel @Inject constructor(
     /** 1.09: choosing an account closes the sheet and moves to the loading state (1.07). */
     fun chooseGoogleAccount(id: String) {
         dismissGoogleSheet()
-        authenticate { signInWithGoogle(id) }
+        authenticate(RetryAction.GoogleAccount(id)) { signInWithGoogle(id) }
     }
 
     fun dismissLock() {
@@ -159,23 +158,25 @@ class SignInViewModel @Inject constructor(
 
     fun onMessageShown() = _uiState.update { it.copy(message = null) }
 
-    /** 1.22 "Reintentar": sends the last request again with what was typed. */
+    /** 1.22 "Reintentar": sends the last request again with what the form holds now. */
     fun retry() {
-        val state = _uiState.value
-        if (state.isOffline && !state.isLoading) lastRequest?.invoke()
+        if (_uiState.value.isLoading) return
+        when (val action = retryAction) {
+            RetryAction.Submit -> submit()
+            RetryAction.GoogleSheet -> openGoogleSheet()
+            is RetryAction.GoogleAccount -> chooseGoogleAccount(action.id)
+            null -> Unit
+        }
     }
 
-    private fun authenticate(request: suspend () -> AuthOutcome<Session>) {
-        lastRequest = { authenticate(request) }
+    private fun authenticate(action: RetryAction, request: suspend () -> AuthOutcome<Session>) {
+        retryAction = action
         _uiState.update { it.copy(isLoading = true, message = null) }
         viewModelScope.launch {
             val result = request()
             _uiState.update { it.copy(isLoading = false) }
             when (result) {
-                is Outcome.Success -> {
-                    _uiState.update { it.copy(isOffline = false) }
-                    _events.send(SignInEvent.SignedIn(pendingStep = pendingSetupStep()))
-                }
+                is Outcome.Success -> _events.send(SignInEvent.SignedIn(pendingStep = pendingSetupStep()))
                 is Outcome.Failure -> report(result.error)
             }
         }
@@ -184,11 +185,9 @@ class SignInViewModel @Inject constructor(
     /** The setup step this account left pending on the device (S4), or null when Inicio opens. */
     private suspend fun pendingSetupStep(): SetupStep? = (resolveLaunch() as? LaunchTarget.Setup)?.step
 
-    /** Offline shows 1.22; anything else leaves it for the lock dialog or a snackbar. */
+    /** A lock opens the 1.08 dialog; anything else is a snackbar over the form. */
     private fun report(error: AuthError) {
-        _uiState.update { it.copy(isOffline = error == AuthError.Offline) }
         when (error) {
-            AuthError.Offline -> Unit
             is AuthError.AccountLocked -> startLock(error.retryAfterSeconds)
             else -> _uiState.update { it.copy(message = error.toMessage()) }
         }
@@ -210,11 +209,16 @@ class SignInViewModel @Inject constructor(
 
     private fun contactError(value: String) = if (contactKindOf(value) == null) SignInFieldError.InvalidContact else null
 
-    private fun passwordError(value: String) =
-        if (value.length < MIN_PASSWORD_LENGTH) SignInFieldError.ShortPassword else null
-
     private fun AuthError.toMessage(): SignInMessage = when (this) {
         is AuthError.InvalidCredentials -> SignInMessage.WrongCredentials(attemptsLeft)
+        AuthError.Offline -> SignInMessage.Offline
         else -> SignInMessage.Unexpected
+    }
+
+    /** The kinds of request "Reintentar" can send again; none of them keeps stale form values. */
+    private sealed interface RetryAction {
+        data object Submit : RetryAction
+        data object GoogleSheet : RetryAction
+        data class GoogleAccount(val id: String) : RetryAction
     }
 }

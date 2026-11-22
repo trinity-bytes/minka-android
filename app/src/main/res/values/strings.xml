@@ -8,14 +8,18 @@
 
     <!-- No connection (Figma 1.22) -->
     <string name="offline_title">Sin conexión</string>
-    <string name="offline_body">Revisa tu wifi o tus datos móviles. Lo que escribiste se guardó.</string>
+    <string name="offline_body">Revisa tu wifi o tus datos móviles.</string>
+    <string name="offline_snackbar">Sin conexión. Lo escrito sigue aquí.</string>
+    <string name="load_error_title">No pudimos cargar esta lista</string>
+    <string name="load_error_body">Algo salió mal. Inténtalo de nuevo.</string>
+    <string name="password_show">Mostrar contraseña</string>
+    <string name="password_hide">Ocultar contraseña</string>
     <string name="offline_retry">Reintentar</string>
     <string name="strength_weak">Débil</string>
     <string name="strength_medium">Media</string>
     <string name="strength_strong">Fuerte</string>
 
     <!-- Onboarding: splash and welcome (Figma 1.01–1.04) -->
-    <string name="splash_loading">Restaurando tu sesión</string>
     <string name="welcome_skip">Omitir</string>
     <string name="welcome_next">Siguiente</string>
     <string name="welcome_create_account">Crear cuenta</string>
@@ -82,7 +86,7 @@
     <string name="register_password_label">Contraseña</string>
     <string name="register_confirm_password_label">Confirmar contraseña</string>
     <!-- %1$s is the terms version (TERMS_VERSION): "Acepto los términos y la privacidad (v1.0)" -->
-    <string name="register_terms">Acepto los términos y la privacidad (v%1$s)</string>
+    <string name="register_terms">Acepto los términos y la privacidad</string>
     <string name="register_submit">Continuar</string>
     <string name="register_email_taken">Este correo ya está registrado</string>
     <!-- Not in Figma: 1.13 only draws the email case. -->

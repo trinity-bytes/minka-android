@@ -15,6 +15,7 @@ import com.trinitybytes.minka.features.auth.domain.SessionStore
 import com.trinitybytes.minka.features.auth.domain.User
 import com.trinitybytes.minka.features.auth.domain.VerificationChallenge
 import com.trinitybytes.minka.features.onboarding.FakeProgressStore
+import com.trinitybytes.minka.features.onboarding.application.BeginOnboarding
 import com.trinitybytes.minka.features.onboarding.application.ResolveLaunch
 import com.trinitybytes.minka.features.onboarding.domain.OnboardingProgress
 import com.trinitybytes.minka.features.onboarding.domain.SetupStep
@@ -55,7 +56,7 @@ class SignInViewModelTest {
     private fun viewModel() = SignInViewModel(
         SignIn(repository, store),
         GetGoogleAccounts(repository),
-        SignInWithGoogle(repository, store),
+        SignInWithGoogle(repository, store, BeginOnboarding(progressStore)),
         ResolveLaunch(store, progressStore),
     )
 
@@ -77,39 +78,29 @@ class SignInViewModelTest {
     }
 
     @Test
-    fun `each field is validated when it loses focus and shows its message below it`() {
+    fun `the contact is validated when it loses focus and shows its message below it`() {
         val viewModel = viewModel()
         viewModel.onContactChange("ana.quispe@")
-        viewModel.onPasswordChange("1234")
         assertNull(viewModel.state.contactError)
-        assertNull(viewModel.state.passwordError)
 
         viewModel.onContactFocusLost()
         assertEquals(SignInFieldError.InvalidContact, viewModel.state.contactError)
-        assertNull(viewModel.state.passwordError)
-
-        viewModel.onPasswordFocusLost()
-        assertEquals(SignInFieldError.ShortPassword, viewModel.state.passwordError)
 
         viewModel.onContactChange("ana.quispe@gmail.com")
         assertNull(viewModel.state.contactError)
-        viewModel.onPasswordChange("Minka2026!")
-        assertNull(viewModel.state.passwordError)
     }
 
     @Test
-    fun `an empty field that loses focus is not flagged yet`() {
+    fun `an empty contact that loses focus is not flagged yet`() {
         val viewModel = viewModel()
 
         viewModel.onContactFocusLost()
-        viewModel.onPasswordFocusLost()
 
         assertNull(viewModel.state.contactError)
-        assertNull(viewModel.state.passwordError)
     }
 
     @Test
-    fun `submitting invalid fields shows their messages without calling the server`() = runTest(dispatcher) {
+    fun `an invalid contact shows its message without calling the server`() = runTest(dispatcher) {
         val viewModel = viewModel()
         viewModel.onContactChange("ana")
         viewModel.onPasswordChange("123")
@@ -118,8 +109,20 @@ class SignInViewModelTest {
         advanceUntilIdle()
 
         assertEquals(SignInFieldError.InvalidContact, viewModel.state.contactError)
-        assertEquals(SignInFieldError.ShortPassword, viewModel.state.passwordError)
         assertEquals(0, repository.signInCalls)
+    }
+
+    @Test
+    fun `a short password is sent as typed, sign-in does not apply the registration policy`() = runTest(dispatcher) {
+        val viewModel = viewModel()
+        viewModel.onContactChange("ana.quispe@gmail.com")
+        viewModel.onPasswordChange("1234")
+        assertTrue(viewModel.state.canSubmit)
+
+        viewModel.submit()
+        advanceUntilIdle()
+
+        assertEquals(listOf("ana.quispe@gmail.com" to "1234"), repository.signIns)
     }
 
     @Test
@@ -258,7 +261,7 @@ class SignInViewModelTest {
     }
 
     @Test
-    fun `an offline answer is reported and keeps what was typed`() = runTest(dispatcher) {
+    fun `an offline answer keeps the form and offers reintentar in a snackbar`() = runTest(dispatcher) {
         repository.signInAnswer = { Outcome.Failure(AuthError.Offline) }
         val viewModel = viewModel()
         viewModel.onContactChange("ana.quispe@gmail.com")
@@ -267,15 +270,36 @@ class SignInViewModelTest {
         viewModel.submit()
         advanceUntilIdle()
 
-        assertTrue("1.22", viewModel.state.isOffline)
-        assertNull(viewModel.state.message)
+        assertEquals("1.22", SignInMessage.Offline, viewModel.state.message)
         assertEquals("ana.quispe@gmail.com", viewModel.state.contact)
         assertEquals("Minka2026!", viewModel.state.password)
         assertTrue(viewModel.state.canSubmit)
     }
 
     @Test
-    fun `reintentar signs in again with what was typed and leaves 1_22 once it works`() = runTest(dispatcher) {
+    fun `reintentar signs in again with what the form holds now`() = runTest(dispatcher) {
+        repository.signInAnswer = { Outcome.Failure(AuthError.Offline) }
+        val viewModel = viewModel()
+        viewModel.onContactChange("ana.quispe@gmail.com")
+        viewModel.onPasswordChange("Minka2025")
+        viewModel.submit()
+        advanceUntilIdle()
+
+        viewModel.onPasswordChange("Minka2026!")
+        repository.signInAnswer = { Outcome.Success(session) }
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("ana.quispe@gmail.com" to "Minka2025", "ana.quispe@gmail.com" to "Minka2026!"),
+            repository.signIns,
+        )
+        assertNull(viewModel.state.message)
+        assertEquals(SignInEvent.SignedIn(pendingStep = null), viewModel.events.first())
+    }
+
+    @Test
+    fun `reintentar while a request runs sends nothing more`() = runTest(dispatcher) {
         repository.signInAnswer = { Outcome.Failure(AuthError.Offline) }
         val viewModel = viewModel()
         viewModel.onContactChange("ana.quispe@gmail.com")
@@ -284,33 +308,26 @@ class SignInViewModelTest {
         advanceUntilIdle()
 
         viewModel.retry()
-        advanceUntilIdle()
-        assertTrue("still offline", viewModel.state.isOffline)
-        assertEquals(2, repository.signInCalls)
-
-        repository.signInAnswer = { Outcome.Success(session) }
         viewModel.retry()
         advanceUntilIdle()
 
-        assertEquals(List(3) { "ana.quispe@gmail.com" to "Minka2026!" }, repository.signIns)
-        assertFalse(viewModel.state.isOffline)
-        assertEquals(SignInEvent.SignedIn(pendingStep = null), viewModel.events.first())
+        assertEquals(2, repository.signInCalls)
     }
 
     @Test
-    fun `offline while opening google shows 1_22 and reintentar opens the sheet`() = runTest(dispatcher) {
+    fun `offline while opening google offers reintentar, which opens the sheet`() = runTest(dispatcher) {
         repository.accountsAnswer = { Outcome.Failure(AuthError.Offline) }
         val viewModel = viewModel()
         viewModel.openGoogleSheet()
         advanceUntilIdle()
-        assertTrue(viewModel.state.isOffline)
+        assertEquals(SignInMessage.Offline, viewModel.state.message)
         assertNull(viewModel.state.googleAccounts)
 
         repository.accountsAnswer = { Outcome.Success(accounts) }
         viewModel.retry()
         advanceUntilIdle()
 
-        assertFalse(viewModel.state.isOffline)
+        assertNull(viewModel.state.message)
         assertEquals(accounts, viewModel.state.googleAccounts)
     }
 

@@ -146,7 +146,7 @@ class PasswordRecoveryViewModelTest {
     }
 
     @Test
-    fun `an offline answer is reported and keeps what was typed`() = runTest(dispatcher) {
+    fun `an offline answer keeps what was typed and offers reintentar in a snackbar`() = runTest(dispatcher) {
         repository.answer = { Outcome.Failure(AuthError.Offline) }
         val viewModel = viewModel()
         viewModel.onContactChange("ana.quispe@gmail.com")
@@ -154,8 +154,7 @@ class PasswordRecoveryViewModelTest {
         viewModel.submit()
         advanceUntilIdle()
 
-        assertTrue("1.22", viewModel.state.isOffline)
-        assertNull(viewModel.state.message)
+        assertEquals("1.22", RecoveryMessage.Offline, viewModel.state.message)
         assertEquals("ana.quispe@gmail.com", viewModel.state.contact)
         assertNull(viewModel.state.sent)
         assertFalse(viewModel.state.isLoading)
@@ -163,19 +162,20 @@ class PasswordRecoveryViewModelTest {
     }
 
     @Test
-    fun `reintentar sends the link again to what was typed and leaves 1_22 once it works`() = runTest(dispatcher) {
+    fun `reintentar sends the link to what the field holds now`() = runTest(dispatcher) {
         repository.answer = { Outcome.Failure(AuthError.Offline) }
         val viewModel = viewModel()
-        viewModel.onContactChange("987654321")
+        viewModel.onContactChange("987654320")
         viewModel.submit()
         advanceUntilIdle()
 
+        viewModel.onContactChange("987654321")
         repository.answer = { Outcome.Success(PasswordReset("987654321", 30, 60)) }
         viewModel.retry()
         runCurrent()
 
-        assertEquals(listOf("987654321", "987654321"), repository.resets)
-        assertFalse(viewModel.state.isOffline)
+        assertEquals(listOf("987654320", "987654321"), repository.resets)
+        assertNull(viewModel.state.message)
         assertEquals(RecoverySent("987654321", ContactKind.Phone, 30), viewModel.state.sent)
     }
 
@@ -206,9 +206,15 @@ class PasswordRecoveryViewModelTest {
         viewModel.resend()
         runCurrent()
 
-        assertTrue("1.22", viewModel.state.isOffline)
+        assertEquals("1.22", RecoveryMessage.Offline, viewModel.state.message)
         assertEquals(RecoverySent("ana.quispe@gmail.com", ContactKind.Email, 30), viewModel.state.sent)
         assertTrue(viewModel.state.canResend)
+
+        repository.answer = { Outcome.Success(PasswordReset("ana.quispe@gmail.com", 30, 60)) }
+        viewModel.retry()
+        runCurrent()
+        assertEquals("reintentar resends to the sent destination", "ana.quispe@gmail.com", repository.resets.last())
+        assertEquals(3, repository.resets.size)
     }
 
     private class FakeRepository : AuthRepository {

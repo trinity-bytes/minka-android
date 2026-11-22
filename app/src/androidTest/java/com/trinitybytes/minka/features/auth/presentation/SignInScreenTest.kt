@@ -13,6 +13,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 import com.trinitybytes.minka.features.auth.domain.GoogleAccount
@@ -43,7 +44,6 @@ class SignInScreenTest {
                     onContactChange = {},
                     onPasswordChange = {},
                     onContactFocusLost = {},
-                    onPasswordFocusLost = {},
                     onSubmit = {},
                     onForgotPassword = onForgotPassword,
                     onGoogle = {},
@@ -59,14 +59,18 @@ class SignInScreenTest {
     }
 
     @Test
-    fun offlineShowsSinConexionAndReintentarRetries() {
+    fun offlineKeepsTheFormAndTheSnackbarRetries() {
         var retries = 0
-        setSignIn(SignInUiState(contact = "ana.quispe@gmail.com", password = "Minka2026!", isOffline = true), onRetry = { retries++ })
+        setSignIn(
+            SignInUiState(contact = "ana.quispe@gmail.com", password = "Minka2026!", message = SignInMessage.Offline),
+            onRetry = { retries++ },
+        )
 
-        compose.onNodeWithText("Sin conexión").assertIsDisplayed()
-        compose.onNodeWithText("Revisa tu wifi o tus datos móviles. Lo que escribiste se guardó.").assertIsDisplayed()
-        compose.onNodeWithText("Ingresar").assertDoesNotExist()
+        compose.onNodeWithText("Sin conexión. Lo escrito sigue aquí.").assertIsDisplayed()
+        compose.onNodeWithText("Ingresar").assertExists()
+        compose.onNodeWithText("ana.quispe@gmail.com").assertExists()
         compose.onNodeWithText("Reintentar").performClick()
+        compose.waitForIdle()
 
         assertEquals(1, retries)
     }
@@ -79,19 +83,22 @@ class SignInScreenTest {
     }
 
     @Test
-    fun fieldErrorsShowBelowEachField() {
+    fun onlyTheContactShowsAnErrorAndThePasswordHasAVisibilityToggle() {
         setSignIn(
-            SignInUiState(
-                contact = "ana.quispe@",
-                password = "1234",
-                contactError = SignInFieldError.InvalidContact,
-                passwordError = SignInFieldError.ShortPassword,
-            ),
+            SignInUiState(contact = "ana.quispe@", password = "1234", contactError = SignInFieldError.InvalidContact),
         )
 
         compose.onNodeWithText("Ingresa un correo o teléfono válido").assertIsDisplayed()
-        compose.onNodeWithText("Mínimo 8 caracteres").assertIsDisplayed()
+        compose.onNodeWithText("Mínimo 8 caracteres").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Mostrar contraseña").assertIsDisplayed()
         compose.onNodeWithText("Ingresar").assertIsEnabled()
+    }
+
+    @Test
+    fun theActionsScrollWithTheFormSoTheyStayReachable() {
+        setSignIn(SignInUiState())
+
+        compose.onNodeWithText("Regístrate").performScrollTo().assertIsDisplayed()
     }
 
     @Test

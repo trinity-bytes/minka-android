@@ -256,7 +256,7 @@ class VerifyCodeViewModelTest {
     }
 
     @Test
-    fun `offline keeps the typed code`() = runTest(dispatcher) {
+    fun `offline keeps the typed code and offers reintentar in a snackbar`() = runTest(dispatcher) {
         repository.verifyAnswer = { Outcome.Failure(AuthError.Offline) }
         val viewModel = viewModel()
         viewModel.onCodeChange("482915")
@@ -264,8 +264,7 @@ class VerifyCodeViewModelTest {
         viewModel.verify()
         advanceUntilIdle()
 
-        assertTrue("1.22", viewModel.state.isOffline)
-        assertNull(viewModel.state.message)
+        assertEquals("1.22", VerifyMessage.Offline, viewModel.state.message)
         assertEquals("482915", viewModel.state.code)
         assertNull(viewModel.state.codeError)
         assertEquals(5, viewModel.state.attemptsLeft)
@@ -275,23 +274,24 @@ class VerifyCodeViewModelTest {
         viewModel.verify()
         advanceUntilIdle()
         assertEquals(VerifyMessage.Unexpected, viewModel.state.message)
-        assertFalse("another error leaves 1.22", viewModel.state.isOffline)
     }
 
     @Test
-    fun `reintentar verifies the typed code again and leaves 1_22 once it works`() = runTest(dispatcher) {
+    fun `reintentar verifies the code the boxes hold now, once`() = runTest(dispatcher) {
         repository.verifyAnswer = { Outcome.Failure(AuthError.Offline) }
         val viewModel = viewModel()
-        viewModel.onCodeChange("482915")
+        viewModel.onCodeChange("482914")
         viewModel.verify()
         advanceUntilIdle()
 
+        viewModel.onCodeChange("482915")
         repository.verifyAnswer = { Outcome.Success(TEST_SESSION) }
+        viewModel.retry()
         viewModel.retry()
         advanceUntilIdle()
 
-        assertEquals(List(2) { "challenge-1" to "482915" }, repository.verifications)
-        assertFalse(viewModel.state.isOffline)
+        assertEquals(listOf("challenge-1" to "482914", "challenge-1" to "482915"), repository.verifications)
+        assertNull(viewModel.state.message)
         assertEquals(VerifyEvent.Verified, viewModel.events.first())
     }
 }

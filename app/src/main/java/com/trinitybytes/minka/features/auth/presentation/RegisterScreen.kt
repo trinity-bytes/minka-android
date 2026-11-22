@@ -1,14 +1,18 @@
 package com.trinitybytes.minka.features.auth.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -27,10 +31,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -39,18 +44,18 @@ import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaCheckboxRow
+import com.trinitybytes.minka.core.designsystem.component.MinkaMessageEffect
 import com.trinitybytes.minka.core.designsystem.component.MinkaSnackbarHost
 import com.trinitybytes.minka.core.designsystem.component.MinkaStrengthMeter
 import com.trinitybytes.minka.core.designsystem.component.MinkaTextField
-import com.trinitybytes.minka.core.designsystem.component.MinkaOfflineScreen
 import com.trinitybytes.minka.core.designsystem.component.MinkaTopAppBar
 import com.trinitybytes.minka.core.designsystem.component.MinkaWavyProgress
 import com.trinitybytes.minka.core.designsystem.component.StrengthLevel
+import com.trinitybytes.minka.core.designsystem.component.formColumnWidth
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 import com.trinitybytes.minka.features.auth.domain.ContactKind
 import com.trinitybytes.minka.features.auth.domain.PasswordStrength
-import com.trinitybytes.minka.features.auth.domain.TERMS_VERSION
 import com.trinitybytes.minka.features.auth.domain.VerificationChallenge
 import com.trinitybytes.minka.features.auth.domain.contactKindOf
 
@@ -105,59 +110,64 @@ fun RegisterContent(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 1.22: no connection replaces the step; the typed values stay in [uiState] for the retry.
-    if (uiState.isOffline) {
-        MinkaOfflineScreen(onBack = onBack, onRetry = onRetry, modifier = modifier, retrying = uiState.isLoading)
-        return
-    }
     val snackbarHostState = remember { SnackbarHostState() }
-    val messageText = uiState.message?.let { registerMessageText(it) }
-    LaunchedEffect(uiState.message) {
-        if (messageText != null) {
-            snackbarHostState.showSnackbar(messageText)
-            onMessageShown()
-        }
-    }
-    Scaffold(
-        modifier = modifier,
-        topBar = { MinkaTopAppBar(title = "", onBack = onBack) },
-        snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .imePadding()
-                .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
-            verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
-        ) {
+    // 1.22: without connection the form stays as typed and the snackbar offers "Reintentar".
+    MinkaMessageEffect(
+        hostState = snackbarHostState,
+        message = uiState.message,
+        text = uiState.message?.let { registerMessageText(it) },
+        onShown = onMessageShown,
+        actionLabel = stringResource(R.string.offline_retry).takeIf { uiState.message == RegisterMessage.Offline },
+        onAction = onRetry,
+    )
+    // Design B5: the form keeps a centered column of at most 480 dp.
+    Box(
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Scaffold(
+            modifier = Modifier.formColumnWidth(),
+            topBar = { MinkaTopAppBar(title = "", onBack = onBack) },
+            snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
+        ) { padding ->
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
+                    .fillMaxSize()
+                    .padding(padding)
+                    .consumeWindowInsets(padding)
+                    .imePadding()
+                    .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
                 verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
             ) {
-                AccountStepHeader(title = stringResource(R.string.register_title))
-                RegisterForm(
-                    uiState,
-                    onNameChange,
-                    onContactChange,
-                    onPasswordChange,
-                    onConfirmPasswordChange,
-                    onContactFocusLost,
-                    onPasswordFocusLost,
-                    onConfirmPasswordFocusLost,
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
+                ) {
+                    AccountStepHeader(title = stringResource(R.string.register_title))
+                    RegisterForm(
+                        uiState,
+                        onNameChange,
+                        onContactChange,
+                        onPasswordChange,
+                        onConfirmPasswordChange,
+                        onContactFocusLost,
+                        onPasswordFocusLost,
+                        onConfirmPasswordFocusLost,
+                        onSubmit,
+                    )
+                    Terms(uiState, onTermsChange)
+                }
+                MinkaButton(
+                    text = stringResource(R.string.register_submit),
+                    onClick = onSubmit,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = uiState.canSubmit,
+                    size = MinkaButtonSize.Large,
+                    loading = uiState.isLoading,
                 )
-                Terms(uiState, onTermsChange)
             }
-            MinkaButton(
-                text = stringResource(R.string.register_submit),
-                onClick = onSubmit,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = uiState.canSubmit,
-                size = MinkaButtonSize.Large,
-                loading = uiState.isLoading,
-            )
         }
     }
 }
@@ -173,7 +183,12 @@ internal fun AccountStepHeader(title: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-    Text(text = title, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onSurface)
+    Text(
+        text = title,
+        modifier = Modifier.semantics { heading() },
+        style = MaterialTheme.typography.headlineLarge,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
 }
 
 @Composable
@@ -186,6 +201,7 @@ private fun RegisterForm(
     onContactFocusLost: () -> Unit,
     onPasswordFocusLost: () -> Unit,
     onConfirmPasswordFocusLost: () -> Unit,
+    onSubmit: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s12)) {
         MinkaTextField(
@@ -214,7 +230,7 @@ private fun RegisterForm(
                 supportingText = uiState.passwordError?.let { fieldErrorText(it, uiState.contact) },
                 isError = uiState.passwordError != null,
                 enabled = uiState.fieldsEnabled,
-                visualTransformation = PasswordVisualTransformation(),
+                secure = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
             )
             uiState.strength?.let { MinkaStrengthMeter(level = it.toLevel(), modifier = Modifier.fillMaxWidth()) }
@@ -227,20 +243,22 @@ private fun RegisterForm(
             supportingText = uiState.confirmError?.let { fieldErrorText(it, uiState.contact) },
             isError = uiState.confirmError != null,
             enabled = uiState.fieldsEnabled,
-            visualTransformation = PasswordVisualTransformation(),
+            secure = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            // Submits when the form is complete; until the terms are ticked it does nothing.
+            keyboardActions = KeyboardActions(onDone = { if (uiState.canSubmit) onSubmit() }),
         )
     }
 }
 
-/** "Acepto los términos y la privacidad (v1.0)" and, in 1.13, its error below. */
+/** "Acepto los términos y la privacidad" (the version is stored, not shown) and, in 1.13, its error below. */
 @Composable
 private fun Terms(uiState: RegisterUiState, onTermsChange: (Boolean) -> Unit) {
     Column {
         MinkaCheckboxRow(
             checked = uiState.termsAccepted,
             onCheckedChange = onTermsChange,
-            label = stringResource(R.string.register_terms, TERMS_VERSION),
+            label = stringResource(R.string.register_terms),
             modifier = Modifier.fillMaxWidth(),
             enabled = uiState.fieldsEnabled,
         )
@@ -279,6 +297,7 @@ private fun fieldErrorText(error: RegisterFieldError, contact: String): String =
 
 @Composable
 private fun registerMessageText(message: RegisterMessage): String = when (message) {
+    RegisterMessage.Offline -> stringResource(R.string.offline_snackbar)
     RegisterMessage.Unexpected -> stringResource(R.string.sign_in_unexpected)
 }
 
