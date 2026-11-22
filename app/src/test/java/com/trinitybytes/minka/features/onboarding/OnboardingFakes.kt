@@ -35,8 +35,8 @@ class FakeProgressStore(initial: OnboardingProgress? = null) : OnboardingProgres
 
 /** Profile port scripted per test; records what was saved. */
 class FakeProfileRepository : ProfileRepository {
-    val savedDistricts = mutableListOf<Pair<String, String>>()
-    val savedInterests = mutableListOf<Pair<String, List<String>>>()
+    val savedDistricts = mutableListOf<String>()
+    val savedInterests = mutableListOf<List<String>>()
     val locatedFrom = mutableListOf<Coordinates?>()
 
     var districtsAnswer: suspend () -> ProfileOutcome<List<District>> = { Outcome.Success(TEST_DISTRICTS) }
@@ -51,11 +51,11 @@ class FakeProfileRepository : ProfileRepository {
         return nearestAnswer()
     }
     override suspend fun interests() = interestsAnswer()
-    override suspend fun saveDistrict(userId: String, districtId: String): ProfileOutcome<Unit> =
-        saveAnswer().also { if (it is Outcome.Success) savedDistricts += userId to districtId }
-    override suspend fun saveInterests(userId: String, interestIds: List<String>): ProfileOutcome<Unit> =
-        saveAnswer().also { if (it is Outcome.Success) savedInterests += userId to interestIds }
-    override suspend fun profile(userId: String) = profileAnswer()
+    override suspend fun saveDistrict(districtId: String): ProfileOutcome<Unit> =
+        saveAnswer().also { if (it is Outcome.Success) savedDistricts += districtId }
+    override suspend fun saveInterests(interestIds: List<String>): ProfileOutcome<Unit> =
+        saveAnswer().also { if (it is Outcome.Success) savedInterests += listOf(interestIds) }
+    override suspend fun profile() = profileAnswer()
 }
 
 class FakeLocationProvider(var location: Coordinates? = Coordinates(-12.149, -77.022)) : LocationProvider {

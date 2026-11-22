@@ -60,6 +60,7 @@ class AuthSessionTest {
     }
 
     private class FakeRepository : AuthRepository {
+        override suspend fun signOut(token: String): com.trinitybytes.minka.features.auth.domain.AuthOutcome<Unit> = com.trinitybytes.minka.core.domain.Outcome.Success(Unit)
         var signInResult: AuthOutcome<Session> = Outcome.Failure(AuthError.Unexpected)
         override suspend fun signIn(contact: String, password: String) = signInResult
         override suspend fun googleAccounts(): AuthOutcome<List<GoogleAccount>> = TODO()

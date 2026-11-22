@@ -415,6 +415,7 @@ class SignInViewModelTest {
     )
 
     private inner class FakeRepository : AuthRepository {
+        override suspend fun signOut(token: String): com.trinitybytes.minka.features.auth.domain.AuthOutcome<Unit> = com.trinitybytes.minka.core.domain.Outcome.Success(Unit)
         var signInAnswer: suspend () -> AuthOutcome<Session> = { Outcome.Success(session) }
         var googleAnswer: suspend () -> AuthOutcome<Session> = { Outcome.Success(session) }
         var accountsAnswer: suspend () -> AuthOutcome<List<GoogleAccount>> = { Outcome.Success(accounts) }

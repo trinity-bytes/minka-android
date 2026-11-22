@@ -156,8 +156,7 @@ class SetupStepsViewModelTest {
         advanceUntilIdle()
 
         assertEquals(1, repository.savedInterests.size)
-        assertEquals(ANA.user.id, repository.savedInterests.single().first)
-        assertEquals(setOf("libros", "plantas"), repository.savedInterests.single().second.toSet())
+        assertEquals(setOf("libros", "plantas"), repository.savedInterests.single().toSet())
         assertEquals(OnboardingProgress.Pending(ANA.user.id, SetupStep.Notifications), progress.progress.value)
         assertEquals(listOf<InterestsEvent>(InterestsEvent.Done), events)
     }
@@ -235,7 +234,7 @@ class SetupStepsViewModelTest {
         viewModel.retry()
         advanceUntilIdle()
 
-        assertEquals(listOf(ANA.user.id to listOf("libros", "plantas")), repository.savedInterests)
+        assertEquals(listOf(listOf("libros", "plantas")), repository.savedInterests)
         assertNull(viewModel.uiState.value.message)
         assertEquals(listOf<InterestsEvent>(InterestsEvent.Done), events)
         assertEquals(OnboardingProgress.Pending(ANA.user.id, SetupStep.Notifications), progress.progress.value)

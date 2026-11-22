@@ -1,8 +1,10 @@
 package com.trinitybytes.minka.features.onboarding.infrastructure
 
+import com.trinitybytes.minka.core.network.MockCall
 import com.trinitybytes.minka.core.network.MockDocument
 import com.trinitybytes.minka.core.network.MockReply
 import com.trinitybytes.minka.core.network.MockRoute
+import com.trinitybytes.minka.core.network.MockSessions
 import com.trinitybytes.minka.core.network.MockStorage
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -13,50 +15,67 @@ import kotlinx.serialization.Serializable
  * and each user's choices. There is no geocoding service, so the nearest district is the closest
  * centroid, and an unknown location falls back to [DEFAULT_DISTRICT_ID] (README).
  */
-class MockProfileServer(storage: MockStorage) {
+class MockProfileServer(storage: MockStorage, private val sessions: MockSessions) {
     private val document = MockDocument(storage, STORAGE_KEY, ProfileDb.serializer()) { ProfileDb() }
 
     fun routes(): Set<MockRoute> = setOf(
-        MockRoute(HttpMethod.Get, "profile/districts") {
-            MockReply.json(HttpStatusCode.OK, DISTRICTS.map { it.toDto() })
+        MockRoute(HttpMethod.Get, "profile/districts") { call ->
+            authorized(call) { MockReply.json(HttpStatusCode.OK, DISTRICTS.map { it.toDto() }) }
         },
         MockRoute(HttpMethod.Post, "profile/districts/nearest") { call ->
-            MockReply.json(HttpStatusCode.OK, nearest(call.body()).toDto())
+            authorized(call) { MockReply.json(HttpStatusCode.OK, nearest(call.body()).toDto()) }
         },
-        MockRoute(HttpMethod.Get, "profile/interests") { MockReply.json(HttpStatusCode.OK, INTERESTS) },
-        MockRoute(HttpMethod.Put, "users/{id}/profile/district") { call ->
+        MockRoute(HttpMethod.Get, "profile/interests") { call ->
+            authorized(call) { MockReply.json(HttpStatusCode.OK, INTERESTS) }
+        },
+        MockRoute(HttpMethod.Put, "me/profile/district") { call ->
+            val userId = userId(call) ?: return@MockRoute unauthorized()
             val request = call.body<DistrictChoiceRequest>()
             if (DISTRICTS.none { it.id == request.districtId }) {
                 return@MockRoute MockReply.error(HttpStatusCode.UnprocessableEntity, "unknown_district")
             }
-            update(call.pathParam("id")) { it.copy(districtId = request.districtId) }
+            update(userId) { it.copy(districtId = request.districtId) }
         },
-        MockRoute(HttpMethod.Put, "users/{id}/profile/interests") { call ->
+        MockRoute(HttpMethod.Put, "me/profile/interests") { call ->
+            val userId = userId(call) ?: return@MockRoute unauthorized()
             val request = call.body<InterestsChoiceRequest>()
             if (!INTERESTS.map { it.id }.containsAll(request.interestIds)) {
                 return@MockRoute MockReply.error(HttpStatusCode.UnprocessableEntity, "unknown_interest")
             }
-            update(call.pathParam("id")) { it.copy(interestIds = request.interestIds.distinct()) }
+            update(userId) { it.copy(interestIds = request.interestIds.distinct()) }
         },
-        MockRoute(HttpMethod.Get, "users/{id}/profile") { call -> update(call.pathParam("id")) { it } },
+        MockRoute(HttpMethod.Get, "me/profile") { call ->
+            val userId = userId(call) ?: return@MockRoute unauthorized()
+            document.read { db -> profileReply(db.profiles[userId] ?: ProfileRecord()) }
+        },
+    )
+
+    private suspend fun userId(call: MockCall): String? = call.bearerToken()?.let { sessions.userFor(it) }
+    private fun unauthorized() = MockReply.error(HttpStatusCode.Unauthorized, "unauthorized")
+    private suspend fun authorized(call: MockCall, block: () -> MockReply): MockReply =
+        if (userId(call) == null) unauthorized() else block()
+
+    private fun profileReply(profile: ProfileRecord) = MockReply.json(
+        HttpStatusCode.OK,
+        ProfileDto(DISTRICTS.firstOrNull { it.id == profile.districtId }?.toDto(), profile.interestIds),
     )
 
     private fun nearest(request: NearestDistrictRequest): DistrictRecord {
         val latitude = request.latitude
         val longitude = request.longitude
         if (latitude == null || longitude == null) return DISTRICTS.first { it.id == DEFAULT_DISTRICT_ID }
-        return DISTRICTS.minBy { (it.latitude - latitude).let { d -> d * d } + (it.longitude - longitude).let { d -> d * d } }
+        return DISTRICTS.minBy {
+            (it.latitude - latitude).let { d -> d * d } + (it.longitude - longitude).let { d -> d * d }
+        }
     }
 
     /** Applies [change] to the profile of [userId], persists it and answers with the result. */
-    private suspend fun update(userId: String, change: (ProfileRecord) -> ProfileRecord): MockReply = document.update { db ->
-        val profile = change(db.profiles[userId] ?: ProfileRecord())
-        db.profiles[userId] = profile
-        MockReply.json(
-            HttpStatusCode.OK,
-            ProfileDto(DISTRICTS.firstOrNull { it.id == profile.districtId }?.toDto(), profile.interestIds),
-        )
-    }
+    private suspend fun update(userId: String, change: (ProfileRecord) -> ProfileRecord): MockReply =
+        document.update { db ->
+            val profile = change(db.profiles[userId] ?: ProfileRecord())
+            db.profiles[userId] = profile
+            profileReply(profile)
+        }
 
     companion object {
         private const val STORAGE_KEY = "profiles"

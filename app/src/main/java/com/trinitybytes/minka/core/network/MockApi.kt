@@ -11,12 +11,12 @@ import io.ktor.http.Url
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
-import kotlinx.coroutines.delay
-import kotlinx.serialization.encodeToString
 import java.io.File
 import java.io.IOException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.delay
+import kotlinx.serialization.encodeToString
 
 /**
  * The in-app "server" behind the Ktor client. Minka has no backend (PLAN.md section 4): every
@@ -48,7 +48,7 @@ class MockApi(
         for (route in routes) {
             if (route.method != request.method) continue
             val params = route.match(segments) ?: continue
-            return route.handler(MockCall(params, request.bodyText()))
+            return route.handler(MockCall(params, request.bodyText(), request.headers[HttpHeaders.Authorization]))
         }
         return MockReply.error(HttpStatusCode.NotFound, "not_found")
     }
@@ -93,8 +93,14 @@ class MockRoute(
 class MockCall(
     private val pathParams: Map<String, String>,
     val bodyText: String,
+    val authorization: String? = null,
 ) {
     fun pathParam(name: String): String = pathParams.getValue(name)
+
+    fun bearerToken(): String? = authorization
+        ?.takeIf { it.startsWith("Bearer ") }
+        ?.removePrefix("Bearer ")
+        ?.takeIf { it.isNotBlank() }
 
     inline fun <reified T> body(): T = MinkaJson.decodeFromString(bodyText)
 }
@@ -129,4 +135,9 @@ fun interface MockConnection {
  */
 class FileMockConnection(private val flag: File) : MockConnection {
     override fun isOffline(): Boolean = flag.exists()
+}
+
+/** Resolves a mock session token without exposing its storage or implementation. */
+fun interface MockSessions {
+    suspend fun userFor(token: String): String?
 }

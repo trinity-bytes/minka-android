@@ -32,6 +32,9 @@ class AuthUseCasesTest {
     private val newGoogleSession = Session("token-2", User("user-new", "Ana Q. · Trabajo", "ana@reflowtech.pe"), isNewAccount = true)
 
     private val repository = object : AuthRepository {
+        var revoked: String? = null
+        var revokeAnswer: AuthOutcome<Unit> = Outcome.Success(Unit)
+        override suspend fun signOut(token: String): AuthOutcome<Unit> { revoked = token; return revokeAnswer }
         var answer: AuthOutcome<Session> = Outcome.Success(session)
         override suspend fun signIn(contact: String, password: String) = answer
         override suspend fun signInWithGoogle(accountId: String) = answer
@@ -63,6 +66,15 @@ class AuthUseCasesTest {
             Outcome.Failure(AuthError.Unexpected),
             SignInWithGoogle(repository, sessions, BeginOnboarding(broken))("google"),
         )
+        assertNull(sessions.session.value)
+    }
+
+    @Test
+    fun `sign out revokes the session and clears the device even offline`() = runTest {
+        val sessions = FakeSessionStore().apply { save(this@AuthUseCasesTest.session) }
+        repository.revokeAnswer = Outcome.Failure(AuthError.Offline)
+        SignOut(sessions, repository)()
+        assertEquals(session.token, repository.revoked)
         assertNull(sessions.session.value)
     }
 

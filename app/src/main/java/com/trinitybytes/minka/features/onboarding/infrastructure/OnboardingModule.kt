@@ -1,9 +1,10 @@
 package com.trinitybytes.minka.features.onboarding.infrastructure
 
 import android.content.Context
-import com.trinitybytes.minka.core.datastore.minkaPreferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.trinitybytes.minka.core.datastore.minkaPreferencesDataStore
 import com.trinitybytes.minka.core.network.MockRoute
+import com.trinitybytes.minka.core.network.MockSessions
 import com.trinitybytes.minka.core.network.MockStorage
 import com.trinitybytes.minka.features.onboarding.domain.LocationProvider
 import com.trinitybytes.minka.features.onboarding.domain.OnboardingProgressStore
@@ -42,7 +43,10 @@ abstract class OnboardingModule {
 
         @Provides
         @Singleton
-        fun provideMockProfileServer(storage: MockStorage) = MockProfileServer(storage)
+        fun provideMockProfileServer(
+            storage: MockStorage,
+            sessions: MockSessions,
+        ) = MockProfileServer(storage, sessions)
 
         @Provides
         @ElementsIntoSet

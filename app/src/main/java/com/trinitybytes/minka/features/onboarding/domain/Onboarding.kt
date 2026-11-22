@@ -53,9 +53,9 @@ interface ProfileRepository {
     /** The district around [location]; the service picks a default when the location is unknown. */
     suspend fun nearestDistrict(location: Coordinates?): ProfileOutcome<District>
     suspend fun interests(): ProfileOutcome<List<Interest>>
-    suspend fun saveDistrict(userId: String, districtId: String): ProfileOutcome<Unit>
-    suspend fun saveInterests(userId: String, interestIds: List<String>): ProfileOutcome<Unit>
-    suspend fun profile(userId: String): ProfileOutcome<Profile>
+    suspend fun saveDistrict(districtId: String): ProfileOutcome<Unit>
+    suspend fun saveInterests(interestIds: List<String>): ProfileOutcome<Unit>
+    suspend fun profile(): ProfileOutcome<Profile>
 }
 
 /** Port to the device storage that keeps the setup progress across launches. */
