@@ -131,6 +131,14 @@ Fuente de verdad: Figma `uMjLWyytKzdU4AgXuNBRZM`.
 | 5 | Prueba cerrada | Release firmado con R8, prueba cerrada en Play |
 | 6 | Post-MVP | Perfil completo, notificaciones, gamificación, comunidad |
 
+#### Alcance de la fase 3 (aprobado el 2026-11-22)
+
+36 estados de Figma: Inicio 2.01–2.05, Búsqueda 3.01–3.05 y 3.07, Detalle 4.01, 4.02 (solo pausada), 4.03, 4.05–4.07, Publicar 5.01–5.11 y Perfil 11.01 (básico), 11.02, 11.05 y 11.06. El perfil entra en esta fase porque Publicar necesita dónde retomar borradores y pausar publicaciones, y el detalle enlaza al perfil del dueño.
+
+- Pasan a la fase 4: 4.02 reservada ("Avisarme si se libera"), 4.04 código QR del objeto, proponer desde 4.01, propuestas recibidas en 4.03, "descargar QR" en 4.07, la pestaña Intercambios y todo lo que depende de trueques cerrados: reputación del dueño, filtro "Reputación mínima" y orden "Mejor calificado".
+- Pasan a post-MVP: 3.06 resultados en mapa, 3.08 búsqueda guardada, Eco-Puntos (4.01, 5.06, 5.08, 5.10), "reportar" en 4.07, la tarjeta de impacto y la campana de Inicio, la pestaña Comunidad, el sello "Raíz Verificada" y los favoritos (corazón y contador "guardados").
+- En la fase 3, los elementos que dependen de una fase posterior se ocultan hasta que esa fase los construya.
+
 ### Progreso
 
 - [x] Fase 0 — Scaffold
