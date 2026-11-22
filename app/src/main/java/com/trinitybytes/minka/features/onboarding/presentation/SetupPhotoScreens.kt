@@ -25,7 +25,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -46,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trinitybytes.minka.R
+import com.trinitybytes.minka.core.designsystem.component.ObserveAsEvents
 import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
@@ -76,13 +76,11 @@ fun NotificationsScreen(onDone: () -> Unit, viewModel: NotificationsViewModel = 
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         viewModel.onPermissionResult(granted)
     }
-    LaunchedEffect(viewModel) {
-        viewModel.events.collect { event ->
-            when (event) {
-                // Only emitted on Android 13+, where the permission exists.
-                NotificationsEvent.RequestPermission -> permission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                NotificationsEvent.Done -> done()
-            }
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            // Only emitted on Android 13+, where the permission exists.
+            NotificationsEvent.RequestPermission -> permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            NotificationsEvent.Done -> done()
         }
     }
     Box(Modifier.fillMaxSize()) {
@@ -130,11 +128,9 @@ fun AllSetScreen(onGoHome: () -> Unit, viewModel: AllSetViewModel = hiltViewMode
         text = uiState.message?.let { setupMessageText(it) },
         onShown = viewModel::onMessageShown,
     )
-    LaunchedEffect(viewModel) {
-        viewModel.events.collect { event ->
-            when (event) {
-                AllSetEvent.GoHome -> goHome()
-            }
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            AllSetEvent.GoHome -> goHome()
         }
     }
     Box(Modifier.fillMaxSize()) {

@@ -22,7 +22,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -35,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trinitybytes.minka.R
+import com.trinitybytes.minka.core.designsystem.component.ObserveAsEvents
 import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
@@ -59,11 +59,9 @@ fun VerifyCodeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val verified by rememberUpdatedState(onVerified)
-    LaunchedEffect(viewModel) {
-        viewModel.events.collect { event ->
-            when (event) {
-                VerifyEvent.Verified -> verified()
-            }
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            VerifyEvent.Verified -> verified()
         }
     }
     VerifyCodeContent(

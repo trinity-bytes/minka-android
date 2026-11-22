@@ -44,7 +44,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import com.trinitybytes.minka.R
+import com.trinitybytes.minka.core.designsystem.component.ObserveAsEvents
 import com.trinitybytes.minka.core.designsystem.component.MinkaBottomSheet
 import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
@@ -76,34 +80,36 @@ fun SignInScreen(
     onRegister: () -> Unit,
     viewModel: SignInViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val signedIn by rememberUpdatedState(onSignedIn)
     val recover by rememberUpdatedState(onRecoverPassword)
-    LaunchedEffect(viewModel) {
-        viewModel.onStart(withGoogle)
-        viewModel.events.collect { event ->
-            when (event) {
-                is SignInEvent.SignedIn -> signedIn(event.pendingStep)
-                SignInEvent.OpenRecovery -> recover()
-            }
+    LaunchedEffect(viewModel) { viewModel.onStart(withGoogle) }
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            is SignInEvent.SignedIn -> signedIn(event.pendingStep)
+            SignInEvent.OpenRecovery -> recover()
         }
     }
-    SignInContent(
-        uiState = uiState,
-        onBack = onBack,
-        onContactChange = viewModel::onContactChange,
-        onPasswordChange = viewModel::onPasswordChange,
-        onContactFocusLost = viewModel::onContactFocusLost,
-        onSubmit = viewModel::submit,
-        onForgotPassword = viewModel::recoverPassword,
-        onGoogle = viewModel::openGoogleSheet,
-        onRegister = onRegister,
-        onChooseGoogleAccount = viewModel::chooseGoogleAccount,
-        onDismissGoogle = viewModel::dismissGoogleSheet,
-        onDismissLock = viewModel::dismissLock,
-        onMessageShown = viewModel::onMessageShown,
-        onRetry = viewModel::retry,
-    )
+    SignInStateCollector(viewModel.uiState, lock = { seconds ->
+        SignInLockDialog(seconds, viewModel::dismissLock, viewModel::recoverPassword)
+    }) { uiState ->
+        SignInContent(
+            uiState = uiState,
+            onBack = onBack,
+            onContactChange = viewModel::onContactChange,
+            onPasswordChange = viewModel::onPasswordChange,
+            onContactFocusLost = viewModel::onContactFocusLost,
+            onSubmit = viewModel::submit,
+            onForgotPassword = viewModel::recoverPassword,
+            onGoogle = viewModel::openGoogleSheet,
+            onRegister = onRegister,
+            onChooseGoogleAccount = viewModel::chooseGoogleAccount,
+            onDismissGoogle = viewModel::dismissGoogleSheet,
+            onDismissLock = viewModel::dismissLock,
+            onMessageShown = viewModel::onMessageShown,
+            onRetry = viewModel::retry,
+            showLockDialog = false,
+        )
+    }
 }
 
 /** One composable for every sign-in state, driven by [uiState]. */
@@ -125,6 +131,7 @@ fun SignInContent(
     onMessageShown: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    showLockDialog: Boolean = true,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -195,24 +202,51 @@ fun SignInContent(
             }
         }
     }
-    uiState.lockSecondsLeft?.let { seconds ->
-        MinkaDialog(
-            title = stringResource(R.string.sign_in_locked_title),
-            text = stringResource(R.string.sign_in_locked_text, formatCountdown(seconds)),
-            confirmText = stringResource(R.string.sign_in_locked_ok),
-            onConfirm = onDismissLock,
-            // Design B3: both actions of 1.08 are text buttons.
-            confirmStyle = MinkaButtonStyle.Text,
-            onDismiss = onDismissLock,
-            dismissText = stringResource(R.string.sign_in_locked_recover),
-            onDismissClick = onForgotPassword,
-            icon = Icons.Rounded.LockClock,
-            iconTint = MaterialTheme.colorScheme.tertiary,
-        )
+    if (showLockDialog) {
+        uiState.lockSecondsLeft?.let { seconds -> SignInLockDialog(seconds, onDismissLock, onForgotPassword) }
     }
     uiState.googleAccounts?.let { accounts ->
         GoogleAccountSheet(accounts, onChooseGoogleAccount, onDismissGoogle)
     }
+}
+
+/** Keep the lock transition, but not each countdown tick, in the form's state. */
+internal fun SignInUiState.withoutCountdownTicks(): SignInUiState =
+    copy(lockSecondsLeft = lockSecondsLeft?.let { 1L })
+
+@Composable
+internal fun SignInStateCollector(
+    state: StateFlow<SignInUiState>,
+    lock: @Composable (Long) -> Unit,
+    form: @Composable (SignInUiState) -> Unit,
+) {
+    val formFlow = remember(state) { state.map { it.withoutCountdownTicks() }.distinctUntilChanged() }
+    val formState by formFlow.collectAsStateWithLifecycle(initialValue = state.value.withoutCountdownTicks())
+    form(formState)
+    SignInCountdown(state, lock)
+}
+
+@Composable
+private fun SignInCountdown(state: StateFlow<SignInUiState>, lock: @Composable (Long) -> Unit) {
+    val countdown = remember(state) { state.map { it.lockSecondsLeft }.distinctUntilChanged() }
+    val seconds by countdown.collectAsStateWithLifecycle(initialValue = state.value.lockSecondsLeft)
+    seconds?.let { lock(it) }
+}
+
+@Composable
+private fun SignInLockDialog(seconds: Long, onDismiss: () -> Unit, onRecover: () -> Unit) {
+    MinkaDialog(
+        title = stringResource(R.string.sign_in_locked_title),
+        text = stringResource(R.string.sign_in_locked_text, formatCountdown(seconds)),
+        confirmText = stringResource(R.string.sign_in_locked_ok),
+        onConfirm = onDismiss,
+        confirmStyle = MinkaButtonStyle.Text,
+        onDismiss = onDismiss,
+        dismissText = stringResource(R.string.sign_in_locked_recover),
+        onDismissClick = onRecover,
+        icon = Icons.Rounded.LockClock,
+        iconTint = MaterialTheme.colorScheme.tertiary,
+    )
 }
 
 @Composable

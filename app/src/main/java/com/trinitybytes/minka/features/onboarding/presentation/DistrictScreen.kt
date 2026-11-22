@@ -25,7 +25,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -39,6 +38,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trinitybytes.minka.R
+import com.trinitybytes.minka.core.designsystem.component.ObserveAsEvents
 import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
@@ -72,13 +72,11 @@ fun DistrictScreen(
     val locationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         viewModel.onLocationPermissionResult(granted)
     }
-    LaunchedEffect(viewModel) {
-        viewModel.events.collect { event ->
-            when (event) {
-                // 1.17 "Basta la aproximada": fine location is never requested.
-                DistrictEvent.RequestLocationPermission -> locationPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-                DistrictEvent.Chosen -> chosen()
-            }
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            // 1.17 "Basta la aproximada": fine location is never requested.
+            DistrictEvent.RequestLocationPermission -> locationPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+            DistrictEvent.Chosen -> chosen()
         }
     }
     DistrictContent(
