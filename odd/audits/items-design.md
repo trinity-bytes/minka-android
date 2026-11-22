@@ -43,6 +43,18 @@ The Figma file describes the **whole product**: flows 06–14 already design exc
 
 5.10 as the flow's hero moment, the wavy step progress, the 2.01 and 3.03 skeletons, and the 5.05 field errors.
 
+## Proposed, pending approval: dedicated android-design pass
+
+The first pass leaned on Nielsen; this pass applies the android-design skill's own checks (adaptation, emphasis, color roles).
+
+| # | State | Rule | Problem | Proposed change |
+|---|---|---|---|---|
+| E1 | Flows 02–05, 11 | Adaptation (Google: reflow and reveal, never stretch) | Only flow 01 has "Ventanas ≥840dp". Items is where extra space pays most. | One "Ventanas ≥840dp" row per flow: navigation rail instead of the bar; Inicio with more grid columns; Búsqueda results + detail side by side (list-detail); Detalle with photo and information in two panes; Publicar form at a readable max width. |
+| E2 | 2.04 | Emphasis (one primary action) | Three ways to publish compete ("Publica el primero" link, the FAB) next to "Ampliar distancia" in outline, so nothing leads. | "Ampliar distancia" becomes the single primary (tonal); the link goes, the FAB stays. |
+| E3 | 3.01 | Category colors | Category discs mix static accents (amber, coral, sky, mint) with role containers (`secondary/container`, `tertiary/container`); "Tecnología" shares the purple of the "Busca:" chips, so one color means two things. | All categories on static accent colors; `secondary/container` stays reserved for "Busca:". |
+
+Not verified: 200 % text scaling on the listing cards (two-line titles in 182dp columns, long "Busca:" chips). Check in code with a worst-case data pass.
+
 ## Proposed, pending approval: profile and cross-cutting states
 
 | # | State | Heuristic | Problem | Proposed change |
@@ -52,7 +64,7 @@ The Figma file describes the **whole product**: flows 06–14 already design exc
 | P3 | 11.05 | M3 components | The status filter looks like tabs (one filled pill, the rest plain text); with "Borradores" it no longer fits. | Scrollable filter chips. |
 | P4 | 11.06 vs 4.09 | H4, H5 | Pausing asks for confirmation in 11.06 but uses an undo snackbar in 4.09. Pausing is reversible, so it needs no dialog. | Pause directly with a snackbar that explains the effect and offers "Deshacer"; 11.06 becomes that snackbar. |
 | P5 | 11.01 | Android conventions | List rows with chevrons (same as finding 18). | Remove chevrons. |
-| T1 | X.01 vs 1.22 | H4 | Two full-screen offline designs: X.01 uses its own layout, 1.22 the "Error state" component. | X.01 reuses the 1.22 "Error state". |
+| T1 | X.01 vs 1.22 | H4 | ~~Two full-screen offline designs.~~ Withdrawn: the premise was stale. Since the flow 01 audit, 1.22 keeps the form and shows a snackbar, so there is no second full-screen design. Applying it broke the match between X.01 and X.02, so it was reverted to the original X.01. | No change. |
 | T2 | X.04 | H3 | Updated terms block the app with no way out for someone who does not accept. | Secondary action "Ahora no" that signs out. |
 | T3 | X.03 | H4 | The background is an old Inicio (no logo, "Cerca de ti en Miraflores", filters icon in the search pill). | Background updated to the current 2.02. |
 

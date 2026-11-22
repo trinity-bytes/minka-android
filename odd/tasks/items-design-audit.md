@@ -21,7 +21,8 @@ Branch: `docs/items-design-audit` (from `develop`). Delivery strategy: ask-on-ri
 | T4 | S2, S3 | delegated (parallel units with T5, disjoint frames) | done, parent spot check + 2 fixes | Flujo 04: findings 8, 9, 13, 14; new 4.08 (470:6249), 4.09 (470:6346); archive 468:413 |
 | T5 | S2, S3 | delegated (parallel units with T4) | done, parent spot check + 1 fix | Flujo 05: findings 6, 7, 11, 15, 17, 19, 20; archive 468:417 |
 | T6 | S4 | inline | done | `odd/audits/items-design.md` |
-| T7 | S5 | inline | audited, waiting for approval | P1–P5, T1–T3 in `odd/audits/items-design.md` |
+| T7 | S5 | delegated (2 parallel units: profile, cross-cutting) | done; T1 withdrawn and reverted | P1–P5 in flow 11 (archive 472:1480), T2–T3 in 363:6134 (archive 472:1793) |
+| T8 | S2 | inline | proposed, waiting for approval | E1–E3 (dedicated android-design pass) |
 
 ## Log
 
@@ -31,3 +32,4 @@ Branch: `docs/items-design-audit` (from `develop`). Delivery strategy: ask-on-ri
 - **L4 — Applying.** The Figma describes the whole product (flows 06–14 design later phases), so scope findings 1–5 and 12 go to PLAN.md and code only; usability findings change the mockups. Profiles answer (S1) added to PLAN.md §8.
 - **L5 — Done in Figma.** 02: filters icon hidden in Inicio's search pill, 2.05 content back to full opacity. 03: trailing chevrons hidden in 3.01/3.02. 04 (writer): back button in 4.06, menu keeps Reportar/Ocultar, new 4.08 delete dialog and 4.09 paused owner view; parent fixed "Minka" → "Mink'a" and the toolbar drawn above the scrim in 4.08. 05 (writer): 5.02 becomes the photo source sheet, Continuar enabled, Estado required in step 1 (also on 5.04's background), remove buttons on photos, X on step 1, Guardar borrador on every step, map removed in 5.07, neutral icon in 5.08; parent hid the chevrons left in 5.07. Every modified state was cloned to the archive first (02: 4, 03: 2, 04: 3, 05: 9).
 - **L6:** Profile (11.01, 11.02, 11.05, 11.06) and cross-cutting states audited: P1–P5, T1–T3 proposed in `odd/audits/items-design.md`; waiting for the user's approval.
+- **L7 (2026-11-22, user):** "va, aprobado. no hubo correcciones al revisar con android design?" — P1–P5 and T1–T3 applied by two parallel writers. Honest answer to the question: the first pass leaned on Nielsen and skipped the skill's own checks; the dedicated pass found E1 (no ≥840dp layouts in flows 02–05 and 11), E2 (2.04 has no single primary action), E3 (category colors mix static accents with role containers). T1 withdrawn: its premise was stale (1.22 uses a snackbar since the flow 01 audit) and applying it broke the X.01/X.02 match; the original X.01 was restored from the archive. Parent fixed the 11.06 snackbar copy ("Publicación pausada").
