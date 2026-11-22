@@ -127,8 +127,8 @@ private fun buttonColors(style: MinkaButtonStyle, loading: Boolean): ButtonColor
     return ButtonColors(
         containerColor = container,
         contentColor = content,
-        disabledContainerColor = if (hasContainer) scheme.onSurface.copy(alpha = DisabledContainerAlpha) else Color.Transparent,
-        disabledContentColor = scheme.onSurface.copy(alpha = DisabledContentAlpha),
+        disabledContainerColor = if (hasContainer) scheme.onSurface.copy(alpha = MinkaDisabled.ContainerAlpha) else Color.Transparent,
+        disabledContentColor = scheme.onSurface.copy(alpha = MinkaDisabled.ContentAlpha),
     )
 }
 
@@ -139,13 +139,9 @@ private fun outlinedBorder(enabled: Boolean) = BorderStroke(
     color = if (enabled) {
         MaterialTheme.colorScheme.outline
     } else {
-        MaterialTheme.colorScheme.onSurface.copy(alpha = DisabledContainerAlpha)
+        MaterialTheme.colorScheme.onSurface.copy(alpha = MinkaDisabled.ContainerAlpha)
     },
 )
-
-// Figma state/disabled-container and state/disabled-content (on-surface at 12% and 38%).
-internal const val DisabledContainerAlpha = 0.12f
-internal const val DisabledContentAlpha = 0.38f
 
 @Preview
 @Composable

@@ -46,7 +46,7 @@ fun MinkaGoogleButton(
             contentDescription = null,
             modifier = Modifier
                 .size(ButtonDefaults.IconSize)
-                .alpha(if (enabled) 1f else DisabledMarkAlpha),
+                .alpha(if (enabled) 1f else MinkaDisabled.ContentAlpha),
         )
         Spacer(Modifier.width(ButtonDefaults.IconSpacing))
         Text(text, style = MaterialTheme.typography.titleMedium)
@@ -55,8 +55,6 @@ fun MinkaGoogleButton(
 
 private val GoogleButtonHeight = 56.dp
 
-/** Matches the Figma `Style=Google, State=Disabled` mark (38 %). */
-private const val DisabledMarkAlpha = 0.38f
 
 @Preview
 @Composable
