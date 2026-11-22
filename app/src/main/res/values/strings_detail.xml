@@ -1,0 +1,55 @@
+<resources>
+    <!-- Listing detail, Figma flow 04. -->
+    <string name="detail_share">Compartir</string>
+    <string name="detail_more">Más opciones</string>
+    <string name="detail_hide">Ocultar</string>
+    <string name="detail_share_text">%1$s · %2$s, en Mink\'a</string>
+    <string name="detail_share_title">Compartir publicación</string>
+    <string name="detail_meta">%1$s · %2$s</string>
+    <string name="detail_age_today">publicada hoy</string>
+    <string name="detail_age_yesterday">publicada ayer</string>
+    <plurals name="detail_age_days">
+        <item quantity="one">publicada hace %d día</item>
+        <item quantity="other">publicada hace %d días</item>
+    </plurals>
+    <plurals name="detail_age_weeks">
+        <item quantity="one">publicada hace %d semana</item>
+        <item quantity="other">publicada hace %d semanas</item>
+    </plurals>
+    <plurals name="detail_age_months">
+        <item quantity="one">publicada hace %d mes</item>
+        <item quantity="other">publicada hace %d meses</item>
+    </plurals>
+    <string name="detail_photo_position">Foto %1$d de %2$d</string>
+    <string name="detail_owner_member_since">Miembro desde %1$s</string>
+    <string name="detail_view_profile">Ver perfil</string>
+    <string name="detail_wants_title">Busca a cambio</string>
+    <string name="detail_estimated_value">Valor estimado</string>
+    <string name="detail_money">S/ %1$s</string>
+    <string name="detail_offline_notice">Sin conexión. Mostrando lo último que guardamos.</string>
+    <string name="detail_tag_paused">Pausada</string>
+    <string name="detail_paused_notice">Esta publicación está en pausa por ahora.</string>
+    <string name="detail_loading">Cargando publicación</string>
+
+    <!-- Owner toolbar (4.03, 4.09). -->
+    <string name="detail_action_pause">Pausar</string>
+    <string name="detail_action_resume">Reanudar</string>
+    <string name="detail_action_delete">Borrar</string>
+    <string name="detail_message_paused">Publicación pausada. No aparece en búsquedas.</string>
+    <string name="detail_message_resumed">Publicación activa otra vez.</string>
+    <string name="detail_message_hidden">Publicación oculta.</string>
+    <string name="detail_message_failed">No se pudo completar. Inténtalo de nuevo.</string>
+    <string name="detail_undo">Deshacer</string>
+
+    <!-- Delete confirmation (4.08). -->
+    <string name="detail_delete_title">¿Borrar esta publicación?</string>
+    <string name="detail_delete_body">Se quita de Mink\'a y no se puede recuperar. Si solo quieres dejar de recibir propuestas, puedes pausarla.</string>
+    <string name="detail_delete_cancel">Cancelar</string>
+    <string name="detail_delete_confirm">Borrar</string>
+    <string name="detail_delete_pause_instead">Pausar en su lugar</string>
+
+    <!-- No longer available (4.05). -->
+    <string name="detail_unavailable_title">Ya no disponible</string>
+    <string name="detail_unavailable_body">Esta publicación se intercambió o su dueño la quitó.</string>
+    <string name="detail_unavailable_action">Ver similares cerca</string>
+</resources>
