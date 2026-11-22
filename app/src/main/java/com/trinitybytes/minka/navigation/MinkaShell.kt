@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.EntryProviderScope
+import com.trinitybytes.minka.features.items.presentation.detail.ListingDetailRoute
 import com.trinitybytes.minka.features.items.presentation.detail.detailEntries
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -58,7 +59,11 @@ data object SearchTab : NavKey
 /** Monotonically increasing request, consumed by the future Buscar search field. */
 val LocalSearchFocusRequest = staticCompositionLocalOf { 0 }
 
-internal val LocalHomeExpanded = staticCompositionLocalOf { false }
+/** True when the shell shows the navigation rail (expanded width), so screens can lay out their wide variant. */
+internal val LocalShellExpanded = staticCompositionLocalOf { false }
+
+/** The listing whose detail is on the selected tab's stack, so a list pane can mark it; null when none is open. */
+internal val LocalOpenListingId = staticCompositionLocalOf<String?> { null }
 
 @Serializable
 data object ProfileTab : NavKey
@@ -72,6 +77,26 @@ internal fun <T> selectTab(current: T, selected: T, stacks: Map<T, MutableList<T
     }
     return selected
 }
+
+/** How the Publicar action shows on compact widths. */
+internal enum class PublishAction { Hidden, Collapsed, Extended }
+
+/** The bottom chrome of the shell for the current screen. */
+internal data class ShellChrome(val showNavigationBar: Boolean, val publish: PublishAction)
+
+/**
+ * Figma flows 04 and 11 draw pushed screens (detail, owner profile, Mis publicaciones) full screen, without the
+ * navigation bar or the Publicar action; only tab roots show the bar. The action is drawn on Inicio only (2.02 to
+ * 2.04: extended, collapsed once the feed scrolls); Buscar and Perfil roots (3.01, 11.01) have none. The expanded
+ * shell keeps the rail, which carries the action itself.
+ */
+internal fun shellChrome(isRoot: Boolean, homeRoot: Boolean, homeScrolled: Boolean, expanded: Boolean): ShellChrome =
+    when {
+        expanded || !isRoot -> ShellChrome(showNavigationBar = false, publish = PublishAction.Hidden)
+        !homeRoot -> ShellChrome(showNavigationBar = true, publish = PublishAction.Hidden)
+        homeScrolled -> ShellChrome(showNavigationBar = true, publish = PublishAction.Collapsed)
+        else -> ShellChrome(showNavigationBar = true, publish = PublishAction.Extended)
+    }
 
 private enum class Tab(val root: NavKey, val label: Int, val icon: ImageVector) {
     Home(HomeTab, R.string.nav_home, Icons.Rounded.Home),
@@ -91,7 +116,7 @@ private enum class Tab(val root: NavKey, val label: Int, val icon: ImageVector) 
 @Composable
 fun MinkaShell(
     onPublish: () -> Unit = {},
-    tabEntries: (EntryProviderScope<NavKey>.() -> Unit)? = null,
+    tabEntries: (EntryProviderScope<NavKey>.(ShellNavigator) -> Unit)? = null,
     onResumeDraft: (String) -> Unit = {},
 ) {
     var selected by rememberSaveable { mutableStateOf(Tab.Home) }
@@ -126,7 +151,7 @@ fun MinkaShell(
     }
     val provider = entryProvider<NavKey> {
         if (tabEntries != null) {
-            tabEntries()
+            tabEntries(navigator)
         } else {
             homeEntries(navigator, onScrollChanged = { homeScrolled = it })
             searchEntries(navigator)
@@ -150,6 +175,7 @@ fun MinkaShell(
             selected = Tab.Home
         }
     }
+    val openListingId = currentStack.filterIsInstance<ListingDetailRoute>().lastOrNull()?.listingId
     BackHandler(enabled = currentStack.size > 1 || selected != Tab.Home, onBack = back)
     val items = Tab.entries.map { tab ->
         MinkaNavigationItem(
@@ -168,15 +194,24 @@ fun MinkaShell(
             if (expanded) {
                 MinkaNavigationRail(items = items, header = { PublishFab(onPublish) })
             }
+            val chrome = shellChrome(
+                isRoot = currentStack.size <= 1,
+                homeRoot = selected == Tab.Home,
+                homeScrolled = homeScrolled,
+                expanded = expanded,
+            )
             Scaffold(
-                bottomBar = { if (!expanded) MinkaNavigationBar(items) },
+                bottomBar = { if (chrome.showNavigationBar) MinkaNavigationBar(items) },
                 floatingActionButton = {
-                    if (!expanded) PublishFab(onPublish, extended = selected == Tab.Home && !homeScrolled)
+                    if (chrome.publish != PublishAction.Hidden) {
+                        PublishFab(onPublish, extended = chrome.publish == PublishAction.Extended)
+                    }
                 },
             ) { padding ->
                 CompositionLocalProvider(
                     LocalSearchFocusRequest provides searchFocusRequest,
-                    LocalHomeExpanded provides expanded,
+                    LocalShellExpanded provides expanded,
+                    LocalOpenListingId provides openListingId,
                 ) {
                     NavDisplay(
                         entries = entries,

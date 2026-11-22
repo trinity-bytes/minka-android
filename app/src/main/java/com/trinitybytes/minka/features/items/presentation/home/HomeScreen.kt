@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -65,7 +67,7 @@ import com.trinitybytes.minka.features.items.domain.Listing
 import com.trinitybytes.minka.features.items.presentation.component.ListingCard
 import com.trinitybytes.minka.features.items.presentation.component.ItemCategories
 import com.trinitybytes.minka.features.items.presentation.component.labelRes
-import com.trinitybytes.minka.navigation.LocalHomeExpanded
+import com.trinitybytes.minka.navigation.LocalShellExpanded
 
 /** Inicio loading, feed, refresh, empty and offline states (Figma 2.01–2.05). */
 @Composable
@@ -118,7 +120,7 @@ internal fun HomeContent(
         state.selectedCategory == null || it.category == state.selectedCategory
     }
     MinkaAdaptiveBox(Modifier.fillMaxSize()) {
-        val expanded = isExpandedWidth || LocalHomeExpanded.current
+        val expanded = isExpandedWidth || LocalShellExpanded.current
         val columns = if (expanded) 4 else 2
         Box(Modifier.fillMaxSize()) {
             PullToRefreshBox(
@@ -205,18 +207,26 @@ private fun HomeHeader(
             }
         }
         Surface(
-            modifier = Modifier.fillMaxWidth().height(56.dp),
+            modifier = Modifier.fillMaxWidth(),
             shape = MinkaShapes.full,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
             Row(
-                Modifier.clickable(enabled = !state.offline, role = Role.Button, onClick = onOpenSearch)
-                    .padding(horizontal = MinkaSpacing.s16),
+                Modifier.fillMaxWidth()
+                    .clickable(enabled = !state.offline, role = Role.Button, onClick = onOpenSearch)
+                    .heightIn(min = 56.dp)
+                    .padding(horizontal = MinkaSpacing.s16, vertical = MinkaSpacing.s8),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s12),
             ) {
                 Icon(Icons.Rounded.Search, contentDescription = null)
-                Text(stringResource(R.string.feed_search), style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    stringResource(R.string.feed_search),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
         Row(

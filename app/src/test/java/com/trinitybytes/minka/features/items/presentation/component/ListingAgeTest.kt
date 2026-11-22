@@ -1,4 +1,4 @@
-package com.trinitybytes.minka.features.items.presentation.detail
+package com.trinitybytes.minka.features.items.presentation.component
 
 import java.time.Duration
 import java.time.Instant

@@ -33,6 +33,7 @@ import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.features.items.domain.Listing
 import com.trinitybytes.minka.features.items.domain.ListingStatus
 import com.trinitybytes.minka.features.items.presentation.component.ListingPhoto
+import com.trinitybytes.minka.features.items.presentation.component.WantsBadge
 import com.trinitybytes.minka.features.items.presentation.component.labelRes
 import com.trinitybytes.minka.features.items.presentation.component.listingMeta
 import java.util.Locale
@@ -87,13 +88,7 @@ internal fun ListingManagePane(
             ) {
                 MinkaBadge(stringResource(listing.category.labelRes), tone = MinkaBadgeTone.Neutral)
                 listing.wants.forEach { category ->
-                    MinkaBadge(
-                        text = stringResource(
-                            R.string.listing_wants,
-                            stringResource(category.labelRes).lowercase(Locale.forLanguageTag("es")),
-                        ),
-                        tone = MinkaBadgeTone.Lavender,
-                    )
+                    WantsBadge(category)
                 }
             }
             listing.description?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }

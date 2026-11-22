@@ -13,13 +13,18 @@ import com.trinitybytes.minka.features.items.application.ResumeListing
 import com.trinitybytes.minka.features.items.application.UndoHideListing
 import com.trinitybytes.minka.features.items.domain.Category
 import com.trinitybytes.minka.features.items.domain.Condition
+import com.trinitybytes.minka.features.items.domain.Feed
 import com.trinitybytes.minka.features.items.domain.ItemsError
+import com.trinitybytes.minka.features.items.domain.ItemsOutcome
 import com.trinitybytes.minka.features.items.domain.ItemsRepository
 import com.trinitybytes.minka.features.items.domain.Listing
+import com.trinitybytes.minka.features.items.domain.ListingDraft
 import com.trinitybytes.minka.features.items.domain.ListingStatus
 import com.trinitybytes.minka.features.items.domain.Loaded
+import com.trinitybytes.minka.features.items.domain.OwnerProfile
 import com.trinitybytes.minka.features.items.domain.OwnerSummary
-import java.lang.reflect.Proxy
+import com.trinitybytes.minka.features.items.domain.SavedDraft
+import com.trinitybytes.minka.features.items.domain.SearchQuery
 import java.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -44,13 +49,7 @@ class ListingDetailViewModelTest {
     private val results = mutableMapOf<String, Any>()
     private var signedInId: String? = "viewer"
 
-    private val repository = Proxy.newProxyInstance(
-        ItemsRepository::class.java.classLoader,
-        arrayOf(ItemsRepository::class.java),
-    ) { _, method, args ->
-        calls += method.name + (args?.firstOrNull()?.let { ":$it" } ?: "")
-        results[method.name] ?: error("No result set for ${method.name}")
-    } as ItemsRepository
+    private val repository = RecordingItemsRepository(calls, results)
 
     private val sessions = object : SessionStore {
         override val session get() = flowOf(signedInId?.let { Session("token", User(it, "Ana", "ana@x.pe")) })
@@ -249,4 +248,56 @@ class ListingDetailViewModelTest {
         viewModel: ListingDetailViewModel,
         into: MutableList<DetailEvent>,
     ) = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.events.collect { into += it } }
+}
+
+/**
+ * An [ItemsRepository] for the detail ViewModel: the calls it makes record "name:id" in [calls] and answer with
+ * the outcome stored under the call name in [results]; every other call is a test mistake.
+ */
+private class RecordingItemsRepository(
+    private val calls: MutableList<String>,
+    private val results: Map<String, Any>,
+) : ItemsRepository {
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> answer(name: String, id: String? = null): ItemsOutcome<T> {
+        calls += name + (id?.let { ":$it" } ?: "")
+        return (results[name] ?: error("No result set for $name")) as ItemsOutcome<T>
+    }
+
+    private fun unused(): Nothing = error("Not used by the detail screen")
+
+    override suspend fun detail(id: String): ItemsOutcome<Loaded<Listing>> = answer("detail", id)
+
+    override suspend fun setStatus(id: String, status: ListingStatus): ItemsOutcome<Listing> =
+        answer("setStatus", id)
+
+    override suspend fun delete(id: String): ItemsOutcome<Unit> = answer("delete", id)
+
+    override suspend fun hide(id: String): ItemsOutcome<Unit> = answer("hide", id)
+
+    override suspend fun unhide(id: String): ItemsOutcome<Unit> = answer("unhide", id)
+
+    override suspend fun feed(): ItemsOutcome<Loaded<Feed>> = unused()
+
+    override suspend fun search(query: SearchQuery): ItemsOutcome<List<Listing>> = unused()
+
+    override suspend fun suggestions(text: String): ItemsOutcome<List<String>> = unused()
+
+    override suspend fun recentSearches(): ItemsOutcome<List<String>> = unused()
+
+    override suspend fun addRecentSearch(text: String): ItemsOutcome<List<String>> = unused()
+
+    override suspend fun clearRecentSearches(): ItemsOutcome<Unit> = unused()
+
+    override suspend fun myListings(status: ListingStatus): ItemsOutcome<Loaded<List<Listing>>> = unused()
+
+    override suspend fun myDrafts(): ItemsOutcome<List<SavedDraft>> = unused()
+
+    override suspend fun saveDraft(id: String?, draft: ListingDraft): ItemsOutcome<SavedDraft> = unused()
+
+    override suspend fun draft(id: String): ItemsOutcome<SavedDraft> = unused()
+
+    override suspend fun publish(id: String): ItemsOutcome<Listing> = unused()
+
+    override suspend fun ownerProfile(id: String): ItemsOutcome<OwnerProfile> = unused()
 }

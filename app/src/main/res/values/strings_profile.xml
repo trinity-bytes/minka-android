@@ -52,19 +52,4 @@
     <string name="owner_profile_not_found_title">Este perfil no está disponible</string>
     <string name="owner_profile_not_found_body">Puede que la persona ya no esté en Mink\'a.</string>
     <string name="owner_profile_back">Volver</string>
-
-    <!-- Relative ages: "hace 2 días" -->
-    <string name="age_now">hace un momento</string>
-    <plurals name="age_hours">
-        <item quantity="one">hace %1$d hora</item>
-        <item quantity="other">hace %1$d horas</item>
-    </plurals>
-    <plurals name="age_days">
-        <item quantity="one">hace %1$d día</item>
-        <item quantity="other">hace %1$d días</item>
-    </plurals>
-    <plurals name="age_months">
-        <item quantity="one">hace %1$d mes</item>
-        <item quantity="other">hace %1$d meses</item>
-    </plurals>
 </resources>

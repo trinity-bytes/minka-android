@@ -15,5 +15,4 @@
     <string name="feed_offline">Sin conexión. Ves lo último guardado.</string>
     <string name="feed_error">No pudimos cargar las publicaciones.</string>
     <string name="feed_retry">Reintentar</string>
-    <string name="listing_wants">Busca: %1$s</string>
 </resources>

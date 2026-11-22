@@ -1,9 +1,13 @@
-package com.trinitybytes.minka.features.items.presentation.detail
+package com.trinitybytes.minka.features.items.presentation.component
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.trinitybytes.minka.R
 import java.time.Duration
 import java.time.Instant
 
-/** How long ago a listing was published, in the units "publicada hace …" of Figma 4.01 uses. */
+/** How long ago a listing was published, in the units "publicada hace …" (Figma 4.01) and "Publicado hace …" (Figma 11.05) use. */
 sealed interface ListingAge {
     data object Today : ListingAge
 
@@ -29,4 +33,14 @@ fun listingAge(createdAt: Instant, now: Instant): ListingAge {
         days < DAYS_PER_MONTH -> ListingAge.Weeks(days / DAYS_PER_WEEK)
         else -> ListingAge.Months(days / DAYS_PER_MONTH)
     }
+}
+
+/** The relative age as Spanish text without a verb: "hoy", "ayer", "hace 2 días". */
+@Composable
+fun ListingAge.text(): String = when (this) {
+    ListingAge.Today -> stringResource(R.string.listing_age_today)
+    ListingAge.Yesterday -> stringResource(R.string.listing_age_yesterday)
+    is ListingAge.Days -> pluralStringResource(R.plurals.listing_age_days, count, count)
+    is ListingAge.Weeks -> pluralStringResource(R.plurals.listing_age_weeks, count, count)
+    is ListingAge.Months -> pluralStringResource(R.plurals.listing_age_months, count, count)
 }

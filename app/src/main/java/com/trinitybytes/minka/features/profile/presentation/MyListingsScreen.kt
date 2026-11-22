@@ -55,7 +55,7 @@ import com.trinitybytes.minka.core.designsystem.component.ObserveAsEvents
 import com.trinitybytes.minka.core.designsystem.component.isExpandedWidth
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.features.items.domain.Listing
-import com.trinitybytes.minka.navigation.LocalHomeExpanded
+import com.trinitybytes.minka.navigation.LocalShellExpanded
 import kotlinx.coroutines.launch
 
 private val ListPaneWidth = 360.dp
@@ -168,7 +168,7 @@ internal fun MyListingsContent(
                 .padding(padding)
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
         ) {
-            val expanded = isExpandedWidth || LocalHomeExpanded.current
+            val expanded = isExpandedWidth || LocalShellExpanded.current
             when {
                 state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     MinkaLoadingIndicator()

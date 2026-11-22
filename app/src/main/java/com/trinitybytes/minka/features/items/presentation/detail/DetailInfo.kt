@@ -20,7 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,6 +33,8 @@ import com.trinitybytes.minka.features.items.domain.Listing
 import com.trinitybytes.minka.features.items.domain.ListingStatus
 import com.trinitybytes.minka.features.items.domain.OwnerSummary
 import com.trinitybytes.minka.features.items.presentation.component.labelRes
+import com.trinitybytes.minka.features.items.presentation.component.listingAge
+import com.trinitybytes.minka.features.items.presentation.component.text
 import com.trinitybytes.minka.features.items.presentation.component.listingMeta
 import java.text.NumberFormat
 import java.time.Instant
@@ -101,13 +103,7 @@ fun DetailInfo(
 @Composable
 private fun metaLine(listing: Listing, now: Instant): String {
     val place = listingMeta(listing.district, listing.distanceKm)
-    val age = when (val age = listingAge(listing.createdAt, now)) {
-        ListingAge.Today -> stringResource(R.string.detail_age_today)
-        ListingAge.Yesterday -> stringResource(R.string.detail_age_yesterday)
-        is ListingAge.Days -> pluralStringResource(R.plurals.detail_age_days, age.count, age.count)
-        is ListingAge.Weeks -> pluralStringResource(R.plurals.detail_age_weeks, age.count, age.count)
-        is ListingAge.Months -> pluralStringResource(R.plurals.detail_age_months, age.count, age.count)
-    }
+    val age = listingAge(listing.createdAt, now).text()
     return stringResource(R.string.detail_meta, place, age)
 }
 
@@ -137,25 +133,31 @@ private fun OwnerCard(owner: OwnerSummary, onOpenOwner: (String) -> Unit) {
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(
-            Modifier.padding(MinkaSpacing.s16),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s12),
-        ) {
-            MinkaAvatar(initialsOf(owner.name))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    owner.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    ownerSubtitle(owner),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        // At large font scales the profile button drops below the text instead of squeezing the name column.
+        val stacked = LocalDensity.current.fontScale > StackedFontScale
+        val identity: @Composable (Modifier) -> Unit = { modifier ->
+            Row(
+                modifier,
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s12),
+            ) {
+                MinkaAvatar(initialsOf(owner.name))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        owner.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        ownerSubtitle(owner),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
+        }
+        val profileButton: @Composable () -> Unit = {
             Surface(
                 shape = MinkaShapes.full,
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -169,8 +171,29 @@ private fun OwnerCard(owner: OwnerSummary, onOpenOwner: (String) -> Unit) {
                 )
             }
         }
+        if (stacked) {
+            Column(
+                Modifier.padding(MinkaSpacing.s16),
+                verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s12),
+                horizontalAlignment = Alignment.End,
+            ) {
+                identity(Modifier.fillMaxWidth())
+                profileButton()
+            }
+        } else {
+            Row(
+                Modifier.padding(MinkaSpacing.s16),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s12),
+            ) {
+                identity(Modifier.weight(1f))
+                profileButton()
+            }
+        }
     }
 }
+
+private const val StackedFontScale = 1.3f
 
 @Composable
 private fun ownerSubtitle(owner: OwnerSummary): String {

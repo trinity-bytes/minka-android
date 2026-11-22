@@ -2,6 +2,8 @@ package com.trinitybytes.minka.features.profile.presentation
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -51,7 +53,7 @@ class OwnerProfileContentTest {
             }
         }
         compose.onNodeWithText("Carlos Ramos").assertIsDisplayed()
-        compose.onNodeWithText("Barranco").assertIsDisplayed()
+        compose.onAllNodesWithText("Barranco").onFirst().assertIsDisplayed()
         compose.onNodeWithText("Raíz Verificada").assertDoesNotExist()
         compose.onNodeWithText("Reseñas").assertDoesNotExist()
         compose.onNodeWithText("Guitarra acústica").performClick()

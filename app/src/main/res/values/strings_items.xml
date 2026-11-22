@@ -13,4 +13,22 @@
     <string name="condition_like_new">Como nuevo</string>
     <string name="condition_good">Buen estado</string>
     <string name="condition_used">Usado</string>
+
+    <string name="listing_wants">Busca: %1$s</string>
+
+    <!-- Relative listing age, no verb: "publicada hoy" / "Publicado hace 2 días" -->
+    <string name="listing_age_today">hoy</string>
+    <string name="listing_age_yesterday">ayer</string>
+    <plurals name="listing_age_days">
+        <item quantity="one">hace %d día</item>
+        <item quantity="other">hace %d días</item>
+    </plurals>
+    <plurals name="listing_age_weeks">
+        <item quantity="one">hace %d semana</item>
+        <item quantity="other">hace %d semanas</item>
+    </plurals>
+    <plurals name="listing_age_months">
+        <item quantity="one">hace %d mes</item>
+        <item quantity="other">hace %d meses</item>
+    </plurals>
 </resources>

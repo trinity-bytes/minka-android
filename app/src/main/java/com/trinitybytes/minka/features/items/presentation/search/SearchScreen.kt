@@ -29,7 +29,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.features.items.domain.Category
-import com.trinitybytes.minka.navigation.LocalHomeExpanded
+import com.trinitybytes.minka.navigation.LocalOpenListingId
+import com.trinitybytes.minka.navigation.LocalShellExpanded
 import com.trinitybytes.minka.navigation.LocalSearchFocusRequest
 
 /** What the screen can ask of its ViewModel; tests pass plain lambdas. */
@@ -86,7 +87,7 @@ fun SearchScreen(
         actions = actions,
         onOpenListing = onOpenListing,
         focusRequest = LocalSearchFocusRequest.current,
-        expanded = LocalHomeExpanded.current,
+        expanded = LocalShellExpanded.current,
     )
 }
 
@@ -102,7 +103,7 @@ internal fun SearchContent(
     val focusManager = LocalFocusManager.current
     var focused by remember { mutableStateOf(false) }
     var handledRequest by rememberSaveable { mutableIntStateOf(0) }
-    var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
+    val openListingId = LocalOpenListingId.current
     LaunchedEffect(focusRequest) {
         if (focusRequest > handledRequest) focusRequester.requestFocus()
         handledRequest = focusRequest
@@ -112,7 +113,7 @@ internal fun SearchContent(
         focusManager.clearFocus()
         actions.onExit()
     }
-    BackHandler(enabled = active, onBack = leave)
+    BackHandler(enabled = active && !(expanded && openListingId != null), onBack = leave)
     val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
     Column(Modifier.fillMaxSize()) {
         if (state.stage == SearchStage.Browse && !focused) {
@@ -165,11 +166,8 @@ internal fun SearchContent(
                 SearchStage.Results -> ResultsContent(
                     state = state,
                     actions = actions,
-                    selectedId = selectedId.takeIf { expanded },
-                    onOpenListing = {
-                        selectedId = it
-                        onOpenListing(it)
-                    },
+                    selectedId = openListingId.takeIf { expanded },
+                    onOpenListing = onOpenListing,
                     bottomPadding = imeBottom,
                 )
             }

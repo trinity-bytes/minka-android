@@ -15,7 +15,7 @@
         <item quantity="one">%1$d resultado</item>
         <item quantity="other">%1$d resultados</item>
     </plurals>
-    <string name="search_empty_title">Sin resultados para "%1$s"</string>
+    <string name="search_empty_title">Sin resultados para \"%1$s\"</string>
     <string name="search_empty_title_filters">Sin resultados</string>
     <string name="search_empty_message">Prueba con otras palabras o quita los filtros para ver más publicaciones.</string>
     <string name="search_empty_message_plain">Prueba con otras palabras.</string>

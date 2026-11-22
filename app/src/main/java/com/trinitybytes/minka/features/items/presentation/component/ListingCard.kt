@@ -1,5 +1,6 @@
 package com.trinitybytes.minka.features.items.presentation.component
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -22,6 +24,7 @@ import com.trinitybytes.minka.core.designsystem.component.MinkaBadge
 import com.trinitybytes.minka.core.designsystem.component.MinkaBadgeTone
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
+import com.trinitybytes.minka.features.items.domain.Category
 import com.trinitybytes.minka.features.items.domain.Listing
 import java.text.NumberFormat
 import java.util.Locale
@@ -100,14 +103,29 @@ private fun ListingCardBody(listing: Listing, showCondition: Boolean, modifier: 
             verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s4),
         ) {
             listing.wants.forEach { category ->
-                MinkaBadge(
-                    stringResource(
-                        R.string.listing_wants,
-                        stringResource(category.labelRes).lowercase(Locale.forLanguageTag("es")),
-                    ),
-                    tone = MinkaBadgeTone.Lavender,
-                )
+                WantsBadge(category)
             }
         }
     }
 }
+
+/**
+ * The "Busca: libros" chip. Its corners are a fixed 12 dp (a full pill at one line) so that at large font
+ * scales the label wraps inside the shape instead of poking out of a stadium's curve.
+ */
+@Composable
+fun WantsBadge(category: Category, modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(
+            R.string.listing_wants,
+            stringResource(category.labelRes).lowercase(Locale.forLanguageTag("es")),
+        ),
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(WantsBadgeRadius))
+            .padding(horizontal = MinkaSpacing.s8, vertical = MinkaSpacing.s4),
+        color = MaterialTheme.colorScheme.onSecondaryContainer,
+        style = MaterialTheme.typography.labelMedium,
+    )
+}
+
+private val WantsBadgeRadius = 12.dp

@@ -5,21 +5,7 @@
     <string name="detail_hide">Ocultar</string>
     <string name="detail_share_text">%1$s · %2$s, en Mink\'a</string>
     <string name="detail_share_title">Compartir publicación</string>
-    <string name="detail_meta">%1$s · %2$s</string>
-    <string name="detail_age_today">publicada hoy</string>
-    <string name="detail_age_yesterday">publicada ayer</string>
-    <plurals name="detail_age_days">
-        <item quantity="one">publicada hace %d día</item>
-        <item quantity="other">publicada hace %d días</item>
-    </plurals>
-    <plurals name="detail_age_weeks">
-        <item quantity="one">publicada hace %d semana</item>
-        <item quantity="other">publicada hace %d semanas</item>
-    </plurals>
-    <plurals name="detail_age_months">
-        <item quantity="one">publicada hace %d mes</item>
-        <item quantity="other">publicada hace %d meses</item>
-    </plurals>
+    <string name="detail_meta">%1$s · publicada %2$s</string>
     <string name="detail_photo_position">Foto %1$d de %2$d</string>
     <string name="detail_owner_member_since">Miembro desde %1$s</string>
     <string name="detail_view_profile">Ver perfil</string>

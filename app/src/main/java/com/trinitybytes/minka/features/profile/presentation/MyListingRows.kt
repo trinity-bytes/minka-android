@@ -31,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,6 +44,8 @@ import com.trinitybytes.minka.features.items.domain.Listing
 import com.trinitybytes.minka.features.items.domain.ListingStatus
 import com.trinitybytes.minka.features.items.domain.SavedDraft
 import com.trinitybytes.minka.features.items.presentation.component.ListingPhoto
+import com.trinitybytes.minka.features.items.presentation.component.listingAge
+import com.trinitybytes.minka.features.items.presentation.component.text
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -182,7 +183,7 @@ internal fun DraftRow(
                     )
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s8, Alignment.End),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s4),
                         itemVerticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -234,19 +235,11 @@ internal fun listingSubtitle(listing: Listing): String {
     return when (listing.status) {
         ListingStatus.ACTIVE -> stringResource(
             R.string.my_listings_published_ago,
-            ageText(listingAge(listing.createdAt, now)),
+            listingAge(listing.createdAt, now).text(),
         )
         ListingStatus.PAUSED -> stringResource(
             R.string.my_listings_paused_since,
             PausedDate.format(listing.updatedAt.atZone(ZoneId.systemDefault())),
         )
     }
-}
-
-@Composable
-private fun ageText(age: ListingAge): String = when (age.unit) {
-    ListingAgeUnit.NOW -> stringResource(R.string.age_now)
-    ListingAgeUnit.HOURS -> pluralStringResource(R.plurals.age_hours, age.count, age.count)
-    ListingAgeUnit.DAYS -> pluralStringResource(R.plurals.age_days, age.count, age.count)
-    ListingAgeUnit.MONTHS -> pluralStringResource(R.plurals.age_months, age.count, age.count)
 }

@@ -84,7 +84,7 @@ internal fun SectionTitle(text: String, modifier: Modifier = Modifier) {
 private fun CategoryGrid(onSelectCategory: (Category) -> Unit) {
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s16, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(CATEGORY_GAP, Alignment.Start),
         verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
     ) {
         ItemCategories.forEach { category ->
@@ -107,6 +107,9 @@ private fun CategoryGrid(onSelectCategory: (Category) -> Unit) {
 }
 
 private val CATEGORY_WIDTH = 78.dp
+
+/** Figma 3.01 places the 78 dp category columns on a 100 dp pitch. */
+private val CATEGORY_GAP = 22.dp
 
 /** Figma 3.02: one row per title that matches, with its category and how many are near. */
 @Composable
