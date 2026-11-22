@@ -52,6 +52,12 @@ class SignInViewModelTest {
     private val store = FakeSessionStore()
     private val progressStore = FakeProgressStore()
 
+    private val clock = object : java.time.Clock() {
+        override fun getZone(): java.time.ZoneId = java.time.ZoneId.of("UTC")
+        override fun withZone(zone: java.time.ZoneId): java.time.Clock = this
+        override fun instant(): java.time.Instant = java.time.Instant.ofEpochMilli(dispatcher.scheduler.currentTime)
+    }
+
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
 
@@ -64,6 +70,7 @@ class SignInViewModelTest {
         SignInWithGoogle(repository, store, BeginOnboarding(progressStore)),
         ResolveLaunch(store, progressStore),
         SavedStateHandle(),
+        clock,
     )
 
     private val SignInViewModel.state get() = uiState.value
@@ -77,12 +84,43 @@ class SignInViewModelTest {
             SignInWithGoogle(repository, store, BeginOnboarding(progressStore)),
             ResolveLaunch(store, progressStore),
             handle,
+            clock,
         )
         assertEquals("ana@example.com", model.state.contact)
         model.onContactChange("luis@example.com")
         model.onPasswordChange("secret")
         assertFalse(handle.keys().any { it.contains("password", ignoreCase = true) })
         assertEquals("luis@example.com", handle.get<String>(KEY_CONTACT))
+    }
+
+    @Test
+    fun `lock response saves a deadline that a recreated view model restores`() = runTest(dispatcher) {
+        repository.signInAnswer = { Outcome.Failure(AuthError.AccountLocked(5)) }
+        val handle = SavedStateHandle()
+        fun create() = SignInViewModel(SignIn(repository, store), GetGoogleAccounts(repository),
+            SignInWithGoogle(repository, store, BeginOnboarding(progressStore)),
+            ResolveLaunch(store, progressStore), handle, clock)
+        val original = create()
+        original.onContactChange("ana@example.com")
+        original.onPasswordChange("password")
+        original.submit()
+        runCurrent()
+        assertEquals(5_000L, handle.get<Long>("signin_lock_deadline"))
+        advanceTimeBy(2_000)
+        assertEquals(3L, create().state.lockSecondsLeft)
+    }
+
+    @Test
+    fun `lock deadline restores and expires with the clock`() = runTest(dispatcher) {
+        val handle = SavedStateHandle(mapOf("signin_lock_deadline" to 2_000L))
+        val model = SignInViewModel(SignIn(repository, store), GetGoogleAccounts(repository),
+            SignInWithGoogle(repository, store, BeginOnboarding(progressStore)),
+            ResolveLaunch(store, progressStore), handle, clock)
+        assertEquals(2L, model.state.lockSecondsLeft)
+        advanceTimeBy(2_000)
+        runCurrent()
+        assertNull(model.state.lockSecondsLeft)
+        assertNull(handle.get<Long>("signin_lock_deadline"))
     }
 
     @Test

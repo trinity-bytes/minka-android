@@ -4,14 +4,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trinitybytes.minka.core.domain.Outcome
+import com.trinitybytes.minka.core.domain.countdown
 import com.trinitybytes.minka.features.auth.application.ResendCode
 import com.trinitybytes.minka.features.auth.application.VerifyRegistration
 import com.trinitybytes.minka.features.auth.domain.AuthError
-import com.trinitybytes.minka.features.onboarding.application.BeginOnboarding
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -71,7 +70,6 @@ class VerifyCodeViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val verifyRegistration: VerifyRegistration,
     private val resendCode: ResendCode,
-    private val beginOnboarding: BeginOnboarding,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -118,7 +116,7 @@ class VerifyCodeViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, message = null) }
         viewModelScope.launch {
             // The setup is saved before the session: a crash in between lands on Welcome, never past the setup (S4).
-            val result = verifyRegistration(challengeId, state.code) { beginOnboarding(it.user.id) is Outcome.Success }
+            val result = verifyRegistration(challengeId, state.code)
             _uiState.update { it.copy(isLoading = false) }
             when (result) {
                 is Outcome.Success -> _events.send(VerifyEvent.Verified)
@@ -179,12 +177,11 @@ class VerifyCodeViewModel @Inject constructor(
 
     private fun runCountdown(deadline: Long) {
         countdown?.cancel()
-        fun remaining(): Long = ((deadline - clock.millis()).coerceAtLeast(0) + 999) / 1_000
-        _uiState.update { it.copy(resendSecondsLeft = remaining().takeIf { left -> left > 0 }) }
+        val remaining = ((deadline - clock.millis()).coerceAtLeast(0) + 999) / 1_000
+        _uiState.update { it.copy(resendSecondsLeft = remaining.takeIf { left -> left > 0 }) }
         countdown = viewModelScope.launch {
-            while (remaining() > 0) {
-                delay(1_000)
-                _uiState.update { it.copy(resendSecondsLeft = remaining().takeIf { left -> left > 0 }) }
+            countdown(deadline, clock).collect { left ->
+                _uiState.update { it.copy(resendSecondsLeft = left.takeIf { it > 0 }) }
             }
         }
     }

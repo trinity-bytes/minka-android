@@ -1,6 +1,5 @@
 package com.trinitybytes.minka.features.onboarding.infrastructure
 
-import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.features.auth.domain.SessionStore
 import com.trinitybytes.minka.features.onboarding.domain.Coordinates
 import com.trinitybytes.minka.features.onboarding.domain.District
@@ -9,8 +8,8 @@ import com.trinitybytes.minka.features.onboarding.domain.Profile
 import com.trinitybytes.minka.features.onboarding.domain.ProfileError
 import com.trinitybytes.minka.features.onboarding.domain.ProfileOutcome
 import com.trinitybytes.minka.features.onboarding.domain.ProfileRepository
+import com.trinitybytes.minka.core.network.ktorCall
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -21,10 +20,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
-import io.ktor.http.isSuccess
-import java.io.IOException
 import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.first
 
 class KtorProfileRepository @Inject constructor(
@@ -81,20 +77,7 @@ class KtorProfileRepository @Inject constructor(
     }
 
     private suspend inline fun <reified D, T> call(
-        toDomain: (D) -> T,
-        request: () -> HttpResponse,
-    ): ProfileOutcome<T> = try {
-        val response = request()
-        if (response.status.isSuccess()) {
-            Outcome.Success(toDomain(response.body<D>()))
-        } else {
-            Outcome.Failure(ProfileError.Unexpected)
-        }
-    } catch (e: CancellationException) {
-        throw e
-    } catch (_: IOException) {
-        Outcome.Failure(ProfileError.Offline)
-    } catch (_: Exception) {
-        Outcome.Failure(ProfileError.Unexpected)
-    }
+        crossinline toDomain: (D) -> T,
+        crossinline request: suspend () -> HttpResponse,
+    ): ProfileOutcome<T> = ktorCall(toDomain, { ProfileError.Unexpected }, ProfileError.Offline, ProfileError.Unexpected, { request() })
 }

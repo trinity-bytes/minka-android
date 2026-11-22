@@ -1,6 +1,5 @@
 package com.trinitybytes.minka.features.auth.infrastructure
 
-import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.core.network.ApiError
 import com.trinitybytes.minka.features.auth.domain.AuthError
 import com.trinitybytes.minka.features.auth.domain.AuthOutcome
@@ -10,6 +9,7 @@ import com.trinitybytes.minka.features.auth.domain.PasswordReset
 import com.trinitybytes.minka.features.auth.domain.Registration
 import com.trinitybytes.minka.features.auth.domain.Session
 import com.trinitybytes.minka.features.auth.domain.VerificationChallenge
+import com.trinitybytes.minka.core.network.ktorCall
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
@@ -21,10 +21,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
-import io.ktor.http.isSuccess
-import java.io.IOException
 import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 
 class KtorAuthRepository @Inject constructor(private val client: HttpClient) : AuthRepository {
 
@@ -81,22 +78,9 @@ class KtorAuthRepository @Inject constructor(private val client: HttpClient) : A
     }
 
     private suspend inline fun <reified D, T> call(
-        toDomain: (D) -> T,
-        request: () -> HttpResponse,
-    ): AuthOutcome<T> = try {
-        val response = request()
-        if (response.status.isSuccess()) {
-            Outcome.Success(toDomain(response.body<D>()))
-        } else {
-            Outcome.Failure(response.body<ApiError>().toAuthError())
-        }
-    } catch (e: CancellationException) {
-        throw e
-    } catch (_: IOException) {
-        Outcome.Failure(AuthError.Offline)
-    } catch (_: Exception) {
-        Outcome.Failure(AuthError.Unexpected)
-    }
+        crossinline toDomain: (D) -> T,
+        crossinline request: suspend () -> HttpResponse,
+    ): AuthOutcome<T> = ktorCall(toDomain, { it.body<ApiError>().toAuthError() }, AuthError.Offline, AuthError.Unexpected, { request() })
 
     private fun ApiError.toAuthError(): AuthError = when (code) {
         AuthErrorCodes.INVALID_CREDENTIALS -> AuthError.InvalidCredentials(attemptsLeft ?: 0)

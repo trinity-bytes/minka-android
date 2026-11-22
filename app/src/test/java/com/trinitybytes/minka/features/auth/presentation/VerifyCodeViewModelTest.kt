@@ -68,9 +68,8 @@ class VerifyCodeViewModelTest {
                 VerifyCodeViewModel.ARG_RESEND_AFTER_SECONDS to resendAfterSeconds,
             ),
         ),
-        VerifyRegistration(repository, sessions),
+        VerifyRegistration(repository, sessions, BeginOnboarding(progressStore)),
         ResendCode(repository),
-        BeginOnboarding(progressStore),
         object : Clock() {
             override fun getZone(): ZoneId = ZoneId.of("UTC")
             override fun withZone(zone: ZoneId): Clock = this
@@ -101,9 +100,8 @@ class VerifyCodeViewModelTest {
         }
         val model = VerifyCodeViewModel(
             handle,
-            VerifyRegistration(repository, sessionStore),
+            VerifyRegistration(repository, sessionStore, BeginOnboarding(progressStore)),
             ResendCode(repository),
-            BeginOnboarding(progressStore),
             clock,
         )
         assertEquals(CodeError.Exhausted, model.state.codeError)
@@ -133,9 +131,8 @@ class VerifyCodeViewModelTest {
         ))
         val model = VerifyCodeViewModel(
             handle,
-            VerifyRegistration(repository, sessionStore),
+            VerifyRegistration(repository, sessionStore, BeginOnboarding(broken)),
             ResendCode(repository),
-            BeginOnboarding(broken),
             TEST_CLOCK,
         )
         val events = mutableListOf<VerifyEvent>()
@@ -165,9 +162,8 @@ class VerifyCodeViewModelTest {
         }
         val model = VerifyCodeViewModel(
             handle,
-            VerifyRegistration(repository, sessionStore),
+            VerifyRegistration(repository, sessionStore, BeginOnboarding(progressStore)),
             ResendCode(repository),
-            BeginOnboarding(progressStore),
             clock,
         )
         assertEquals(2, model.state.attemptsLeft)
