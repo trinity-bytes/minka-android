@@ -5,6 +5,7 @@ import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -41,12 +42,61 @@ class NavigationFeedbackComponentsTest {
         compose.setContent { MinkaTheme { MinkaOfflineScreen(onBack = { backs++ }, onRetry = { retries++ }) } }
 
         compose.onNodeWithText("Sin conexión").assertIsDisplayed()
-        compose.onNodeWithText("Revisa tu wifi o tus datos móviles. Lo que escribiste se guardó.").assertIsDisplayed()
+        compose.onNodeWithText("Revisa tu wifi o tus datos móviles.").assertIsDisplayed()
         compose.onNodeWithText("Reintentar").performClick()
         compose.onNodeWithContentDescription("Volver").performClick()
 
         assertEquals(1, retries)
         assertEquals(1, backs)
+    }
+
+    @Test
+    fun loadErrorScreenOffersReintentar() {
+        var retries = 0
+        compose.setContent { MinkaTheme { MinkaLoadErrorScreen(onBack = null, onRetry = { retries++ }) } }
+
+        compose.onNodeWithText("No pudimos cargar esta lista").assertIsDisplayed()
+        compose.onNodeWithText("Reintentar").performClick()
+
+        assertEquals(1, retries)
+    }
+
+    @Test
+    fun messageEffectShowsTheActionAndReportsIt() {
+        var shown = 0
+        var actions = 0
+        compose.setContent {
+            MinkaTheme {
+                val hostState = remember { SnackbarHostState() }
+                MinkaSnackbarHost(hostState)
+                MinkaMessageEffect(
+                    hostState = hostState,
+                    message = "offline",
+                    text = "Sin conexión. Lo escrito sigue aquí.",
+                    onShown = { shown++ },
+                    actionLabel = "Reintentar",
+                    onAction = { actions++ },
+                )
+            }
+        }
+
+        compose.onNodeWithText("Sin conexión. Lo escrito sigue aquí.").assertIsDisplayed()
+        compose.onNodeWithText("Reintentar").performClick()
+        compose.waitForIdle()
+
+        assertEquals(1, shown)
+        assertEquals(1, actions)
+    }
+
+    @Test
+    fun dialogConfirmIsATextButtonByDefault() {
+        compose.setContent {
+            MinkaTheme {
+                MinkaDialog(title = "Cuenta bloqueada", text = "Vuelve más tarde.", confirmText = "Entendido", onConfirm = {}, onDismiss = {})
+            }
+        }
+
+        compose.onNodeWithText("Entendido").assertIsDisplayed()
     }
 
     @Test

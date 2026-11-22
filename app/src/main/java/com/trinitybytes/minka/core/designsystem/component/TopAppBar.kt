@@ -17,6 +17,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
@@ -54,14 +56,14 @@ fun MinkaTopAppBar(
     val onSurface = MaterialTheme.colorScheme.onSurface
     when (size) {
         MinkaTopAppBarSize.Small -> TopAppBar(
-            title = { Text(title) },
+            title = { Text(title, modifier = Modifier.semantics { heading() }) },
             modifier = modifier,
             navigationIcon = navigationIcon,
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(actionIconContentColor = onSurface),
         )
         MinkaTopAppBarSize.Large -> LargeTopAppBar(
-            title = { Text(title) },
+            title = { Text(title, modifier = Modifier.semantics { heading() }) },
             modifier = modifier,
             navigationIcon = navigationIcon,
             actions = actions,

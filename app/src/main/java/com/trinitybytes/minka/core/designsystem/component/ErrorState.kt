@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -87,9 +88,9 @@ fun MinkaErrorState(
 }
 
 /**
- * Figma 1.22 "Sin conexión": replaces any step that needs the network while there is no connection.
- * What the user typed stays in the step's state, so it is back as soon as [onRetry] succeeds. While
- * [retrying] "Reintentar" shows the loading indicator.
+ * Figma 1.22 "Sin conexión" for a step that has nothing to show without the network, such as a list
+ * that could not load. Forms keep their content and use a snackbar instead. While [retrying]
+ * "Reintentar" shows the loading indicator.
  */
 @Composable
 fun MinkaOfflineScreen(
@@ -97,6 +98,46 @@ fun MinkaOfflineScreen(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     retrying: Boolean = false,
+) {
+    MinkaErrorScreen(
+        icon = Icons.Rounded.WifiOff,
+        title = stringResource(R.string.offline_title),
+        body = stringResource(R.string.offline_body),
+        onBack = onBack,
+        onRetry = onRetry,
+        modifier = modifier,
+        retrying = retrying,
+    )
+}
+
+/** Like [MinkaOfflineScreen] for a list that failed to load for any other reason. */
+@Composable
+fun MinkaLoadErrorScreen(
+    onBack: (() -> Unit)?,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+    retrying: Boolean = false,
+) {
+    MinkaErrorScreen(
+        icon = Icons.Rounded.ErrorOutline,
+        title = stringResource(R.string.load_error_title),
+        body = stringResource(R.string.load_error_body),
+        onBack = onBack,
+        onRetry = onRetry,
+        modifier = modifier,
+        retrying = retrying,
+    )
+}
+
+@Composable
+private fun MinkaErrorScreen(
+    icon: ImageVector,
+    title: String,
+    body: String,
+    onBack: (() -> Unit)?,
+    onRetry: () -> Unit,
+    modifier: Modifier,
+    retrying: Boolean,
 ) {
     Scaffold(
         modifier = modifier,
@@ -110,9 +151,9 @@ fun MinkaOfflineScreen(
             contentAlignment = Alignment.Center,
         ) {
             MinkaErrorState(
-                icon = Icons.Rounded.WifiOff,
-                title = stringResource(R.string.offline_title),
-                body = stringResource(R.string.offline_body),
+                icon = icon,
+                title = title,
+                body = body,
                 actionText = stringResource(R.string.offline_retry),
                 onAction = onRetry,
                 actionLoading = retrying,

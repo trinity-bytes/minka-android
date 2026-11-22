@@ -27,8 +27,8 @@ import com.trinitybytes.minka.core.designsystem.theme.minkaShadow
 /**
  * Figma Dialog (`299:102`): overlay surface, radius extraLarge and the modal shadow, with an
  * optional icon (secondary unless [iconTint] says otherwise), a Fraunces headline and the actions
- * at the end. [destructive] turns the confirm button into the Destructive style for irreversible
- * actions. The [dismissText] button calls [onDismissClick], which defaults to [onDismiss] (the
+ * at the end. [confirmStyle] is a text button by default, as M3 dialogs ask for non-destructive
+ * actions; pass [MinkaButtonStyle.Destructive] for irreversible ones. The [dismissText] button calls [onDismissClick], which defaults to [onDismiss] (the
  * scrim and back gesture); pass it when that button leads somewhere else.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,7 +42,7 @@ fun MinkaDialog(
     modifier: Modifier = Modifier,
     dismissText: String? = null,
     icon: ImageVector? = null,
-    destructive: Boolean = false,
+    confirmStyle: MinkaButtonStyle = MinkaButtonStyle.Text,
     iconTint: Color = MaterialTheme.colorScheme.secondary,
     onDismissClick: () -> Unit = onDismiss,
 ) {
@@ -72,7 +72,7 @@ fun MinkaDialog(
                     MinkaButton(
                         text = confirmText,
                         onClick = onConfirm,
-                        style = if (destructive) MinkaButtonStyle.Destructive else MinkaButtonStyle.Filled,
+                        style = confirmStyle,
                     )
                 }
             }

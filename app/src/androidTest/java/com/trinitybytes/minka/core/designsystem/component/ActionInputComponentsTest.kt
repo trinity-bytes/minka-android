@@ -11,6 +11,7 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -87,6 +88,34 @@ class ActionInputComponentsTest {
 
         compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.EditableText))
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Error, "Ingresa un correo válido"))
+    }
+
+    @Test
+    fun secureTextFieldTogglesVisibilityAndKeepsTheToggleInError() {
+        compose.setContent {
+            MinkaTheme {
+                MinkaTextField(
+                    value = "Minka2026",
+                    onValueChange = {},
+                    label = "Contraseña",
+                    supportingText = "Credenciales incorrectas",
+                    isError = true,
+                    secure = true,
+                )
+            }
+        }
+
+        compose.onNodeWithContentDescription("Mostrar contraseña").assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription("Ocultar contraseña").assertIsDisplayed()
+        compose.onNodeWithText("Minka2026").assertIsDisplayed()
+    }
+
+    @Test
+    fun textFieldLabelIsReadOnceByTheField() {
+        compose.setContent { MinkaTheme { MinkaTextField(value = "", onValueChange = {}, label = "Correo") } }
+
+        compose.onNodeWithText("Correo").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.HideFromAccessibility))
+        compose.onNodeWithContentDescription("Correo").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.EditableText))
     }
 
     @Test
