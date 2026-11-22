@@ -99,11 +99,10 @@ fun MinkaNavHost() {
             SignInScreen(
                 withGoogle = entry.toRoute<SignInRoute>().withGoogle,
                 onBack = { navController.popBackStack() },
-                onSignedIn = {
-                    // A signed-in user never goes back to the welcome or sign-in screens.
-                    navController.navigate(HomeRoute) {
-                        popUpTo(navController.graph.id) { inclusive = true }
-                    }
+                onSignedIn = { pendingStep ->
+                    // A signed-in user never goes back to the welcome or sign-in screens;
+                    // a setup this account left pending on the device continues where it stopped (S4).
+                    navController.replaceAll(pendingStep?.route() ?: HomeRoute)
                 },
                 onRecoverPassword = { navController.navigate(PasswordRecoveryRoute) },
                 onRegister = { navController.navigate(RegisterRoute) },

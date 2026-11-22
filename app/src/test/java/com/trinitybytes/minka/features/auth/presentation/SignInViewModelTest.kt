@@ -14,6 +14,10 @@ import com.trinitybytes.minka.features.auth.domain.Session
 import com.trinitybytes.minka.features.auth.domain.SessionStore
 import com.trinitybytes.minka.features.auth.domain.User
 import com.trinitybytes.minka.features.auth.domain.VerificationChallenge
+import com.trinitybytes.minka.features.onboarding.FakeProgressStore
+import com.trinitybytes.minka.features.onboarding.application.ResolveLaunch
+import com.trinitybytes.minka.features.onboarding.domain.OnboardingProgress
+import com.trinitybytes.minka.features.onboarding.domain.SetupStep
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,6 +44,7 @@ class SignInViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val repository = FakeRepository()
     private val store = FakeSessionStore()
+    private val progressStore = FakeProgressStore()
 
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
@@ -51,6 +56,7 @@ class SignInViewModelTest {
         SignIn(repository, store),
         GetGoogleAccounts(repository),
         SignInWithGoogle(repository, store),
+        ResolveLaunch(store, progressStore),
     )
 
     private val SignInViewModel.state get() = uiState.value
@@ -136,7 +142,7 @@ class SignInViewModelTest {
         pending.complete(Outcome.Success(session))
         advanceUntilIdle()
 
-        assertEquals(SignInEvent.SignedIn, viewModel.events.first())
+        assertEquals(SignInEvent.SignedIn(pendingStep = null), viewModel.events.first())
         assertEquals(session, store.session.value)
         assertEquals(listOf("ana.quispe@gmail.com" to "Minka2026!"), repository.signIns)
     }
@@ -245,7 +251,7 @@ class SignInViewModelTest {
         pending.complete(Outcome.Success(session))
         advanceUntilIdle()
 
-        assertEquals(SignInEvent.SignedIn, viewModel.events.first())
+        assertEquals(SignInEvent.SignedIn(pendingStep = null), viewModel.events.first())
         assertEquals(listOf(accounts[1].id), repository.googleSignIns)
         assertEquals(session, store.session.value)
         assertFalse(viewModel.state.isLoading)
@@ -288,7 +294,7 @@ class SignInViewModelTest {
 
         assertEquals(List(3) { "ana.quispe@gmail.com" to "Minka2026!" }, repository.signIns)
         assertFalse(viewModel.state.isOffline)
-        assertEquals(SignInEvent.SignedIn, viewModel.events.first())
+        assertEquals(SignInEvent.SignedIn(pendingStep = null), viewModel.events.first())
     }
 
     @Test
@@ -306,6 +312,52 @@ class SignInViewModelTest {
 
         assertFalse(viewModel.state.isOffline)
         assertEquals(accounts, viewModel.state.googleAccounts)
+    }
+
+    @Test
+    fun `signing in resumes the profile setup this account left pending`() = runTest(dispatcher) {
+        progressStore.progress.value = OnboardingProgress.Pending(session.user.id, SetupStep.Interests)
+        val viewModel = viewModel()
+        viewModel.onContactChange("ana.quispe@gmail.com")
+        viewModel.onPasswordChange("Minka2026!")
+
+        viewModel.submit()
+        advanceUntilIdle()
+
+        assertEquals(SignInEvent.SignedIn(pendingStep = SetupStep.Interests), viewModel.events.first())
+        assertEquals(session, store.session.value)
+    }
+
+    @Test
+    fun `signing in with google resumes the profile setup this account left pending`() = runTest(dispatcher) {
+        progressStore.progress.value = OnboardingProgress.Pending(session.user.id, SetupStep.Notifications)
+        val viewModel = viewModel()
+        viewModel.openGoogleSheet()
+        advanceUntilIdle()
+
+        viewModel.chooseGoogleAccount(accounts[0].id)
+        advanceUntilIdle()
+
+        assertEquals(SignInEvent.SignedIn(pendingStep = SetupStep.Notifications), viewModel.events.first())
+    }
+
+    @Test
+    fun `a setup left pending by another account or already completed opens inicio`() = runTest(dispatcher) {
+        for (progress in listOf(
+            OnboardingProgress.Pending("user-luis", SetupStep.Interests),
+            OnboardingProgress.Completed(session.user.id),
+        )) {
+            progressStore.progress.value = progress
+            store.session.value = null
+            val viewModel = viewModel()
+            viewModel.onContactChange("ana.quispe@gmail.com")
+            viewModel.onPasswordChange("Minka2026!")
+
+            viewModel.submit()
+            advanceUntilIdle()
+
+            assertEquals(SignInEvent.SignedIn(pendingStep = null), viewModel.events.first())
+        }
     }
 
     @Test

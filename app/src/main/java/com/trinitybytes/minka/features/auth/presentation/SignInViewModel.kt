@@ -12,6 +12,9 @@ import com.trinitybytes.minka.features.auth.domain.GoogleAccount
 import com.trinitybytes.minka.features.auth.domain.MIN_PASSWORD_LENGTH
 import com.trinitybytes.minka.features.auth.domain.Session
 import com.trinitybytes.minka.features.auth.domain.contactKindOf
+import com.trinitybytes.minka.features.onboarding.application.LaunchTarget
+import com.trinitybytes.minka.features.onboarding.application.ResolveLaunch
+import com.trinitybytes.minka.features.onboarding.domain.SetupStep
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -35,7 +38,8 @@ sealed interface SignInMessage {
 }
 
 sealed interface SignInEvent {
-    data object SignedIn : SignInEvent
+    /** Signed in; [pendingStep] is the profile setup step this account left pending on the device, if any. */
+    data class SignedIn(val pendingStep: SetupStep?) : SignInEvent
     data object OpenRecovery : SignInEvent
 }
 
@@ -70,6 +74,7 @@ class SignInViewModel @Inject constructor(
     private val signIn: SignIn,
     private val getGoogleAccounts: GetGoogleAccounts,
     private val signInWithGoogle: SignInWithGoogle,
+    private val resolveLaunch: ResolveLaunch,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SignInUiState())
@@ -169,12 +174,15 @@ class SignInViewModel @Inject constructor(
             when (result) {
                 is Outcome.Success -> {
                     _uiState.update { it.copy(isOffline = false) }
-                    _events.send(SignInEvent.SignedIn)
+                    _events.send(SignInEvent.SignedIn(pendingStep = pendingSetupStep()))
                 }
                 is Outcome.Failure -> report(result.error)
             }
         }
     }
+
+    /** The setup step this account left pending on the device (S4), or null when Inicio opens. */
+    private suspend fun pendingSetupStep(): SetupStep? = (resolveLaunch() as? LaunchTarget.Setup)?.step
 
     /** Offline shows 1.22; anything else leaves it for the lock dialog or a snackbar. */
     private fun report(error: AuthError) {

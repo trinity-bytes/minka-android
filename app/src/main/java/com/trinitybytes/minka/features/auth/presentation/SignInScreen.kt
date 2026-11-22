@@ -53,13 +53,15 @@ import com.trinitybytes.minka.core.designsystem.component.initialsOf
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 import com.trinitybytes.minka.features.auth.domain.GoogleAccount
+import com.trinitybytes.minka.features.onboarding.domain.SetupStep
 
 /** Figma 1.05–1.09. [withGoogle] opens the Google account sheet (1.09) right away. */
 @Composable
 fun SignInScreen(
     withGoogle: Boolean,
     onBack: () -> Unit,
-    onSignedIn: () -> Unit,
+    /** Receives the profile setup step to resume, or null to open Inicio. */
+    onSignedIn: (pendingStep: SetupStep?) -> Unit,
     onRecoverPassword: () -> Unit,
     onRegister: () -> Unit,
     viewModel: SignInViewModel = hiltViewModel(),
@@ -71,7 +73,7 @@ fun SignInScreen(
         viewModel.onStart(withGoogle)
         viewModel.events.collect { event ->
             when (event) {
-                SignInEvent.SignedIn -> signedIn()
+                is SignInEvent.SignedIn -> signedIn(event.pendingStep)
                 SignInEvent.OpenRecovery -> recover()
             }
         }

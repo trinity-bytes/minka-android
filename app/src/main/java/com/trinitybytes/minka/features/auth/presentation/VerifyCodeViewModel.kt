@@ -106,13 +106,11 @@ class VerifyCodeViewModel @Inject constructor(
         lastRequest = ::verify
         _uiState.update { it.copy(isLoading = true, message = null) }
         viewModelScope.launch {
-            val result = verifyRegistration(challengeId, state.code)
+            // The setup is saved before the session: a crash in between lands on Welcome, never past the setup (S4).
+            val result = verifyRegistration(challengeId, state.code) { beginOnboarding(it.user.id) }
             _uiState.update { it.copy(isLoading = false, isOffline = result.isOffline()) }
             when (result) {
-                is Outcome.Success -> {
-                    beginOnboarding(result.value.user.id)
-                    _events.send(VerifyEvent.Verified)
-                }
+                is Outcome.Success -> _events.send(VerifyEvent.Verified)
                 is Outcome.Failure -> when (val error = result.error) {
                     is AuthError.WrongCode -> _uiState.update {
                         it.copy(attemptsLeft = error.attemptsLeft, codeError = CodeError.Wrong(error.attemptsLeft))

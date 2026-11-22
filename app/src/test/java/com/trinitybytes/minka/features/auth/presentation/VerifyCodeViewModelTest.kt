@@ -7,6 +7,7 @@ import com.trinitybytes.minka.features.auth.application.VerifyRegistration
 import com.trinitybytes.minka.features.auth.domain.AuthError
 import com.trinitybytes.minka.features.auth.domain.AuthOutcome
 import com.trinitybytes.minka.features.auth.domain.Session
+import com.trinitybytes.minka.features.auth.domain.SessionStore
 import com.trinitybytes.minka.features.onboarding.FakeProgressStore
 import com.trinitybytes.minka.features.onboarding.application.BeginOnboarding
 import com.trinitybytes.minka.features.onboarding.domain.OnboardingProgress
@@ -14,6 +15,7 @@ import com.trinitybytes.minka.features.onboarding.domain.SetupStep
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -44,7 +46,7 @@ class VerifyCodeViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(resendAfterSeconds: Int = 60) = VerifyCodeViewModel(
+    private fun viewModel(resendAfterSeconds: Int = 60, sessions: SessionStore = sessionStore) = VerifyCodeViewModel(
         SavedStateHandle(
             mapOf(
                 VerifyCodeViewModel.ARG_CHALLENGE_ID to "challenge-1",
@@ -53,7 +55,7 @@ class VerifyCodeViewModelTest {
                 VerifyCodeViewModel.ARG_RESEND_AFTER_SECONDS to resendAfterSeconds,
             ),
         ),
-        VerifyRegistration(repository, sessionStore),
+        VerifyRegistration(repository, sessions),
         ResendCode(repository),
         BeginOnboarding(progressStore),
     )
@@ -110,6 +112,28 @@ class VerifyCodeViewModelTest {
         advanceUntilIdle()
 
         assertEquals(OnboardingProgress.Pending(TEST_SESSION.user.id, SetupStep.District), progressStore.progress.value)
+        assertEquals(VerifyEvent.Verified, viewModel.events.first())
+    }
+
+    @Test
+    fun `the pending setup is saved before the session so a crash in between never skips it`() = runTest(dispatcher) {
+        var progressWhenSignedIn: OnboardingProgress? = null
+        val recordingSessions = object : SessionStore {
+            override val session = MutableStateFlow<Session?>(null)
+            override suspend fun save(session: Session) {
+                progressWhenSignedIn = progressStore.progress.value
+                this.session.value = session
+            }
+            override suspend fun clear() = Unit
+        }
+        val viewModel = viewModel(sessions = recordingSessions)
+        viewModel.onCodeChange("482915")
+
+        viewModel.verify()
+        advanceUntilIdle()
+
+        assertEquals(OnboardingProgress.Pending(TEST_SESSION.user.id, SetupStep.District), progressWhenSignedIn)
+        assertEquals(TEST_SESSION, recordingSessions.session.value)
         assertEquals(VerifyEvent.Verified, viewModel.events.first())
     }
 

@@ -57,8 +57,19 @@ class VerifyRegistration @Inject constructor(
     private val repository: AuthRepository,
     private val sessionStore: SessionStore,
 ) {
-    suspend operator fun invoke(challengeId: String, code: String): AuthOutcome<Session> =
-        repository.verifyCode(challengeId, code).onSuccess { sessionStore.save(it) }
+    /**
+     * [beforeSignIn] runs once the code is accepted and before the session is stored, so whatever it
+     * saves already exists whenever the session does, even if the app dies in between.
+     */
+    suspend operator fun invoke(
+        challengeId: String,
+        code: String,
+        beforeSignIn: suspend (Session) -> Unit = {},
+    ): AuthOutcome<Session> =
+        repository.verifyCode(challengeId, code).onSuccess {
+            beforeSignIn(it)
+            sessionStore.save(it)
+        }
 }
 
 class ResendCode @Inject constructor(private val repository: AuthRepository) {
