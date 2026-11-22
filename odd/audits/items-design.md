@@ -43,9 +43,11 @@ The Figma file describes the **whole product**: flows 06–14 already design exc
 
 5.10 as the flow's hero moment, the wavy step progress, the 2.01 and 3.03 skeletons, and the 5.05 field errors.
 
-## Proposed, pending approval: dedicated android-design pass
+## Dedicated android-design pass (approved and applied)
 
 The first pass leaned on Nielsen; this pass applies the android-design skill's own checks (adaptation, emphasis, color roles).
+
+Applied: new shared component "Navigation rail" (`477:192`, Components page). Expanded rows 2.02 (4-column grid; cards 164dp so four fit beside the rail at 840dp), 3.05 (list-detail), 4.01, 5.03, 5.08 and 11.05. Selected rows in list-detail use `brand/mint`, so the green stays reserved for the primary action. 2.04 keeps "Ampliar distancia" as its only filled action. 3.01 categories use static accents only (Tecnología → `accent/lavender-container`, Deportes → `accent/sky-container`); Tecnología's icon still uses `secondary/on-container` because no on-lavender accent exists.
 
 | # | State | Rule | Problem | Proposed change |
 |---|---|---|---|---|
