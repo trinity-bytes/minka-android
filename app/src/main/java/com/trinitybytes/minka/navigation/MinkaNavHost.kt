@@ -16,6 +16,7 @@ import com.trinitybytes.minka.features.auth.presentation.RegisterScreen
 import com.trinitybytes.minka.features.auth.presentation.SignInScreen
 import com.trinitybytes.minka.features.auth.presentation.VerifyCodeScreen
 import com.trinitybytes.minka.features.auth.presentation.VerifyCodeViewModel
+import com.trinitybytes.minka.features.items.presentation.publish.PublishScreen
 import com.trinitybytes.minka.features.onboarding.domain.SetupStep
 import com.trinitybytes.minka.features.onboarding.presentation.AllSetScreen
 import com.trinitybytes.minka.features.onboarding.presentation.DistrictScreen
@@ -76,8 +77,9 @@ data object AllSetRoute : NavKey
 @Serializable
 data object HomeRoute : NavKey
 
+/** Publicar (Figma 5.01–5.11), full screen; with [draftId] it resumes that draft (audit P1). */
 @Serializable
-data object PublishRoute : NavKey
+data class PublishRoute(val draftId: String? = null) : NavKey
 
 /**
  * Composed from the first frame so the Nav3 back stack restores after process death. [SplashRoute]
@@ -183,7 +185,7 @@ fun MinkaNavHost(launch: SplashUiState) {
                 AllSetScreen(onGoHome = { replace(HomeRoute) })
             }
             shellEntries(
-                onPublish = dropUnlessResumed { stack.add(PublishRoute) },
+                onPublish = dropUnlessResumed { stack.add(PublishRoute()) },
                 onClose = dropUnlessResumed { if (stack.size > 1) stack.removeLastOrNull() },
             )
         },
@@ -196,7 +198,10 @@ private fun EntryProviderScope<NavKey>.shellEntries(onPublish: () -> Unit, onClo
 }
 
 private fun EntryProviderScope<NavKey>.publishEntries(onClose: () -> Unit) {
-    entry<PublishRoute> { PublishPlaceholder(onClose) }
+    // There is no listing detail yet, so "Ver publicación" leaves the flow like the close icon does.
+    entry<PublishRoute> { key ->
+        PublishScreen(route = key, onClose = onClose, onViewListing = { onClose() })
+    }
 }
 
 /** The route the app starts at for a launch [SplashDestination]. */

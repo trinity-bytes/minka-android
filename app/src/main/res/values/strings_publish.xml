@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Categories (Figma 3.01 and the "Busca:" chips of 5.06) and "Estado" (Figma 5.01) -->
+    <string name="category_home">Hogar</string>
+    <string name="category_clothing">Ropa</string>
+    <string name="category_books">Libros</string>
+    <string name="category_technology">Tecnología</string>
+    <string name="category_plants">Plantas</string>
+    <string name="category_sports">Deportes</string>
+    <string name="category_tools">Herramientas</string>
+    <string name="category_services">Servicios</string>
+    <string name="category_any">Lo que sea</string>
+    <string name="condition_new">Nuevo</string>
+    <string name="condition_like_new">Como nuevo</string>
+    <string name="condition_good">Buen estado</string>
+    <string name="condition_used">Usado</string>
+
+    <!-- Publicar: shell and progress (Figma 5.01–5.08) -->
+    <string name="publish_step">Paso %1$d de %2$d · %3$s</string>
+    <string name="publish_step_basics">Lo básico</string>
+    <string name="publish_step_exchange">A cambio</string>
+    <string name="publish_step_review">Revisión</string>
+    <string name="publish_save_draft">Guardar borrador</string>
+    <string name="publish_continue">Continuar</string>
+    <string name="publish_publish">Publicar</string>
+    <string name="publish_required_note">* Obligatorio</string>
+
+    <!-- Step 1: lo básico (5.01–5.05) -->
+    <string name="publish_basics_title">¿Qué vas a truequear?</string>
+    <string name="publish_photos_add">Agregar fotos</string>
+    <string name="publish_photos_add_more">Agregar otra foto</string>
+    <string name="publish_photos_hint">Hasta %1$d fotos. Con buena luz se truequea más rápido.</string>
+    <string name="publish_photos_cover_hint">La primera foto es la portada. Toca una foto para hacerla portada o quitarla.</string>
+    <string name="publish_photo_cover">Portada</string>
+    <string name="publish_photo_label">Foto %1$d</string>
+    <string name="publish_photo_label_cover">Foto %1$d, portada</string>
+    <string name="publish_photo_remove">Quitar foto %1$d</string>
+    <string name="publish_title_label">Título *</string>
+    <string name="publish_title_placeholder">Ej. Juego de platos de cerámica</string>
+    <string name="publish_category_label">Categoría *</string>
+    <string name="publish_category_placeholder">Elige una categoría</string>
+    <string name="publish_category_sheet_title">Categoría</string>
+    <string name="publish_condition_label">Estado *</string>
+    <string name="publish_more_details">Agregar más detalles (opcional)</string>
+    <string name="publish_error_photo">Agrega al menos una foto</string>
+    <string name="publish_error_title">Agrega un título</string>
+    <string name="publish_error_category">Elige una categoría</string>
+    <string name="publish_error_condition">Elige el estado</string>
+    <string name="publish_error_exchange">Elige al menos una categoría</string>
+    <string name="publish_error_district">Elige un distrito</string>
+
+    <!-- Sheets (5.02, 5.03, 5.04) -->
+    <string name="publish_source_title">Agregar fotos</string>
+    <string name="publish_source_camera">Tomar foto</string>
+    <string name="publish_source_camera_hint">Abre la cámara</string>
+    <string name="publish_source_gallery">Elegir de la galería</string>
+    <string name="publish_source_gallery_hint">Selector de fotos del sistema, hasta %1$d</string>
+    <string name="publish_photo_actions_title">Foto %1$d</string>
+    <string name="publish_photo_make_cover">Hacer portada</string>
+    <string name="publish_photo_remove_action">Quitar</string>
+    <string name="publish_details_title">Más detalles</string>
+    <string name="publish_details_description">Descripción</string>
+    <string name="publish_details_value">Valor estimado (opcional)</string>
+    <string name="publish_details_value_hint">Solo como referencia; no se cobra nada.</string>
+    <string name="publish_details_done">Listo</string>
+
+    <!-- Step 2: a cambio (5.06, 5.07) -->
+    <string name="publish_wants_title">¿Qué te gustaría a cambio?</string>
+    <string name="publish_wants_body">Elige una o más categorías; así te encuentran más rápido.</string>
+    <string name="publish_location_title">Ubicación y entrega</string>
+    <string name="publish_district_row">Distrito: %1$s</string>
+    <string name="publish_district_row_empty">Elige tu distrito</string>
+    <string name="publish_district_row_hint">Solo se muestra el distrito</string>
+    <string name="publish_district_sheet_title">Distrito</string>
+    <string name="publish_meeting_row">Punto de encuentro sugerido</string>
+    <string name="publish_meeting_row_empty">Opcional · agrega un lugar seguro</string>
+    <string name="publish_meeting_title">Punto de encuentro</string>
+    <string name="publish_meeting_label">Lugar</string>
+    <string name="publish_meeting_placeholder">Ej. Parque Kennedy</string>
+    <string name="publish_meeting_cancel">Cancelar</string>
+    <string name="publish_hide_location">Ocultar mi ubicación exacta</string>
+    <string name="publish_hide_location_hint">Los vecinos solo ven tu distrito.</string>
+    <string name="publish_home_delivery">Entrega a domicilio</string>
+    <string name="publish_home_delivery_hint">Coordinas el envío por el chat del intercambio.</string>
+
+    <!-- Step 3: revisión (5.08) -->
+    <string name="publish_review_title">Revisa tu publicación</string>
+    <string name="publish_review_preview_caption">Así la verán los demás</string>
+    <string name="publish_review_preview_info">%1$s · se publicará ahora</string>
+    <string name="publish_review_wants_chip">Busca: %1$s</string>
+    <string name="publish_review_photos">Fotos</string>
+    <plurals name="publish_review_photos_summary">
+        <item quantity="one">%1$d foto · portada elegida</item>
+        <item quantity="other">%1$d fotos · portada elegida</item>
+    </plurals>
+    <string name="publish_review_title_category">Título y categoría</string>
+    <string name="publish_review_wants">Qué buscas a cambio</string>
+    <string name="publish_review_description">Descripción (opcional)</string>
+    <string name="publish_review_value">Valor estimado (opcional)</string>
+    <string name="publish_review_empty">Sin completar</string>
+    <string name="publish_review_edit">Editar</string>
+    <string name="publish_review_add">Agregar</string>
+    <string name="publish_review_edit_cd">Editar %1$s</string>
+    <string name="publish_review_add_cd">Agregar %1$s</string>
+    <string name="publish_money">S/ %1$s</string>
+
+    <!-- Publishing and published (5.09, 5.10) -->
+    <string name="publish_publishing_title">Publicando…</string>
+    <plurals name="publish_publishing_body">
+        <item quantity="one">Subiendo %1$d foto. Si se corta la conexión, la guardamos como borrador.</item>
+        <item quantity="other">Subiendo %1$d fotos. Si se corta la conexión, la guardamos como borrador.</item>
+    </plurals>
+    <string name="publish_done_title">¡Publicado!</string>
+    <string name="publish_done_body">%1$s ya es visible para vecinos de %2$s.</string>
+    <string name="publish_done_sticker">Segunda vida</string>
+    <string name="publish_done_view">Ver publicación</string>
+    <string name="publish_done_share">Compartir</string>
+    <string name="publish_done_another">Publicar otro</string>
+    <string name="publish_share_text">Mira lo que publiqué en Mink’a: %1$s</string>
+    <string name="publish_share_chooser">Compartir publicación</string>
+
+    <!-- Exit (5.11) -->
+    <string name="publish_exit_title">¿Guardar como borrador?</string>
+    <string name="publish_exit_body">Puedes terminarla después desde Perfil › Mis publicaciones.</string>
+    <string name="publish_exit_discard">Descartar</string>
+    <string name="publish_exit_save">Guardar</string>
+
+    <!-- Feedback -->
+    <string name="publish_message_draft_saved">Borrador guardado</string>
+    <string name="publish_message_publish_failed">No pudimos publicar. Guardamos tu publicación como borrador.</string>
+    <string name="publish_message_unexpected">Algo salió mal. Inténtalo de nuevo.</string>
+    <string name="publish_message_no_camera">No encontramos una app de cámara.</string>
+    <string name="publish_message_photo_failed">No pudimos cargar esa foto.</string>
+</resources>
