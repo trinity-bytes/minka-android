@@ -10,14 +10,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material3.MaterialTheme
@@ -25,12 +26,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -39,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trinitybytes.minka.R
+import com.trinitybytes.minka.core.designsystem.component.ObserveAsEvents
 import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
@@ -72,13 +74,11 @@ fun DistrictScreen(
     val locationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         viewModel.onLocationPermissionResult(granted)
     }
-    LaunchedEffect(viewModel) {
-        viewModel.events.collect { event ->
-            when (event) {
-                // 1.17 "Basta la aproximada": fine location is never requested.
-                DistrictEvent.RequestLocationPermission -> locationPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-                DistrictEvent.Chosen -> chosen()
-            }
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            // 1.17 "Basta la aproximada": fine location is never requested.
+            DistrictEvent.RequestLocationPermission -> locationPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+            DistrictEvent.Chosen -> chosen()
         }
     }
     DistrictContent(
@@ -147,6 +147,7 @@ fun DistrictContent(
         contentAlignment = Alignment.TopCenter,
     ) {
         Scaffold(
+            contentWindowInsets = WindowInsets.safeContent,
             modifier = Modifier.formColumnWidth(),
             topBar = { MinkaTopAppBar(title = "", onBack = onBack) },
             snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
@@ -156,43 +157,57 @@ fun DistrictContent(
                     .fillMaxSize()
                     .padding(padding)
                     .consumeWindowInsets(padding)
-                    .imePadding()
                     .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
                 verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
             ) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
+                LazyColumn(
+                    modifier = Modifier.weight(1f).selectableGroup().testTag("district_list"),
                 ) {
-                    SetupStepHeader(
-                        progress = 2f / 3,
-                        step = stringResource(R.string.setup_district_step),
-                        title = stringResource(R.string.setup_district_title),
-                    )
-                    Text(
-                        text = stringResource(R.string.setup_district_body),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    MinkaButton(
-                        text = stringResource(R.string.setup_use_location),
-                        onClick = onUseMyLocation,
-                        modifier = Modifier.fillMaxWidth(),
-                        style = MinkaButtonStyle.Outlined,
-                        enabled = !uiState.isSaving,
-                        leadingIcon = Icons.Rounded.MyLocation,
-                        size = MinkaButtonSize.Large,
-                        loading = uiState.isLocating,
-                    )
-                    MinkaSearchField(
-                        value = uiState.query,
-                        onValueChange = onQueryChange,
-                        placeholder = stringResource(R.string.setup_district_search),
-                        enabled = !uiState.isSaving,
-                    )
-                    DistrictList(uiState.visibleDistricts, uiState.selectedId, !uiState.isSaving, onDistrictSelected)
+                    item(key = "header", contentType = "header") {
+                        Column(
+                            modifier = Modifier.padding(bottom = MinkaSpacing.s16),
+                            verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
+                        ) {
+                            SetupStepHeader(
+                                progress = 2f / 3,
+                                step = stringResource(R.string.setup_district_step),
+                                title = stringResource(R.string.setup_district_title),
+                            )
+                            Text(
+                                text = stringResource(R.string.setup_district_body),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            MinkaButton(
+                                text = stringResource(R.string.setup_use_location),
+                                onClick = onUseMyLocation,
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MinkaButtonStyle.Outlined,
+                                enabled = !uiState.isSaving,
+                                leadingIcon = Icons.Rounded.MyLocation,
+                                size = MinkaButtonSize.Large,
+                                loading = uiState.isLocating,
+                            )
+                            MinkaSearchField(
+                                value = uiState.query,
+                                onValueChange = onQueryChange,
+                                placeholder = stringResource(R.string.setup_district_search),
+                                enabled = !uiState.isSaving,
+                            )
+                        }
+                    }
+                    items(
+                        items = uiState.visibleDistricts,
+                        key = { "district:${it.id}" },
+                        contentType = { "district" },
+                    ) { district ->
+                        MinkaRadioRow(
+                            selected = district.id == uiState.selectedId,
+                            onClick = { onDistrictSelected(district.id) },
+                            label = district.name,
+                            enabled = !uiState.isSaving,
+                        )
+                    }
                 }
                 MinkaButton(
                     text = stringResource(R.string.setup_continue),
@@ -203,25 +218,6 @@ fun DistrictContent(
                     loading = uiState.isSaving,
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun DistrictList(
-    districts: List<District>,
-    selectedId: String?,
-    enabled: Boolean,
-    onDistrictSelected: (String) -> Unit,
-) {
-    Column(Modifier.selectableGroup()) {
-        districts.forEach { district ->
-            MinkaRadioRow(
-                selected = district.id == selectedId,
-                onClick = { onDistrictSelected(district.id) },
-                label = district.name,
-                enabled = enabled,
-            )
         }
     }
 }

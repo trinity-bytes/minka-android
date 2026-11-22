@@ -2,6 +2,10 @@ package com.trinitybytes.minka.core.designsystem.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Favorite
@@ -9,7 +13,8 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -37,7 +42,7 @@ enum class MinkaTopAppBarSize {
  * Top app bar on the page surface. With [onBack] it shows the back arrow; [actions] are 48 dp
  * icon buttons. The title styles come from the theme typography (titleLarge and headlineMedium).
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MinkaTopAppBar(
     title: String,
@@ -60,13 +65,15 @@ fun MinkaTopAppBar(
         MinkaTopAppBarSize.Small -> TopAppBar(
             title = { Text(title, modifier = Modifier.semantics { heading() }) },
             modifier = modifier,
+            windowInsets = WindowInsets.safeContent.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
             navigationIcon = navigationIcon,
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(actionIconContentColor = onSurface),
         )
-        MinkaTopAppBarSize.Large -> LargeTopAppBar(
+        MinkaTopAppBarSize.Large -> LargeFlexibleTopAppBar(
             title = { Text(title, modifier = Modifier.semantics { heading() }) },
             modifier = modifier,
+            windowInsets = WindowInsets.safeContent.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
             navigationIcon = navigationIcon,
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(actionIconContentColor = onSurface),

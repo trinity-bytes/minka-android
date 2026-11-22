@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -25,7 +25,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -46,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trinitybytes.minka.R
+import com.trinitybytes.minka.core.designsystem.component.ObserveAsEvents
 import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
@@ -76,18 +76,16 @@ fun NotificationsScreen(onDone: () -> Unit, viewModel: NotificationsViewModel = 
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         viewModel.onPermissionResult(granted)
     }
-    LaunchedEffect(viewModel) {
-        viewModel.events.collect { event ->
-            when (event) {
-                // Only emitted on Android 13+, where the permission exists.
-                NotificationsEvent.RequestPermission -> permission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                NotificationsEvent.Done -> done()
-            }
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            // Only emitted on Android 13+, where the permission exists.
+            NotificationsEvent.RequestPermission -> permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            NotificationsEvent.Done -> done()
         }
     }
     Box(Modifier.fillMaxSize()) {
         NotificationsContent(onEnable = viewModel::onEnable, onNotNow = viewModel::onNotNow)
-        MinkaSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())
+        MinkaSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).safeContentPadding())
     }
 }
 
@@ -130,16 +128,14 @@ fun AllSetScreen(onGoHome: () -> Unit, viewModel: AllSetViewModel = hiltViewMode
         text = uiState.message?.let { setupMessageText(it) },
         onShown = viewModel::onMessageShown,
     )
-    LaunchedEffect(viewModel) {
-        viewModel.events.collect { event ->
-            when (event) {
-                AllSetEvent.GoHome -> goHome()
-            }
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            AllSetEvent.GoHome -> goHome()
         }
     }
     Box(Modifier.fillMaxSize()) {
         AllSetContent(uiState = uiState, onExplore = viewModel::onExplore)
-        MinkaSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())
+        MinkaSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).safeContentPadding())
     }
 }
 
@@ -182,7 +178,7 @@ private fun PhotoStepLayout(
         AdaptivePhotoLayout(
             photo = { photoModifier -> PhotoStageBox(stage, photoModifier) },
             modifier = Modifier
-                .safeDrawingPadding()
+                .safeContentPadding()
                 .padding(MinkaSpacing.s16),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

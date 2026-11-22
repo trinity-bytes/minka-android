@@ -56,7 +56,7 @@ fun MinkaRadioRow(
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface.let { if (enabled) it else it.copy(alpha = DisabledContentAlpha) },
+            color = MaterialTheme.colorScheme.onSurface.let { if (enabled) it else it.copy(alpha = MinkaDisabled.ContentAlpha) },
         )
     }
 }

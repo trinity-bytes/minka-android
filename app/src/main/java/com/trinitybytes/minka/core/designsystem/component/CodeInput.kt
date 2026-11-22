@@ -89,7 +89,7 @@ fun MinkaCodeInput(
                             Text(
                                 text = digit.toString(),
                                 style = MaterialTheme.typography.headlineSmall,
-                                color = scheme.onSurface.let { if (enabled) it else it.copy(alpha = DisabledContentAlpha) },
+                                color = scheme.onSurface.let { if (enabled) it else it.copy(alpha = MinkaDisabled.ContentAlpha) },
                             )
                         }
                     }

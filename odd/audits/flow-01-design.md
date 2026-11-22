@@ -95,6 +95,11 @@
 - Figma: 1.22 keeps the form visible (registration form example) with snackbar "Sin conexión. Lo escrito sigue aquí." and action "Reintentar". Caption: "Al enviar sin red, la pantalla no cambia: lo escrito queda visible y un snackbar ofrece Reintentar. La pantalla completa de error solo se usa cuando un paso no puede mostrar nada sin red (p. ej. la lista de distritos)."
 - Code: `SignInScreen.kt:121` swaps to `MinkaOfflineScreen` when `uiState.isOffline`; same pattern likely in register, verify code and recovery.
 
+## Flow 01 implementation alignment (2026-11-22)
+
+- `MinkaTopAppBar` uses Material 3 `LargeFlexibleTopAppBar` with the existing collapsing behavior (ab72e56); the approved light theme and Inter/Fraunces typography remain unchanged.
+- The activity keeps transparent system bars and `adjustResize`. Flow screens and app bars use safe-content insets for system bars, keyboard, and gesture regions; scaffold padding is consumed without a second IME inset (78184cc). This is a code-level check: visual and keyboard/gesture verification on a device remains pending.
+
 ## Considered, not changed
 
 | Item | Reason |
