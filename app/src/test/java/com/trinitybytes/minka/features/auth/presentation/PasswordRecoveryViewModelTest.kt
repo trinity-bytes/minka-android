@@ -218,6 +218,7 @@ class PasswordRecoveryViewModelTest {
     }
 
     private class FakeRepository : AuthRepository {
+        override suspend fun signOut(token: String): com.trinitybytes.minka.features.auth.domain.AuthOutcome<Unit> = com.trinitybytes.minka.core.domain.Outcome.Success(Unit)
         var answer: suspend () -> AuthOutcome<PasswordReset> = { Outcome.Success(PasswordReset("x", 30, 60)) }
         val resets = mutableListOf<String>()
 

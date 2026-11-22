@@ -12,6 +12,9 @@ import com.trinitybytes.minka.features.auth.domain.Session
 import com.trinitybytes.minka.features.auth.domain.VerificationChallenge
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.delete
+import io.ktor.client.request.header
+import io.ktor.http.HttpHeaders
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -24,6 +27,9 @@ import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
 class KtorAuthRepository @Inject constructor(private val client: HttpClient) : AuthRepository {
+
+    override suspend fun signOut(token: String): AuthOutcome<Unit> =
+        call<Boolean, Unit>({ }) { client.delete("auth/sessions/current") { header(HttpHeaders.Authorization, "Bearer $token") } }
 
     override suspend fun signIn(contact: String, password: String): AuthOutcome<Session> =
         call<SessionDto, Session>(SessionDto::toDomain) { post("auth/sessions", SignInRequest(contact, password)) }

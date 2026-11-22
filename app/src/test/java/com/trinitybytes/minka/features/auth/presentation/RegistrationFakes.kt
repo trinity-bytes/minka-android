@@ -23,6 +23,7 @@ val TEST_SESSION = Session("token-1", User("user-luis", "Luis Mamani", "luis.mam
 
 /** Registration half of the auth port, scripted per test. */
 class FakeRegistrationRepository : AuthRepository {
+        override suspend fun signOut(token: String): com.trinitybytes.minka.features.auth.domain.AuthOutcome<Unit> = com.trinitybytes.minka.core.domain.Outcome.Success(Unit)
     val registrations = mutableListOf<Registration>()
     val verifications = mutableListOf<Pair<String, String>>()
     val resends = mutableListOf<String>()

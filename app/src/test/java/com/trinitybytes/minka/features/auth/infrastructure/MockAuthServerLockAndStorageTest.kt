@@ -63,6 +63,13 @@ class MockAuthServerLockAndStorageTest {
     )
 
     @Test
+    fun `stored credentials are hashed and still authenticate`() = runTest {
+        assertEquals("Ana Quispe", repo.signIn(DEMO_EMAIL, DEMO_PASSWORD).value().user.name)
+        assertFalse(storage.memory.read("auth")!!.contains(DEMO_PASSWORD))
+        assertTrue(repo.signIn(DEMO_EMAIL, "wrong").error() is AuthError.InvalidCredentials)
+    }
+
+    @Test
     fun `lock on email then phone with right password is locked`() = runTest {
         repeat(5) { repo.signIn(DEMO_EMAIL, "nope") }
         assertEquals(AuthError.AccountLocked(retryAfterSeconds = 900), repo.signIn("+51 987 654 321", DEMO_PASSWORD).error())
@@ -102,6 +109,8 @@ class MockAuthServerLockAndStorageTest {
         storage.memory.write("auth", legacy)
         val r = repository()
         assertEquals("Luis", r.signIn("luis@x.pe", "Pw123456!").value().user.name)
+        assertFalse(storage.memory.read("auth")!!.contains("Pw123456!"))
+        assertFalse(storage.memory.read("auth")!!.contains(DEMO_PASSWORD))
         assertEquals("Rosa", r.verifyCode("c1", DEMO_VERIFICATION_CODE).value().user.name)
         // legacy contact-keyed counter is ignored by the new account key (advisory)
         assertEquals(AuthError.InvalidCredentials(attemptsLeft = 4), r.signIn(DEMO_EMAIL, "nope").error())

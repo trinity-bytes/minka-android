@@ -80,7 +80,7 @@ class ChooseDistrict @Inject constructor(
 ) {
     suspend operator fun invoke(districtId: String): ProfileOutcome<Unit> = storingOnDevice {
         val userId = sessionStore.session.first()?.user?.id ?: return@storingOnDevice Outcome.Failure(ProfileError.Unexpected)
-        repository.saveDistrict(userId, districtId).onSuccess {
+        repository.saveDistrict(districtId).onSuccess {
             progressStore.save(OnboardingProgress.Pending(userId, SetupStep.Interests))
         }
     }
@@ -98,7 +98,7 @@ class SaveInterests @Inject constructor(
 ) {
     suspend operator fun invoke(interestIds: List<String>): ProfileOutcome<Unit> = storingOnDevice {
         val userId = sessionStore.session.first()?.user?.id ?: return@storingOnDevice Outcome.Failure(ProfileError.Unexpected)
-        repository.saveInterests(userId, interestIds).onSuccess {
+        repository.saveInterests(interestIds).onSuccess {
             progressStore.save(OnboardingProgress.Pending(userId, SetupStep.Notifications))
         }
     }
@@ -139,7 +139,7 @@ class GetSetupSummary @Inject constructor(
 ) {
     suspend operator fun invoke(): SetupSummary {
         val user = sessionStore.session.first()?.user ?: return SetupSummary("", null)
-        val district = when (val profile = repository.profile(user.id).map { it.district?.name }) {
+        val district = when (val profile = repository.profile().map { it.district?.name }) {
             is Outcome.Success -> profile.value
             is Outcome.Failure -> null
         }

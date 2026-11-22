@@ -11,6 +11,11 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.Serializable
 import java.time.Clock
 import java.util.UUID
+import java.util.Base64
+import java.security.MessageDigest
+import java.security.SecureRandom
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.PBEKeySpec
 
 /** Seed account of the mock API (README, "Cuenta demo"). */
 const val DEMO_EMAIL = "ana.quispe@gmail.com"
@@ -33,6 +38,13 @@ class MockAuthServer(
 
     fun routes(): Set<MockRoute> = setOf(
         MockRoute(HttpMethod.Post, "auth/sessions") { signIn(it.body()) },
+        MockRoute(HttpMethod.Delete, "auth/sessions/current") { call ->
+            val token = call.bearerToken() ?: return@MockRoute MockReply.error(HttpStatusCode.Unauthorized, "unauthorized")
+            transaction { db ->
+                if (db.sessions.remove(token) == null) MockReply.error(HttpStatusCode.Unauthorized, "unauthorized")
+                else MockReply.json(HttpStatusCode.OK, true)
+            }
+        },
         MockRoute(HttpMethod.Get, "auth/google/accounts") {
             MockReply.json(HttpStatusCode.OK, GOOGLE_ACCOUNTS)
         },
@@ -63,7 +75,7 @@ class MockAuthServer(
             db.lockedUntil.remove(key)
             db.failedSignIns.remove(key)
         }
-        if (account == null || account.password != request.password) {
+        if (account == null || !PasswordHash.matches(request.password, account.password)) {
             val failures = (db.failedSignIns[key] ?: 0) + 1
             if (failures >= MAX_SIGN_IN_ATTEMPTS) {
                 db.failedSignIns.remove(key)
@@ -100,7 +112,7 @@ class MockAuthServer(
         db.challenges.values.removeAll { it.accountId == null && it.registration.contact == contact }
         val challenge = ChallengeRecord(
             id = newId(),
-            registration = request.copy(contact = contact),
+            registration = request.copy(contact = contact, password = PasswordHash.hash(request.password)),
             attemptsLeft = MAX_CODE_ATTEMPTS,
             resendAvailableAt = clock.millis() + RESEND_AFTER_SECONDS * 1000L,
         )
@@ -189,8 +201,18 @@ class MockAuthServer(
 
     private fun newId() = UUID.randomUUID().toString()
 
+    suspend fun userForToken(token: String): String? = document.read { it.sessions[token] }
+
     /** Runs [block] on a copy of the stored state, one request at a time; the copy is kept only once written. */
-    private suspend fun transaction(block: (AuthDb) -> MockReply): MockReply = document.update(block)
+    private suspend fun transaction(block: (AuthDb) -> MockReply): MockReply = document.update { db ->
+        db.accounts.replaceAll { account ->
+            account.copy(password = account.password?.let(PasswordHash::migrate))
+        }
+        db.challenges.replaceAll { _, challenge ->
+            challenge.copy(registration = challenge.registration.copy(password = PasswordHash.migrate(challenge.registration.password)))
+        }
+        block(db)
+    }
 
     private fun ChallengeRecord.toDto() = ChallengeDto(
         id = id,
@@ -260,9 +282,39 @@ private data class AuthDb(
                     name = "Ana Quispe",
                     email = DEMO_EMAIL,
                     phone = DEMO_PHONE,
-                    password = DEMO_PASSWORD,
+                    password = PasswordHash.hash(DEMO_PASSWORD),
                 ),
             ),
         )
+    }
+}
+
+internal fun MockCall.bearerToken(): String? = authorization
+    ?.takeIf { it.startsWith("Bearer ") }
+    ?.removePrefix("Bearer ")
+    ?.takeIf { it.isNotBlank() }
+
+private object PasswordHash {
+    private const val PREFIX = "pbkdf2-sha256$"
+    private const val ITERATIONS = 120_000
+    fun migrate(value: String): String = if (value.startsWith(PREFIX)) value else hash(value)
+    fun hash(password: String): String {
+        val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
+        return PREFIX + Base64.getEncoder().encodeToString(salt) + "$" +
+            Base64.getEncoder().encodeToString(derive(password, salt))
+    }
+    fun matches(password: String, stored: String?): Boolean {
+        if (stored == null || !stored.startsWith(PREFIX)) return false
+        return try {
+            val parts = stored.removePrefix(PREFIX).split('$')
+            val salt = Base64.getDecoder().decode(parts[0])
+            val expected = Base64.getDecoder().decode(parts[1])
+            MessageDigest.isEqual(expected, derive(password, salt))
+        } catch (_: IllegalArgumentException) { false }
+    }
+    private fun derive(password: String, salt: ByteArray): ByteArray {
+        val spec = PBEKeySpec(password.toCharArray(), salt, ITERATIONS, 256)
+        return try { SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded }
+        finally { spec.clearPassword() }
     }
 }

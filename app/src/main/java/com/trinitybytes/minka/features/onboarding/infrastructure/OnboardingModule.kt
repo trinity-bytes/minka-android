@@ -42,7 +42,7 @@ abstract class OnboardingModule {
 
         @Provides
         @Singleton
-        fun provideMockProfileServer(storage: MockStorage) = MockProfileServer(storage)
+        fun provideMockProfileServer(storage: MockStorage, auth: com.trinitybytes.minka.features.auth.infrastructure.MockAuthServer) = MockProfileServer(storage, auth)
 
         @Provides
         @ElementsIntoSet

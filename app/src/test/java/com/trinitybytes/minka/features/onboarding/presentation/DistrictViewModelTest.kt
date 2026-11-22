@@ -138,7 +138,7 @@ class DistrictViewModelTest {
         assertFalse(viewModel.state.canContinue)
         advanceUntilIdle()
 
-        assertEquals(listOf(ANA.user.id to SAN_ISIDRO.id), repository.savedDistricts)
+        assertEquals(listOf(SAN_ISIDRO.id), repository.savedDistricts)
         assertEquals(OnboardingProgress.Pending(ANA.user.id, SetupStep.Interests), progress.progress.value)
         assertEquals(DistrictEvent.Chosen, viewModel.events.first())
         assertFalse(viewModel.state.isSaving)
@@ -183,7 +183,7 @@ class DistrictViewModelTest {
         viewModel.retry()
         advanceUntilIdle()
 
-        assertEquals(listOf(ANA.user.id to BARRANCO.id), repository.savedDistricts)
+        assertEquals(listOf(BARRANCO.id), repository.savedDistricts)
         assertNull(viewModel.state.message)
         assertEquals(listOf<DistrictEvent>(DistrictEvent.Chosen), events)
     }

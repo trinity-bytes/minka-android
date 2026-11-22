@@ -20,6 +20,12 @@ class MockDocument<T>(
     /** The JSON last written (or read) for [key]; null until the first request. */
     private var stored: String? = null
 
+    suspend fun <R> read(block: (T) -> R): R = mutex.withLock {
+        val current = stored ?: storage.read(key)
+        val document = current?.let { MinkaJson.decodeFromString(serializer, it) } ?: initial()
+        block(document)
+    }
+
     suspend fun <R> update(change: (T) -> R): R = mutex.withLock {
         val current = stored ?: storage.read(key)
         val document = current?.let { MinkaJson.decodeFromString(serializer, it) } ?: initial()

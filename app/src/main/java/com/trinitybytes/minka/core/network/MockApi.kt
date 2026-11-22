@@ -48,7 +48,7 @@ class MockApi(
         for (route in routes) {
             if (route.method != request.method) continue
             val params = route.match(segments) ?: continue
-            return route.handler(MockCall(params, request.bodyText()))
+            return route.handler(MockCall(params, request.bodyText(), request.headers[HttpHeaders.Authorization]))
         }
         return MockReply.error(HttpStatusCode.NotFound, "not_found")
     }
@@ -93,6 +93,7 @@ class MockRoute(
 class MockCall(
     private val pathParams: Map<String, String>,
     val bodyText: String,
+    val authorization: String? = null,
 ) {
     fun pathParam(name: String): String = pathParams.getValue(name)
 

@@ -62,6 +62,7 @@ typealias AuthOutcome<T> = Outcome<T, AuthError>
 
 /** Port to the identity service. */
 interface AuthRepository {
+    suspend fun signOut(token: String): AuthOutcome<Unit>
     suspend fun signIn(contact: String, password: String): AuthOutcome<Session>
     suspend fun googleAccounts(): AuthOutcome<List<GoogleAccount>>
     suspend fun signInWithGoogle(accountId: String): AuthOutcome<Session>

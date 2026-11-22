@@ -14,6 +14,7 @@ import com.trinitybytes.minka.features.auth.domain.TERMS_VERSION
 import com.trinitybytes.minka.features.auth.domain.VerificationChallenge
 import com.trinitybytes.minka.features.onboarding.application.BeginOnboarding
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import java.io.IOException
 import java.time.Clock
 import javax.inject.Inject
@@ -97,8 +98,11 @@ class ObserveSession @Inject constructor(private val sessionStore: SessionStore)
     operator fun invoke(): Flow<Session?> = sessionStore.session
 }
 
-class SignOut @Inject constructor(private val sessionStore: SessionStore) {
-    suspend operator fun invoke() = sessionStore.clear()
+class SignOut @Inject constructor(private val sessionStore: SessionStore, private val repository: AuthRepository) {
+    suspend operator fun invoke() {
+        sessionStore.session.first()?.let { repository.signOut(it.token) }
+        sessionStore.clear()
+    }
 }
 
 /** A device storage failure while keeping the result is reported as [AuthError.Unexpected] instead of crashing. */
