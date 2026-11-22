@@ -25,7 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trinitybytes.minka.R
@@ -190,7 +190,7 @@ private val PreviewInterests = listOf(
     "Herramientas", "Plantas", "Servicios", "Arte", "Música", "Cocina",
 ).map { Interest(it.lowercase(), it) }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun InterestsPreview() {
     MinkaTheme {

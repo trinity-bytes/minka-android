@@ -23,7 +23,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.trinitybytes.minka.core.designsystem.theme.MinkaShapes
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
@@ -74,7 +74,7 @@ fun MinkaSearchField(
     )
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun MinkaSearchFieldPreview() {
     MinkaTheme {

@@ -22,7 +22,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MarkChatRead
 import androidx.compose.material.icons.rounded.MarkEmailRead
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -32,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -40,7 +43,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -81,6 +84,7 @@ fun PasswordRecoveryScreen(
 }
 
 /** One composable for both recovery states, driven by [uiState]. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PasswordRecoveryContent(
     uiState: PasswordRecoveryUiState,
@@ -94,6 +98,7 @@ fun PasswordRecoveryContent(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
     // 1.22: without connection the step stays as it was and the snackbar offers "Reintentar".
     MinkaMessageEffect(
@@ -111,13 +116,14 @@ fun PasswordRecoveryContent(
         contentAlignment = Alignment.TopCenter,
     ) {
         Scaffold(
-            modifier = Modifier.formColumnWidth(),
+            modifier = Modifier.formColumnWidth().nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 // 1.10 uses the large bar with its headline; 1.11 a small bar with only the back arrow.
                 if (sent == null) {
                     MinkaTopAppBar(
                         title = stringResource(R.string.password_recovery_title),
                         size = MinkaTopAppBarSize.Large,
+                        scrollBehavior = scrollBehavior,
                         onBack = onBack,
                     )
                 } else {
@@ -302,12 +308,12 @@ private fun PasswordRecoveryPreview(uiState: PasswordRecoveryUiState) {
     }
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun PasswordRecoveryRequestPreview() =
     PasswordRecoveryPreview(PasswordRecoveryUiState(contact = "ana.quispe@gmail.com"))
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun PasswordRecoverySentPreview() = PasswordRecoveryPreview(
     PasswordRecoveryUiState(

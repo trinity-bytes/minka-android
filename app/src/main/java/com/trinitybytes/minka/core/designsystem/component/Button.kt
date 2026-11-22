@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.trinitybytes.minka.core.designsystem.theme.MinkaShapes
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
@@ -147,7 +147,7 @@ private fun outlinedBorder(enabled: Boolean) = BorderStroke(
 internal const val DisabledContainerAlpha = 0.12f
 internal const val DisabledContentAlpha = 0.38f
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun MinkaButtonPreview() {
     MinkaTheme {

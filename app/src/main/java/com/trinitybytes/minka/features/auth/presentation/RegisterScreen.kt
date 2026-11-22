@@ -36,7 +36,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -340,7 +340,7 @@ private fun RegisterPreview(uiState: RegisterUiState) {
     }
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun RegisterDataPreview() = RegisterPreview(
     RegisterUiState(
@@ -352,7 +352,7 @@ private fun RegisterDataPreview() = RegisterPreview(
     ),
 )
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun RegisterErrorsPreview() = RegisterPreview(
     RegisterUiState(

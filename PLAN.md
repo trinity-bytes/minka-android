@@ -96,10 +96,9 @@ Fuente de verdad: Figma `uMjLWyytKzdU4AgXuNBRZM`.
 |---|---|
 | Mapa de pantallas y estados + wireframes v2 | `307:80` |
 | Mockups v1 · Light (134 pantallas) | `333:2` |
-| Mockups v1 · Dark | `368:5490` |
 
-- La página **Foundations** (`291:1298`) manda: sus paneles de color fijan el mapeo exacto a roles de Material 3 en claro y oscuro, y las descripciones de **Components** (`291:1299`) nombran la API de Compose.
-- Colores: `MaterialTheme.colorScheme` para los roles de Material 3 y `MinkaTheme.colors` para lo que no tiene rol (marca, acentos, `raised`, `overlay`). El tema sigue el modo oscuro del sistema; sin color dinámico.
+- La página **Foundations** (`291:1298`) manda: sus paneles de color fijan el mapeo exacto a roles de Material 3 en claro, y las descripciones de **Components** (`291:1299`) nombran la API de Compose.
+- Colores: `MaterialTheme.colorScheme` para los roles de Material 3 y `MinkaTheme.colors` para lo que no tiene rol (marca, acentos, `raised`, `overlay`). The app ships a single light theme without dynamic color. Dark mode was dropped on 2026-11-22 because its cost outweighs its value. Compose BOM 2026.11.01 supplies stable Material 3 1.5.0 and requires compile SDK 37.1.
 - Tipografía: Fraunces (display, headline y Title/Large, con `SOFT 0`, `WONK 1` y tamaño óptico por estilo) e Inter (resto), como fuentes variables empaquetadas. `MinkaTheme.typography.sticker` para el estilo sin lugar en Material 3.
 - Formas, espaciado y elevación: `MaterialTheme.shapes`, `MinkaShapes` (`control`, `bento`, `full`), `MinkaSpacing.s4`…`s64` y las sombras teñidas de `MinkaElevation` con `Modifier.minkaShadow`.
 - Íconos: Material Icons Round (`Icons.Rounded.*`).
@@ -125,7 +124,7 @@ Fuente de verdad: Figma `uMjLWyytKzdU4AgXuNBRZM`.
 | Fase | Objetivo | Entregable |
 |---|---|---|
 | 0 | Scaffold | Proyecto que compila: Hilt, Compose, navegación, tema base, este plan |
-| 1 | Sistema de diseño | Tema completo desde Figma (Light/Dark), Fraunces + Inter, formas, espaciado, componentes base, ícono de la app |
+| 1 | Sistema de diseño | Tema completo desde Figma (Light), Fraunces + Inter, formas, espaciado, componentes base, ícono de la app |
 | 2 | Onboarding + IAM sobre el mock API | Flujo 1.01–1.22 de Figma, sesión en DataStore |
 | 3 | Items sobre el mock API | Publicar, explorar, buscar, detalle; caché en Room |
 | 4 | Exchanges + chat sobre el mock API | Proponer, aceptar, chatear, confirmar con QR |

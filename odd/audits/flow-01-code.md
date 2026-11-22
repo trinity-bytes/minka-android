@@ -32,7 +32,7 @@
 
 | ID | Sev | Finding | Why not now |
 |---|---|---|---|
-| D1 | medium | Compose BOM 2026.09.00 (Material3 1.4) and `MaterialTheme` instead of `MaterialExpressiveTheme` + `MotionScheme`; hand-made `tween` loader instead of `LoadingIndicator`; `LargeTopAppBar` without scroll behavior. | Dependency upgrade (release risk item 5) with app-wide visual impact; its own unit with visual regression checks. |
+| D1 | medium | Compose BOM 2026.09.00 (Material3 1.4) and `MaterialTheme` instead of `MaterialExpressiveTheme` + `MotionScheme`; hand-made `tween` loader instead of `LoadingIndicator`; `LargeTopAppBar` without scroll behavior. | Resolved by `refactor(theme): adopt light expressive theme`: stable Material 3 1.5.0, expressive theme and loader, and collapsing large app bars. Visual regression remains unverified without a device. |
 | D2 | medium | Form state lives only in `MutableStateFlow`: process death loses register/interests/welcome state; verify restores attempts and resend timer from nav args. | Needs a `SavedStateHandle` pass over five ViewModels; separate unit. |
 | D3 | medium | Profile writes carry no session token and address `users/{userId}` from the client. | Port signature change across onboarding; plan with the next backend-facing slice. |
 | D4 | low | Passwords stored in plain text in the mock storage; `db.sessions` never read; `SignOut`/`ObserveSession` unused; `GET profile` writes on read. | Mock-only; sign-out has no designed entry point yet (MVP scope gap noted in PLAN review). |

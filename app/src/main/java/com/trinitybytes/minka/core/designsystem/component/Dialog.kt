@@ -18,7 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import com.trinitybytes.minka.core.designsystem.theme.MinkaElevation
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
@@ -80,7 +80,7 @@ fun MinkaDialog(
     }
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun MinkaDialogPreview() {
     MinkaTheme {

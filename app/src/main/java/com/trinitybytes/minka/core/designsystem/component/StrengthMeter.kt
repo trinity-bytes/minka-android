@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
@@ -76,7 +76,7 @@ private fun StrengthLevel.color(): Color = when (this) {
     StrengthLevel.Strong -> MaterialTheme.colorScheme.primary
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun MinkaStrengthMeterPreview() {
     MinkaTheme {

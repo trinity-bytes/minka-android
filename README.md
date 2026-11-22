@@ -7,7 +7,7 @@ El plan completo (alcance, arquitectura, stack, backend y fases) está en [PLAN.
 ## Requisitos
 
 - JDK 21 (Gradle usa un toolchain compatible).
-- Android SDK con la plataforma 37 (`ANDROID_HOME` configurado, o `sdk.dir` en `local.properties`).
+- Android SDK con la plataforma 37.1 (`ANDROID_HOME` configurado, o `sdk.dir` en `local.properties`).
 - Android Studio (opcional, recomendado).
 
 ## Comandos

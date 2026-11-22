@@ -49,7 +49,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -408,13 +408,13 @@ private val WelcomeSteps = listOf(
 
 private val TopActionsHeight = 40.dp
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun WelcomeFirstStepPreview() {
     MinkaTheme { WelcomeContent(WelcomeUiState(step = 0), {}, {}, {}, {}, {}, {}) }
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun WelcomeLastStepPreview() {
     MinkaTheme { WelcomeContent(WelcomeUiState(step = WelcomeUiState.LAST_STEP), {}, {}, {}, {}, {}, {}) }
