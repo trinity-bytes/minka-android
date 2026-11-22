@@ -1,0 +1,16 @@
+<resources>
+    <!-- Category and condition labels shared by every Items screen (Figma 3.01, 5.01, 5.06). -->
+    <string name="category_home">Hogar</string>
+    <string name="category_clothing">Ropa</string>
+    <string name="category_books">Libros</string>
+    <string name="category_technology">Tecnología</string>
+    <string name="category_plants">Plantas</string>
+    <string name="category_sports">Deportes</string>
+    <string name="category_tools">Herramientas</string>
+    <string name="category_services">Servicios</string>
+    <string name="category_any">Lo que sea</string>
+    <string name="condition_new">Nuevo</string>
+    <string name="condition_like_new">Como nuevo</string>
+    <string name="condition_good">Buen estado</string>
+    <string name="condition_used">Usado</string>
+</resources>

@@ -25,8 +25,12 @@ class KtorItemsRepositoryTest {
         harness.profiles.saveDistrict("barranco")
         val feed = repository.feed().value()
         assertFalse(feed.fromCache)
-        assertEquals(listOf("seed-plates"), feed.value.nearby.map { it.id })
-        assertTrue(feed.value.nearby.single().distanceKm!! > 2.0)
+        val nearby = feed.value.nearby
+        assertEquals(10, nearby.size)
+        assertTrue(nearby.none { it.owner.id == "user-ana" })
+        assertEquals(nearby.sortedBy { it.distanceKm }, nearby)
+        assertEquals(setOf("Barranco"), nearby.filter { it.distanceKm == 0.0 }.map { it.district }.toSet())
+        assertTrue(nearby.first { it.id == "seed-plates" }.distanceKm!! > 2.0)
         assertEquals(listOf("seed-ana-bike"), repository.myListings(ListingStatus.ACTIVE).value().value.map { it.id })
     }
 
@@ -35,10 +39,14 @@ class KtorItemsRepositoryTest {
         assertTrue(repository.feed().value().value.byInterest.isEmpty())
         harness.profiles.saveInterests(listOf("hogar"))
         val feed = repository.feed().value().value
-        assertEquals(listOf("seed-plates"), feed.byInterest.map { it.id })
+        assertTrue(feed.byInterest.all { it.category == Category.HOME })
+        assertTrue("seed-plates" in feed.byInterest.map { it.id })
         harness.profiles.saveInterests(listOf("libros"))
-        assertTrue(repository.feed().value().value.byInterest.isEmpty())
-        assertEquals(listOf("seed-plates", "seed-ana-bike"), repository.feed().value().value.nearby.map { it.id })
+        assertEquals(
+            setOf("seed-stories", "seed-novels"),
+            repository.feed().value().value.byInterest.map { it.id }.toSet(),
+        )
+        assertEquals(11, repository.feed().value().value.nearby.size)
     }
 
     @Test
@@ -149,8 +157,9 @@ class KtorItemsRepositoryTest {
         assertTrue(ids(SearchQuery(text = "azules", category = Category.SPORTS)).isEmpty())
         assertTrue(ids(SearchQuery(text = "azules", condition = Condition.NEW)).isEmpty())
         assertTrue(posted.id in ids(SearchQuery(condition = Condition.GOOD)))
-        assertEquals(listOf("seed-plates"), ids(SearchQuery(distanceKm = 1.0)))
-        assertEquals(setOf("seed-plates", posted.id), ids(SearchQuery(distanceKm = 5.0)).toSet())
+        assertEquals(setOf("seed-plates", "seed-saddle"), ids(SearchQuery(distanceKm = 1.0)).toSet())
+        assertTrue(posted.id in ids(SearchQuery(distanceKm = 5.0)))
+        assertTrue("seed-mtb" !in ids(SearchQuery(distanceKm = 1.0)))
     }
 
     @Test
@@ -160,7 +169,9 @@ class KtorItemsRepositoryTest {
         val posted = harness.publishedDraft()
         harness.signInAs("user-ana")
         val seedOnly = repository.search(SearchQuery(sort = SearchSort.NEWEST)).value().map { it.id }
-        assertEquals(listOf(posted.id, "seed-plates"), seedOnly)
+        assertEquals(posted.id, seedOnly.first())
+        assertEquals("seed-plates", seedOnly[1])
+        assertEquals(11, seedOnly.size)
         val nearest = repository.search(SearchQuery(sort = SearchSort.NEAREST)).value()
         assertEquals(nearest.sortedBy { it.distanceKm ?: Double.MAX_VALUE }, nearest)
     }
@@ -212,7 +223,7 @@ class KtorItemsRepositoryTest {
         val lucia = repository.ownerProfile("seed-lucia").value()
         assertEquals("Lucía Torres", lucia.owner.name)
         assertTrue(lucia.owner.memberSince != null)
-        assertEquals(listOf("seed-plates"), lucia.activeListings.map { it.id })
+        assertEquals(setOf("seed-plates", "seed-table"), lucia.activeListings.map { it.id }.toSet())
         val ana = repository.ownerProfile("user-ana").value()
         assertNull(ana.owner.memberSince)
         assertEquals(listOf("seed-ana-bike"), ana.activeListings.map { it.id })

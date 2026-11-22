@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.trinitybytes.minka.features.items.presentation.component.rememberPhotoModel
 import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
@@ -154,7 +155,7 @@ internal fun PreviewCard(draft: ListingDraft, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AsyncImage(
-            model = draft.photos.firstOrNull(),
+            model = rememberPhotoModel(draft.photos.firstOrNull()),
             contentDescription = null,
             modifier = Modifier
                 .size(96.dp)
@@ -205,7 +206,7 @@ internal fun PreviewPane(draft: ListingDraft, modifier: Modifier = Modifier) {
                 .background(MinkaTheme.colors.raised),
         ) {
             AsyncImage(
-                model = draft.photos.firstOrNull(),
+                model = rememberPhotoModel(draft.photos.firstOrNull()),
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()

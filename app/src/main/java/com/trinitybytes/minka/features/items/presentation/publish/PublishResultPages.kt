@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.trinitybytes.minka.features.items.presentation.component.rememberPhotoModel
 import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
@@ -151,7 +152,7 @@ private fun PhotoStage(cover: String) {
             .background(MinkaTheme.colors.coralContainer),
     ) {
         AsyncImage(
-            model = cover,
+            model = rememberPhotoModel(cover),
             contentDescription = null,
             modifier = Modifier
                 .align(Alignment.BottomEnd)

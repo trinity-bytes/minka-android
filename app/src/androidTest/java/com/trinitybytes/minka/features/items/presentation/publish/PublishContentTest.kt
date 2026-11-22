@@ -5,6 +5,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -52,7 +54,10 @@ class PublishContentTest {
         show(PublishUiState(errors = errors))
         compose.onNodeWithText("Agrega al menos una foto").assertIsDisplayed()
         compose.onNodeWithText("Agrega un título").assertIsDisplayed()
-        compose.onNodeWithText("Elige una categoría").performScrollTo().assertIsDisplayed()
+        // The empty field shows the placeholder and the error with the same words (Figma 5.01).
+        val category = compose.onAllNodesWithText("Elige una categoría", useUnmergedTree = true)
+        category.assertCountEquals(2)
+        category[0].performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Elige el estado").performScrollTo().assertIsDisplayed()
     }
 

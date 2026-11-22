@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.trinitybytes.minka.features.items.presentation.component.rememberPhotoModel
 import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
@@ -169,7 +170,7 @@ private fun PhotoTile(
             .semantics { contentDescription = label },
     ) {
         AsyncImage(
-            model = photo,
+            model = rememberPhotoModel(photo),
             contentDescription = null,
             modifier = Modifier.matchParentSize(),
             contentScale = ContentScale.Crop,

@@ -63,7 +63,8 @@ import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 import com.trinitybytes.minka.features.items.domain.Category
 import com.trinitybytes.minka.features.items.domain.Listing
 import com.trinitybytes.minka.features.items.presentation.component.ListingCard
-import com.trinitybytes.minka.features.items.presentation.component.categoryName
+import com.trinitybytes.minka.features.items.presentation.component.ItemCategories
+import com.trinitybytes.minka.features.items.presentation.component.labelRes
 import com.trinitybytes.minka.navigation.LocalHomeExpanded
 
 /** Inicio loading, feed, refresh, empty and offline states (Figma 2.01–2.05). */
@@ -75,7 +76,15 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    HomeContent(state, onOpenSearch, onOpenListing, viewModel::refresh, viewModel::selectCategory, onScrollChanged)
+    HomeContent(
+        state = state,
+        onOpenSearch = onOpenSearch,
+        onOpenListing = onOpenListing,
+        onRefresh = viewModel::refresh,
+        onSelectCategory = viewModel::selectCategory,
+        onScrollChanged = onScrollChanged,
+        onSelectAll = viewModel::selectAll,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,6 +96,7 @@ internal fun HomeContent(
     onRefresh: () -> Unit,
     onSelectCategory: (Category) -> Unit = {},
     onScrollChanged: (Boolean) -> Unit = {},
+    onSelectAll: () -> Unit = {},
 ) {
     val gridState = rememberLazyGridState()
     val snackbar = remember { SnackbarHostState() }
@@ -129,7 +139,7 @@ internal fun HomeContent(
                         items(columns * 2, key = { "skeleton-$it" }, contentType = { "skeleton" }) { SkeletonCard() }
                     } else {
                         item(span = { GridItemSpan(maxLineSpan) }, contentType = "header") {
-                            HomeHeader(state, onOpenSearch, onSelectCategory, onRefresh)
+                            HomeHeader(state, onOpenSearch, onSelectCategory, onSelectAll, onRefresh)
                         }
                         if (state.feed != null) {
                             item(span = { GridItemSpan(maxLineSpan) }, contentType = "title-nearby") {
@@ -167,21 +177,27 @@ private fun HomeHeader(
     state: HomeUiState,
     onOpenSearch: () -> Unit,
     onSelectCategory: (Category) -> Unit,
+    onSelectAll: () -> Unit,
     onRefresh: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             MinkaLogo(Modifier.height(28.dp))
             Spacer(Modifier.weight(1f))
-            MinkaAvatar(state.firstName.take(1).uppercase(), Modifier.size(32.dp))
+            MinkaAvatar(state.initials, Modifier.size(32.dp))
         }
         Column {
             val greeting = if (state.firstName.isBlank()) stringResource(R.string.feed_greeting)
             else stringResource(R.string.feed_greeting_name, state.firstName)
             Text(greeting, style = MaterialTheme.typography.headlineLarge)
-            if (state.district != null && state.feed != null && state.feed.nearby.isNotEmpty()) {
+            val count = state.feed?.nearby?.size ?: 0
+            if (count > 0) {
                 Text(
-                    stringResource(R.string.feed_nearby_count, state.feed.nearby.size, state.district),
+                    if (state.district != null) {
+                        stringResource(R.string.feed_nearby_count, count, state.district)
+                    } else {
+                        stringResource(R.string.feed_nearby_count_unknown, count)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                 )
             } else if (state.district != null) {
@@ -207,9 +223,14 @@ private fun HomeHeader(
             Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s8),
         ) {
-            Category.entries.filter { it != Category.ANY }.forEach { category ->
+            MinkaFilterChip(
+                label = stringResource(R.string.feed_all),
+                selected = state.selectedCategory == null,
+                onClick = onSelectAll,
+            )
+            ItemCategories.forEach { category ->
                 MinkaFilterChip(
-                    label = stringResource(categoryName(category)),
+                    label = stringResource(category.labelRes),
                     selected = state.selectedCategory == category,
                     onClick = { onSelectCategory(category) },
                 )

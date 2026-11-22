@@ -3,7 +3,9 @@ package com.trinitybytes.minka.features.items.presentation.home
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.trinitybytes.minka.core.designsystem.component.initialsOf
 import com.trinitybytes.minka.core.domain.Outcome
+import com.trinitybytes.minka.features.auth.application.ObserveSession
 import com.trinitybytes.minka.features.items.application.GetFeed
 import com.trinitybytes.minka.features.items.domain.Category
 import com.trinitybytes.minka.features.items.domain.Feed
@@ -13,6 +15,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -24,6 +27,8 @@ data class HomeUiState(
     val error: Boolean = false,
     val selectedCategory: Category? = null,
     val firstName: String = "",
+    /** Up to two letters for the avatar ("AQ" for Ana Quispe). */
+    val initials: String = "",
     val district: String? = null,
 )
 
@@ -32,6 +37,7 @@ class HomeViewModel @Inject constructor(
     private val getFeed: GetFeed,
     private val savedState: SavedStateHandle,
     private val getSetupSummary: GetSetupSummary,
+    private val observeSession: ObserveSession,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(HomeUiState(selectedCategory = savedCategory()))
     val state = mutableState.asStateFlow()
@@ -40,12 +46,21 @@ class HomeViewModel @Inject constructor(
         refresh()
         viewModelScope.launch {
             val summary = getSetupSummary()
-            mutableState.update { it.copy(firstName = summary.firstName, district = summary.districtName) }
+            val name = observeSession().first()?.user?.name.orEmpty()
+            mutableState.update {
+                it.copy(firstName = summary.firstName, initials = initialsOf(name), district = summary.districtName)
+            }
         }
     }
 
     private fun savedCategory(): Category? = savedState.get<String>(CATEGORY_KEY)?.let { name ->
         Category.entries.firstOrNull { it.name == name }
+    }
+
+    /** The "Todo" chip: no category filter. */
+    fun selectAll() {
+        savedState[CATEGORY_KEY] = null
+        mutableState.update { it.copy(selectedCategory = null) }
     }
 
     fun selectCategory(category: Category) {

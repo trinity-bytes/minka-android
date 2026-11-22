@@ -1,20 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Categories (Figma 3.01 and the "Busca:" chips of 5.06) and "Estado" (Figma 5.01) -->
-    <string name="category_home">Hogar</string>
-    <string name="category_clothing">Ropa</string>
-    <string name="category_books">Libros</string>
-    <string name="category_technology">Tecnología</string>
-    <string name="category_plants">Plantas</string>
-    <string name="category_sports">Deportes</string>
-    <string name="category_tools">Herramientas</string>
-    <string name="category_services">Servicios</string>
-    <string name="category_any">Lo que sea</string>
-    <string name="condition_new">Nuevo</string>
-    <string name="condition_like_new">Como nuevo</string>
-    <string name="condition_good">Buen estado</string>
-    <string name="condition_used">Usado</string>
-
     <!-- Publicar: shell and progress (Figma 5.01–5.08) -->
     <string name="publish_step">Paso %1$d de %2$d · %3$s</string>
     <string name="publish_step_basics">Lo básico</string>

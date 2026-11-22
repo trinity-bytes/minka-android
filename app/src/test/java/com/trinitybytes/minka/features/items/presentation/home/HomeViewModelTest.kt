@@ -1,7 +1,9 @@
 package com.trinitybytes.minka.features.items.presentation.home
 
 import androidx.lifecycle.SavedStateHandle
+import com.trinitybytes.minka.features.auth.application.ObserveSession
 import com.trinitybytes.minka.features.auth.domain.Session
+import com.trinitybytes.minka.features.auth.domain.User
 import com.trinitybytes.minka.features.auth.domain.SessionStore
 import com.trinitybytes.minka.features.onboarding.application.GetSetupSummary
 import com.trinitybytes.minka.features.onboarding.domain.ProfileRepository
@@ -48,8 +50,14 @@ class HomeViewModelTest {
         arrayOf(ProfileRepository::class.java),
     ) { _, _, _ -> error("No profile expected without a session") } as ProfileRepository
     private val summary = GetSetupSummary(sessions, profiles)
+    private var signedIn: Session? = null
+    private val observedSessions = object : SessionStore {
+        override val session get() = flowOf(signedIn)
+        override suspend fun save(session: Session) = Unit
+        override suspend fun clear() = Unit
+    }
     private fun model(handle: SavedStateHandle = SavedStateHandle()) =
-        HomeViewModel(GetFeed(repository), handle, summary)
+        HomeViewModel(GetFeed(repository), handle, summary, ObserveSession(observedSessions))
 
     @Before fun setup() = Dispatchers.setMain(dispatcher)
     @After fun tearDown() = Dispatchers.resetMain()
@@ -96,4 +104,23 @@ class HomeViewModelTest {
         assertEquals(null, restored.state.value.selectedCategory)
     }
 
+    @Test fun `Todo is the default and selecting it clears the category`() = runTest(dispatcher) {
+        val viewModel = model()
+        advanceUntilIdle()
+        assertEquals(null, viewModel.state.value.selectedCategory)
+        viewModel.selectCategory(Category.HOME)
+        assertEquals(Category.HOME, viewModel.state.value.selectedCategory)
+        viewModel.selectAll()
+        assertEquals(null, viewModel.state.value.selectedCategory)
+        viewModel.selectCategory(Category.BOOKS)
+        viewModel.selectCategory(Category.PLANTS)
+        assertEquals(Category.PLANTS, viewModel.state.value.selectedCategory)
+    }
+
+    @Test fun `the avatar shows two initials from the account name`() = runTest(dispatcher) {
+        signedIn = Session("token", User("user-ana", "Ana Quispe", "ana.quispe@gmail.com"))
+        val viewModel = model()
+        advanceUntilIdle()
+        assertEquals("AQ", viewModel.state.value.initials)
+    }
 }

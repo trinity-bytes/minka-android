@@ -14,6 +14,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.runtime.Composable
@@ -29,6 +30,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
@@ -80,10 +82,16 @@ private enum class Tab(val root: NavKey, val label: Int, val icon: ImageVector) 
  * Signed-in navigation keeps a saveable back stack per tab. Reselecting the active tab pops it
  * to its root; switching tabs preserves each stack. All stacks stay decorated, including inactive
  * ones, so their saveable entry state and ViewModel stores are retained while another tab is shown.
+ *
+ * [tabEntries] replaces the feature screens of every tab; tests pass plain stand-ins so the shell can be
+ * composed without Hilt.
  */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
-fun MinkaShell(onPublish: () -> Unit = {}) {
+fun MinkaShell(
+    onPublish: () -> Unit = {},
+    tabEntries: (EntryProviderScope<NavKey>.() -> Unit)? = null,
+) {
     var selected by rememberSaveable { mutableStateOf(Tab.Home) }
     var searchFocusRequest by rememberSaveable { mutableIntStateOf(0) }
     var homeScrolled by rememberSaveable { mutableStateOf(false) }
@@ -96,13 +104,17 @@ fun MinkaShell(onPublish: () -> Unit = {}) {
         ProfileTab to profile,
     )
     val provider = entryProvider<NavKey> {
-        homeEntries(
-            onOpenSearch = { searchFocusRequest++; selected = Tab.Search },
-            onOpenListing = {},
-            onScrollChanged = { homeScrolled = it },
-        )
-        searchEntries()
-        profileEntries()
+        if (tabEntries != null) {
+            tabEntries()
+        } else {
+            homeEntries(
+                onOpenSearch = { searchFocusRequest++; selected = Tab.Search },
+                onOpenListing = {},
+                onScrollChanged = { homeScrolled = it },
+            )
+            searchEntries()
+            profileEntries()
+        }
     }
     val homeEntries = decorated(home, provider)
     val searchEntries = decorated(search, provider)

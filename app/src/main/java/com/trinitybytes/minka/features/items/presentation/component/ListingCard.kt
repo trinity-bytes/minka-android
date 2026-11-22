@@ -21,10 +21,31 @@ import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.component.MinkaBadge
 import com.trinitybytes.minka.core.designsystem.component.MinkaBadgeTone
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
-import com.trinitybytes.minka.features.items.domain.Category
-import com.trinitybytes.minka.features.items.domain.Condition
 import com.trinitybytes.minka.features.items.domain.Listing
 import java.text.NumberFormat
+import java.util.Locale
+import kotlin.math.roundToInt
+
+/**
+ * The meta line of a card: "Miraflores · 1,2 km" on the grid card (Figma 2.02), plus the condition on the
+ * row card (3.05). A missing or same-district distance is left out.
+ */
+fun listingMeta(district: String, distanceKm: Double?, condition: String? = null): String =
+    listOfNotNull(district, distanceKm?.let(::formatDistance), condition).joinToString(" · ")
+
+private const val METERS_PER_KM = 1000
+private const val METER_STEP = 50
+private const val MIN_SHOWN_KM = 0.05
+
+/** "800 m" under a kilometer, otherwise "1,2 km" with the Spanish decimal comma; null when it is the same place. */
+fun formatDistance(km: Double): String? {
+    if (km < MIN_SHOWN_KM) return null
+    val meters = (km * METERS_PER_KM / METER_STEP).roundToInt() * METER_STEP
+    if (meters < METERS_PER_KM) return "$meters m"
+    val format = NumberFormat.getNumberInstance(Locale.forLanguageTag("es"))
+    format.maximumFractionDigits = 1
+    return "${format.format(km)} km"
+}
 
 /** Grid card for Inicio and row card for search results (Figma 2.02 and 3.05). */
 enum class ListingCardLayout { Grid, Row }
@@ -45,7 +66,7 @@ fun ListingCard(
         if (layout == ListingCardLayout.Grid) {
             Column(Modifier.padding(MinkaSpacing.s8), verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s4)) {
                 ListingPhoto(listing.cover, Modifier.fillMaxWidth().height(140.dp))
-                ListingCardBody(listing, Modifier.padding(MinkaSpacing.s8))
+                ListingCardBody(listing, showCondition = false, Modifier.padding(MinkaSpacing.s8))
             }
         } else {
             Row(
@@ -53,21 +74,22 @@ fun ListingCard(
                 horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s12),
             ) {
                 ListingPhoto(listing.cover, Modifier.size(96.dp))
-                ListingCardBody(listing, Modifier.weight(1f))
+                ListingCardBody(listing, showCondition = true, Modifier.weight(1f))
             }
         }
     }
 }
 
 @Composable
-private fun ListingCardBody(listing: Listing, modifier: Modifier = Modifier) {
+private fun ListingCardBody(listing: Listing, showCondition: Boolean, modifier: Modifier = Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s4)) {
         Text(listing.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        val location = listing.distanceKm?.let {
-            stringResource(R.string.listing_distance_km, listing.district, NumberFormat.getNumberInstance().format(it))
-        } ?: listing.district
         Text(
-            "$location · ${stringResource(conditionName(listing.condition))}",
+            listingMeta(
+                district = listing.district,
+                distanceKm = listing.distanceKm,
+                condition = if (showCondition) stringResource(listing.condition.labelRes) else null,
+            ),
             style = MaterialTheme.typography.bodySmall,
         )
         FlowRow(
@@ -76,29 +98,13 @@ private fun ListingCardBody(listing: Listing, modifier: Modifier = Modifier) {
         ) {
             listing.wants.forEach { category ->
                 MinkaBadge(
-                    stringResource(R.string.listing_wants, stringResource(categoryName(category))),
+                    stringResource(
+                        R.string.listing_wants,
+                        stringResource(category.labelRes).lowercase(Locale.forLanguageTag("es")),
+                    ),
                     tone = MinkaBadgeTone.Lavender,
                 )
             }
         }
     }
-}
-
-internal fun categoryName(category: Category): Int = when (category) {
-    Category.HOME -> R.string.category_home
-    Category.CLOTHING -> R.string.category_clothing
-    Category.BOOKS -> R.string.category_books
-    Category.TECHNOLOGY -> R.string.category_technology
-    Category.PLANTS -> R.string.category_plants
-    Category.SPORTS -> R.string.category_sports
-    Category.TOOLS -> R.string.category_tools
-    Category.SERVICES -> R.string.category_services
-    Category.ANY -> R.string.category_any
-}
-
-private fun conditionName(condition: Condition): Int = when (condition) {
-    Condition.NEW -> R.string.condition_new
-    Condition.LIKE_NEW -> R.string.condition_like_new
-    Condition.GOOD -> R.string.condition_good
-    Condition.USED -> R.string.condition_used
 }
