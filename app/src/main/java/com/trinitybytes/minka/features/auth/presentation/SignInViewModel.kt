@@ -52,7 +52,7 @@ sealed interface SignInEvent {
 
 /**
  * Every state of Figma 1.05–1.09: empty (1.05), field errors (1.06), loading (1.07), locked
- * account while [lockSecondsLeft] is set (1.08), the Google sheet while [googleAccounts] is set (1.09)
+ * account while [isLocked] is set (1.08, its countdown in [SignInViewModel.lockSecondsLeft]), the Google sheet while [googleAccounts] is set (1.09)
  * and no connection (1.22) as a [SignInMessage.Offline] snackbar over the untouched form.
  */
 data class SignInUiState(
@@ -60,7 +60,7 @@ data class SignInUiState(
     val password: String = "",
     val contactError: SignInFieldError? = null,
     val isLoading: Boolean = false,
-    val lockSecondsLeft: Long? = null,
+    val isLocked: Boolean = false,
     val googleAccounts: List<GoogleAccount>? = null,
     val message: SignInMessage? = null,
 ) {
@@ -89,6 +89,12 @@ class SignInViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(SignInUiState(contact = savedStateHandle[KEY_CONTACT] ?: ""))
     val uiState: StateFlow<SignInUiState> = _uiState.asStateFlow()
+
+    /**
+     * 1.08 countdown, apart from [uiState] so each tick only recomposes the dialog text, not the form.
+     */
+    private val _lockSecondsLeft = MutableStateFlow<Long?>(null)
+    val lockSecondsLeft: StateFlow<Long?> = _lockSecondsLeft.asStateFlow()
 
     private val _events = Channel<SignInEvent>(Channel.BUFFERED)
     val events: Flow<SignInEvent> = _events.receiveAsFlow()
@@ -160,7 +166,8 @@ class SignInViewModel @Inject constructor(
     fun dismissLock() {
         countdown?.cancel()
         savedStateHandle.remove<Long>(KEY_LOCK_DEADLINE)
-        _uiState.update { it.copy(lockSecondsLeft = null) }
+        _lockSecondsLeft.value = null
+        _uiState.update { it.copy(isLocked = false) }
     }
 
     /** "Recuperar" in the 1.08 dialog and "¿Olvidaste tu contraseña?" lead to password recovery. */
@@ -217,7 +224,8 @@ class SignInViewModel @Inject constructor(
         countdown?.cancel()
         countdown = viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             countdown(deadline, clock).collect { left ->
-                _uiState.update { it.copy(lockSecondsLeft = left.takeIf { it > 0 }) }
+                _lockSecondsLeft.value = left.takeIf { it > 0 }
+                _uiState.update { it.copy(isLocked = left > 0) }
                 if (left == 0L) savedStateHandle.remove<Long>(KEY_LOCK_DEADLINE)
             }
         }

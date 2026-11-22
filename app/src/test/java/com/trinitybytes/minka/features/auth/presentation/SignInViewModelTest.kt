@@ -36,6 +36,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -107,7 +108,7 @@ class SignInViewModelTest {
         runCurrent()
         assertEquals(5_000L, handle.get<Long>("signin_lock_deadline"))
         advanceTimeBy(2_000)
-        assertEquals(3L, create().state.lockSecondsLeft)
+        assertEquals(3L, create().lockSecondsLeft.value)
     }
 
     @Test
@@ -116,10 +117,10 @@ class SignInViewModelTest {
         val model = SignInViewModel(SignIn(repository, store), GetGoogleAccounts(repository),
             SignInWithGoogle(repository, store, BeginOnboarding(progressStore)),
             ResolveLaunch(store, progressStore), handle, clock)
-        assertEquals(2L, model.state.lockSecondsLeft)
+        assertEquals(2L, model.lockSecondsLeft.value)
         advanceTimeBy(2_000)
         runCurrent()
-        assertNull(model.state.lockSecondsLeft)
+        assertNull(model.lockSecondsLeft.value)
         assertNull(handle.get<Long>("signin_lock_deadline"))
     }
 
@@ -238,16 +239,21 @@ class SignInViewModelTest {
 
         viewModel.submit()
         runCurrent()
-        assertEquals(900L, viewModel.state.lockSecondsLeft)
-        assertEquals("15:00", formatCountdown(viewModel.state.lockSecondsLeft!!))
+        assertEquals(900L, viewModel.lockSecondsLeft.value)
+        assertEquals("15:00", formatCountdown(viewModel.lockSecondsLeft.value!!))
         assertFalse(viewModel.state.isLoading)
+        assertTrue(viewModel.state.isLocked)
+        val lockedState = viewModel.state
 
         advanceTimeBy(1_001)
-        assertEquals(899L, viewModel.state.lockSecondsLeft)
-        assertEquals("14:59", formatCountdown(viewModel.state.lockSecondsLeft!!))
+        assertEquals(899L, viewModel.lockSecondsLeft.value)
+        assertEquals("14:59", formatCountdown(viewModel.lockSecondsLeft.value!!))
+        // A tick changes only the countdown flow, so the form state is not re-emitted (D7).
+        assertSame(lockedState, viewModel.state)
 
         advanceTimeBy(899_000)
-        assertNull(viewModel.state.lockSecondsLeft)
+        assertNull(viewModel.lockSecondsLeft.value)
+        assertFalse(viewModel.state.isLocked)
     }
 
     @Test
@@ -262,13 +268,13 @@ class SignInViewModelTest {
         viewModel.recoverPassword()
         runCurrent()
 
-        assertNull(viewModel.state.lockSecondsLeft)
+        assertNull(viewModel.lockSecondsLeft.value)
         assertEquals(SignInEvent.OpenRecovery, viewModel.events.first())
 
         viewModel.submit()
         runCurrent()
         viewModel.dismissLock()
-        assertNull(viewModel.state.lockSecondsLeft)
+        assertNull(viewModel.lockSecondsLeft.value)
     }
 
     @Test

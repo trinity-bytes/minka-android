@@ -35,6 +35,7 @@ class SignInScreenTest {
         onDismissLock: () -> Unit = {},
         onChooseGoogleAccount: (String) -> Unit = {},
         onRetry: () -> Unit = {},
+        lockSecondsLeft: Long? = null,
     ) {
         compose.setContent {
             MinkaTheme {
@@ -53,6 +54,7 @@ class SignInScreenTest {
                     onDismissLock = onDismissLock,
                     onMessageShown = {},
                     onRetry = onRetry,
+                    lockSecondsLeft = { lockSecondsLeft },
                 )
             }
         }
@@ -116,7 +118,7 @@ class SignInScreenTest {
     @Test
     fun theLockDialogCountsDownAndLeadsToRecovery() {
         var recovered = false
-        setSignIn(SignInUiState(lockSecondsLeft = 899), onForgotPassword = { recovered = true })
+        setSignIn(SignInUiState(isLocked = true), onForgotPassword = { recovered = true }, lockSecondsLeft = 899)
 
         compose.onNodeWithText("Cuenta bloqueada").assertIsDisplayed()
         compose.onNode(hasText("14:59", substring = true)).assertIsDisplayed()

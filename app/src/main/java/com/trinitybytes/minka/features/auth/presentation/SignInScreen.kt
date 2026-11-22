@@ -45,9 +45,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.component.ObserveAsEvents
 import com.trinitybytes.minka.core.designsystem.component.MinkaBottomSheet
@@ -90,27 +87,26 @@ fun SignInScreen(
             SignInEvent.OpenRecovery -> recover()
         }
     }
-    SignInStateCollector(viewModel.uiState, lock = { countdownState ->
-        SignInLiveLockDialog(countdownState, viewModel::dismissLock, viewModel::recoverPassword)
-    }) { uiState ->
-        SignInContent(
-            uiState = uiState,
-            onBack = onBack,
-            onContactChange = viewModel::onContactChange,
-            onPasswordChange = viewModel::onPasswordChange,
-            onContactFocusLost = viewModel::onContactFocusLost,
-            onSubmit = viewModel::submit,
-            onForgotPassword = viewModel::recoverPassword,
-            onGoogle = viewModel::openGoogleSheet,
-            onRegister = onRegister,
-            onChooseGoogleAccount = viewModel::chooseGoogleAccount,
-            onDismissGoogle = viewModel::dismissGoogleSheet,
-            onDismissLock = viewModel::dismissLock,
-            onMessageShown = viewModel::onMessageShown,
-            onRetry = viewModel::retry,
-            showLockDialog = false,
-        )
-    }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // Read only inside the dialog text, so a countdown tick does not recompose the form (D7).
+    val lockSecondsLeft = viewModel.lockSecondsLeft.collectAsStateWithLifecycle()
+    SignInContent(
+        uiState = uiState,
+        onBack = onBack,
+        onContactChange = viewModel::onContactChange,
+        onPasswordChange = viewModel::onPasswordChange,
+        onContactFocusLost = viewModel::onContactFocusLost,
+        onSubmit = viewModel::submit,
+        onForgotPassword = viewModel::recoverPassword,
+        onGoogle = viewModel::openGoogleSheet,
+        onRegister = onRegister,
+        onChooseGoogleAccount = viewModel::chooseGoogleAccount,
+        onDismissGoogle = viewModel::dismissGoogleSheet,
+        onDismissLock = viewModel::dismissLock,
+        onMessageShown = viewModel::onMessageShown,
+        onRetry = viewModel::retry,
+        lockSecondsLeft = { lockSecondsLeft.value },
+    )
 }
 
 /** One composable for every sign-in state, driven by [uiState]. */
@@ -132,7 +128,7 @@ fun SignInContent(
     onMessageShown: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    showLockDialog: Boolean = true,
+    lockSecondsLeft: () -> Long? = { null },
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -203,47 +199,15 @@ fun SignInContent(
             }
         }
     }
-    if (showLockDialog) {
-        uiState.lockSecondsLeft?.let { seconds -> SignInLockDialog(seconds, onDismissLock, onForgotPassword) }
-    }
+    if (uiState.isLocked) SignInLockDialog(lockSecondsLeft, onDismissLock, onForgotPassword)
     uiState.googleAccounts?.let { accounts ->
         GoogleAccountSheet(accounts, onChooseGoogleAccount, onDismissGoogle)
     }
 }
 
-/** Keep the lock transition, but not each countdown tick, in the form's state. */
-internal fun SignInUiState.withoutCountdownTicks(): SignInUiState =
-    copy(lockSecondsLeft = lockSecondsLeft?.let { 1L })
-
+/** 1.08. Only [LockCountdownText] reads [secondsLeft], so each tick recomposes just that text. */
 @Composable
-internal fun SignInStateCollector(
-    state: StateFlow<SignInUiState>,
-    lock: @Composable (StateFlow<SignInUiState>) -> Unit,
-    form: @Composable (SignInUiState) -> Unit,
-) {
-    val formFlow = remember(state) { state.map { it.withoutCountdownTicks() }.distinctUntilChanged() }
-    val initialForm = remember(state) { state.value.withoutCountdownTicks() }
-    val formState by formFlow.collectAsStateWithLifecycle(initialValue = initialForm)
-    form(formState)
-    if (formState.lockSecondsLeft != null) lock(state)
-}
-
-@Composable
-internal fun SignInCountdownText(state: StateFlow<SignInUiState>) {
-    val countdown = remember(state) { state.map { it.lockSecondsLeft }.distinctUntilChanged() }
-    val initialSeconds = remember(state) { state.value.lockSecondsLeft }
-    val seconds by countdown.collectAsStateWithLifecycle(initialValue = initialSeconds)
-    seconds?.let {
-        Text(
-            text = stringResource(R.string.sign_in_locked_text, formatCountdown(it)),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun SignInLiveLockDialog(state: StateFlow<SignInUiState>, onDismiss: () -> Unit, onRecover: () -> Unit) {
+private fun SignInLockDialog(secondsLeft: () -> Long?, onDismiss: () -> Unit, onRecover: () -> Unit) {
     MinkaDialog(
         title = stringResource(R.string.sign_in_locked_title),
         text = "",
@@ -255,23 +219,18 @@ private fun SignInLiveLockDialog(state: StateFlow<SignInUiState>, onDismiss: () 
         onDismissClick = onRecover,
         icon = Icons.Rounded.LockClock,
         iconTint = MaterialTheme.colorScheme.tertiary,
-        textContent = { SignInCountdownText(state) },
+        // Design B3: both actions of 1.08 are text buttons.
+        textContent = { LockCountdownText(secondsLeft) },
     )
 }
 
 @Composable
-private fun SignInLockDialog(seconds: Long, onDismiss: () -> Unit, onRecover: () -> Unit) {
-    MinkaDialog(
-        title = stringResource(R.string.sign_in_locked_title),
+internal fun LockCountdownText(secondsLeft: () -> Long?) {
+    val seconds = secondsLeft() ?: return
+    Text(
         text = stringResource(R.string.sign_in_locked_text, formatCountdown(seconds)),
-        confirmText = stringResource(R.string.sign_in_locked_ok),
-        onConfirm = onDismiss,
-        confirmStyle = MinkaButtonStyle.Text,
-        onDismiss = onDismiss,
-        dismissText = stringResource(R.string.sign_in_locked_recover),
-        onDismissClick = onRecover,
-        icon = Icons.Rounded.LockClock,
-        iconTint = MaterialTheme.colorScheme.tertiary,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -401,10 +360,11 @@ private fun Modifier.onFocusLost(onLost: () -> Unit): Modifier {
 }
 
 @Composable
-private fun SignInPreview(uiState: SignInUiState) {
+private fun SignInPreview(uiState: SignInUiState, lockSecondsLeft: Long? = null) {
     MinkaTheme {
         SignInContent(
             uiState = uiState,
+            lockSecondsLeft = { lockSecondsLeft },
             onBack = {},
             onContactChange = {},
             onPasswordChange = {},
@@ -444,4 +404,7 @@ private fun SignInLoadingPreview() =
 @Preview
 @Composable
 private fun SignInLockedPreview() =
-    SignInPreview(SignInUiState(contact = "ana.quispe@gmail.com", password = "Minka2026", lockSecondsLeft = 899))
+    SignInPreview(
+        SignInUiState(contact = "ana.quispe@gmail.com", password = "Minka2026", isLocked = true),
+        lockSecondsLeft = 899,
+    )
