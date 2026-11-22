@@ -20,15 +20,33 @@ class ProfileHeaderTest {
             seen += request.headers[HttpHeaders.Authorization]
             val body = when {
                 request.url.encodedPath.endsWith("nearest") -> "{\"id\":\"miraflores\",\"name\":\"Miraflores\"}"
-                request.url.encodedPath.endsWith("districts") || request.url.encodedPath.endsWith("interests") && request.method.value == "GET" -> "[]"
+                request.url.encodedPath.endsWith("districts") ||
+                    request.url.encodedPath.endsWith("interests") && request.method.value == "GET" -> "[]"
                 else -> "{\"district\":null,\"interestIds\":[]}"
             }
             respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
         }
         val store = FakeSessionStore().apply { session.value = ANA }
         val repo = KtorProfileRepository(minkaHttpClient(engine), store)
-        repo.districts(); repo.nearestDistrict(null); repo.interests()
-        repo.saveDistrict("miraflores"); repo.saveInterests(emptyList()); repo.profile()
+        repo.districts()
+        repo.nearestDistrict(null)
+        repo.interests()
+        repo.saveDistrict("miraflores")
+        repo.saveInterests(emptyList())
+        repo.profile()
         assertEquals(List(6) { "Bearer ${ANA.token}" }, seen)
+    }
+
+    @Test
+    fun `no authorization header is sent without a session`() = runTest {
+        val seen = mutableListOf<String?>()
+        val engine = MockEngine { request ->
+            seen += request.headers[HttpHeaders.Authorization]
+            respond("[]", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+        }
+        val repo = KtorProfileRepository(minkaHttpClient(engine), FakeSessionStore())
+
+        repo.districts()
+        assertEquals(listOf<String?>(null), seen)
     }
 }

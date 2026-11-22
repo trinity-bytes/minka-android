@@ -1,9 +1,10 @@
 package com.trinitybytes.minka.features.auth.infrastructure
 
 import android.content.Context
-import com.trinitybytes.minka.core.datastore.minkaPreferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.trinitybytes.minka.core.datastore.minkaPreferencesDataStore
 import com.trinitybytes.minka.core.network.MockRoute
+import com.trinitybytes.minka.core.network.MockSessions
 import com.trinitybytes.minka.core.network.MockStorage
 import com.trinitybytes.minka.features.auth.domain.AuthRepository
 import com.trinitybytes.minka.features.auth.domain.SessionStore
@@ -34,6 +35,9 @@ abstract class AuthModule {
         @Provides
         @Singleton
         fun provideMockAuthServer(storage: MockStorage, clock: Clock) = MockAuthServer(storage, clock)
+
+        @Provides
+        fun provideMockSessions(server: MockAuthServer): MockSessions = server
 
         @Provides
         @ElementsIntoSet

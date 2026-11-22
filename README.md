@@ -21,7 +21,9 @@ El plan completo (alcance, arquitectura, stack, backend y fases) está en [PLAN.
 
 ## Mock API
 
-Profile endpoints require a bearer session token and use `/me/profile` rather than client-supplied user IDs. Signing out revokes the mock session when online; local sign-out still succeeds offline. Mock credentials use salted password hashes.
+Profile endpoints require a bearer session token and use `/me/profile` rather than client-supplied user IDs.
+Signing out revokes the mock session when online; local sign-out still succeeds offline. Mock credentials use salted
+password hashes; the demo password remains `Minka2026!` for sign-in.
 
 La app no tiene backend: responde un mock API que corre dentro de ella (Ktor `MockEngine`, ver [PLAN.md](PLAN.md#4-backend)). Lo que se crea en la app (cuentas, etc.) queda guardado en el dispositivo; para empezar de cero, borra los datos de la app.
 
