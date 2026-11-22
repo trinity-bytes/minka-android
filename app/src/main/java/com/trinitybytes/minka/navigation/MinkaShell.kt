@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.EntryProviderScope
+import com.trinitybytes.minka.features.items.presentation.detail.detailEntries
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
@@ -91,6 +92,7 @@ private enum class Tab(val root: NavKey, val label: Int, val icon: ImageVector) 
 fun MinkaShell(
     onPublish: () -> Unit = {},
     tabEntries: (EntryProviderScope<NavKey>.() -> Unit)? = null,
+    onResumeDraft: (String) -> Unit = {},
 ) {
     var selected by rememberSaveable { mutableStateOf(Tab.Home) }
     var searchFocusRequest by rememberSaveable { mutableIntStateOf(0) }
@@ -103,17 +105,33 @@ fun MinkaShell(
         SearchTab to search,
         ProfileTab to profile,
     )
+    val navigator = object : ShellNavigator {
+        override fun open(key: NavKey) {
+            stacks.getValue(selected.root).add(key)
+        }
+
+        override fun back() {
+            val stack = stacks.getValue(selected.root)
+            if (stack.size > 1) stack.removeAt(stack.lastIndex) else selected = Tab.Home
+        }
+
+        override fun openSearch() {
+            searchFocusRequest++
+            selected = Tab.Search
+        }
+
+        override fun publish(draftId: String?) {
+            if (draftId == null) onPublish() else onResumeDraft(draftId)
+        }
+    }
     val provider = entryProvider<NavKey> {
         if (tabEntries != null) {
             tabEntries()
         } else {
-            homeEntries(
-                onOpenSearch = { searchFocusRequest++; selected = Tab.Search },
-                onOpenListing = {},
-                onScrollChanged = { homeScrolled = it },
-            )
-            searchEntries()
-            profileEntries()
+            homeEntries(navigator, onScrollChanged = { homeScrolled = it })
+            searchEntries(navigator)
+            detailEntries(navigator)
+            profileEntries(navigator)
         }
     }
     val homeEntries = decorated(home, provider)
