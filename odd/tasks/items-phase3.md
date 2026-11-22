@@ -21,7 +21,7 @@ Branch: `feat/items-phase3` (from `develop`). Delivery strategy: ask-on-risk. Te
 | ID | Specs | Route | Status | Commit |
 |---|---|---|---|---|
 | T0 | S2, S4 | inline (parent owns the shared Gradle files) | done | 0c278ef |
-| T1 | S2, S3 | codex `nav3` via herdr (parallel with T2) | done after 1 correction batch (4 tests; 186 unit green, connected green per writer) | see git log |
+| T1 | S2, S3 | codex `nav3` via herdr (parallel with T2) | done after 1 correction batch (4 tests; 186 unit green, connected green per writer) | 083f9e7 |
 | T2 | S4 | codex draft rejected → Sonnet writer, worktree `feat/items-phase3-data`; parent fix (owner name from the account) | done (38 unit + 6 instrumented) | 3efd1eb, merge c21dbeb |
 | T3 | S5 | codex `home` via herdr, worktree `feat/items-phase3-home` (parallel with T6) | in progress | |
 | T4 | S6 | pending (after T3) | pending | |
