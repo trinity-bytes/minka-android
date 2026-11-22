@@ -12,7 +12,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 
-/** Indeterminate Material Expressive loading indicator. */
+/** Figma Loading indicator (`331:3029`), 48 dp, using the Material 3 Expressive LoadingIndicator. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MinkaLoadingIndicator(

@@ -44,20 +44,7 @@ fun MinkaTopAppBar(
     modifier: Modifier = Modifier,
     size: MinkaTopAppBarSize = MinkaTopAppBarSize.Small,
     onBack: (() -> Unit)? = null,
-    actions: @Composable RowScope.() -> Unit = {},
-) {
-    MinkaTopAppBar(title, null, modifier, size, onBack, actions)
-}
-
-/** A top app bar whose large variant can collapse with the supplied scroll behavior. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MinkaTopAppBar(
-    title: String,
-    scrollBehavior: TopAppBarScrollBehavior?,
-    modifier: Modifier = Modifier,
-    size: MinkaTopAppBarSize = MinkaTopAppBarSize.Small,
-    onBack: (() -> Unit)? = null,
+    scrollBehavior: TopAppBarScrollBehavior? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val navigationIcon: @Composable () -> Unit = {
