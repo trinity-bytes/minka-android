@@ -78,6 +78,7 @@ class RegisterViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
+    // Name, contact and terms survive process death; passwords stay in memory only, never in saved state.
     private val _uiState = MutableStateFlow(
         RegisterUiState(
             name = savedStateHandle[KEY_NAME] ?: "",
@@ -90,7 +91,6 @@ class RegisterViewModel @Inject constructor(
     private val _events = Channel<RegisterEvent>(Channel.BUFFERED)
     val events: Flow<RegisterEvent> = _events.receiveAsFlow()
 
-    // Passwords remain in memory only and are never written to saved state.
     /** Set once the confirmation was left filled in; from then on, a new password rechecks it. */
     private var confirmChecked = false
 
