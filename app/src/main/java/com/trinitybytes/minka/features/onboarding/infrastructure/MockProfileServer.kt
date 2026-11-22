@@ -50,15 +50,19 @@ class MockProfileServer(storage: MockStorage, private val sessions: MockSessions
         },
     )
 
+    /** The district and interests [userId] chose, for the sibling mock servers that personalize their answers. */
+    suspend fun profileOf(userId: String): ProfileDto =
+        document.read { db -> profileDto(db.profiles[userId] ?: ProfileRecord()) }
+
     private suspend fun userId(call: MockCall): String? = call.bearerToken()?.let { sessions.userFor(it) }
     private fun unauthorized() = MockReply.error(HttpStatusCode.Unauthorized, "unauthorized")
     private suspend fun authorized(call: MockCall, block: () -> MockReply): MockReply =
         if (userId(call) == null) unauthorized() else block()
 
-    private fun profileReply(profile: ProfileRecord) = MockReply.json(
-        HttpStatusCode.OK,
-        ProfileDto(DISTRICTS.firstOrNull { it.id == profile.districtId }?.toDto(), profile.interestIds),
-    )
+    private fun profileDto(profile: ProfileRecord) =
+        ProfileDto(DISTRICTS.firstOrNull { it.id == profile.districtId }?.toDto(), profile.interestIds)
+
+    private fun profileReply(profile: ProfileRecord) = MockReply.json(HttpStatusCode.OK, profileDto(profile))
 
     private fun nearest(request: NearestDistrictRequest): DistrictRecord {
         val latitude = request.latitude
@@ -81,23 +85,9 @@ class MockProfileServer(storage: MockStorage, private val sessions: MockSessions
         private const val STORAGE_KEY = "profiles"
 
         /** Answer to "Usar mi ubicación" when the device has no approximate position (Figma 1.18 example). */
-        const val DEFAULT_DISTRICT_ID = "miraflores"
+        const val DEFAULT_DISTRICT_ID = MockDistricts.DEFAULT_DISTRICT_ID
 
-        /** Lima districts; the first five are the ones Figma 1.16 lists, in its order. */
-        private val DISTRICTS = listOf(
-            DistrictRecord("miraflores", "Miraflores", -12.1211, -77.0297),
-            DistrictRecord("san-isidro", "San Isidro", -12.0977, -77.0365),
-            DistrictRecord("barranco", "Barranco", -12.1494, -77.0219),
-            DistrictRecord("santiago-de-surco", "Santiago de Surco", -12.1459, -76.9916),
-            DistrictRecord("jesus-maria", "Jesús María", -12.0776, -77.0490),
-            DistrictRecord("chorrillos", "Chorrillos", -12.1710, -77.0150),
-            DistrictRecord("la-molina", "La Molina", -12.0790, -76.9420),
-            DistrictRecord("lince", "Lince", -12.0838, -77.0360),
-            DistrictRecord("magdalena-del-mar", "Magdalena del Mar", -12.0910, -77.0700),
-            DistrictRecord("pueblo-libre", "Pueblo Libre", -12.0745, -77.0630),
-            DistrictRecord("san-borja", "San Borja", -12.1086, -77.0010),
-            DistrictRecord("surquillo", "Surquillo", -12.1120, -77.0190),
-        )
+        private val DISTRICTS = MockDistricts.ALL
 
         /** The categories of Figma 1.19, in its order. */
         private val INTERESTS = listOf(
@@ -117,9 +107,7 @@ class MockProfileServer(storage: MockStorage, private val sessions: MockSessions
     }
 }
 
-private data class DistrictRecord(val id: String, val name: String, val latitude: Double, val longitude: Double) {
-    fun toDto() = DistrictDto(id, name)
-}
+private fun DistrictRecord.toDto() = DistrictDto(id, name)
 
 @Serializable
 private data class ProfileRecord(val districtId: String? = null, val interestIds: List<String> = emptyList())
