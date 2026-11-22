@@ -14,7 +14,12 @@ data class User(
     val contact: String,
 )
 
-data class Session(val token: String, val user: User)
+data class Session(
+    val token: String,
+    val user: User,
+    /** True only on the sign-in that created the account (Google access, C16); it is not kept on the device. */
+    val isNewAccount: Boolean = false,
+)
 
 /** An account offered by the Google picker (Figma 1.09). */
 data class GoogleAccount(val id: String, val name: String, val email: String)

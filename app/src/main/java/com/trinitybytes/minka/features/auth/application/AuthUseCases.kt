@@ -1,6 +1,8 @@
 package com.trinitybytes.minka.features.auth.application
 
+import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.core.domain.onSuccess
+import com.trinitybytes.minka.features.auth.domain.AuthError
 import com.trinitybytes.minka.features.auth.domain.AuthOutcome
 import com.trinitybytes.minka.features.auth.domain.AuthRepository
 import com.trinitybytes.minka.features.auth.domain.GoogleAccount
@@ -10,7 +12,9 @@ import com.trinitybytes.minka.features.auth.domain.Session
 import com.trinitybytes.minka.features.auth.domain.SessionStore
 import com.trinitybytes.minka.features.auth.domain.TERMS_VERSION
 import com.trinitybytes.minka.features.auth.domain.VerificationChallenge
+import com.trinitybytes.minka.features.onboarding.application.BeginOnboarding
 import kotlinx.coroutines.flow.Flow
+import java.io.IOException
 import java.time.Clock
 import javax.inject.Inject
 
@@ -19,20 +23,30 @@ class SignIn @Inject constructor(
     private val repository: AuthRepository,
     private val sessionStore: SessionStore,
 ) {
-    suspend operator fun invoke(contact: String, password: String): AuthOutcome<Session> =
+    suspend operator fun invoke(contact: String, password: String): AuthOutcome<Session> = storingOnDevice {
         repository.signIn(contact, password).onSuccess { sessionStore.save(it) }
+    }
 }
 
 class GetGoogleAccounts @Inject constructor(private val repository: AuthRepository) {
     suspend operator fun invoke(): AuthOutcome<List<GoogleAccount>> = repository.googleAccounts()
 }
 
+/**
+ * Signs in with a Google account. An account created by this sign-in starts the profile setup, saved
+ * before the session as registration does, so the next launch resumes the setup instead of Home.
+ */
 class SignInWithGoogle @Inject constructor(
     private val repository: AuthRepository,
     private val sessionStore: SessionStore,
+    private val beginOnboarding: BeginOnboarding,
 ) {
-    suspend operator fun invoke(accountId: String): AuthOutcome<Session> =
-        repository.signInWithGoogle(accountId).onSuccess { sessionStore.save(it) }
+    suspend operator fun invoke(accountId: String): AuthOutcome<Session> = storingOnDevice {
+        repository.signInWithGoogle(accountId).onSuccess {
+            if (it.isNewAccount) beginOnboarding(it.user.id)
+            sessionStore.save(it)
+        }
+    }
 }
 
 class RequestPasswordReset @Inject constructor(private val repository: AuthRepository) {
@@ -65,11 +79,12 @@ class VerifyRegistration @Inject constructor(
         challengeId: String,
         code: String,
         beforeSignIn: suspend (Session) -> Unit = {},
-    ): AuthOutcome<Session> =
+    ): AuthOutcome<Session> = storingOnDevice {
         repository.verifyCode(challengeId, code).onSuccess {
             beforeSignIn(it)
             sessionStore.save(it)
         }
+    }
 }
 
 class ResendCode @Inject constructor(private val repository: AuthRepository) {
@@ -84,4 +99,11 @@ class ObserveSession @Inject constructor(private val sessionStore: SessionStore)
 
 class SignOut @Inject constructor(private val sessionStore: SessionStore) {
     suspend operator fun invoke() = sessionStore.clear()
+}
+
+/** A device storage failure while keeping the result is reported as [AuthError.Unexpected] instead of crashing. */
+private inline fun <T> storingOnDevice(block: () -> AuthOutcome<T>): AuthOutcome<T> = try {
+    block()
+} catch (_: IOException) {
+    Outcome.Failure(AuthError.Unexpected)
 }

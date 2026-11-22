@@ -1,15 +1,13 @@
 package com.trinitybytes.minka.features.auth.infrastructure
 
-import com.trinitybytes.minka.core.network.MinkaJson
 import com.trinitybytes.minka.core.network.MockCall
+import com.trinitybytes.minka.core.network.MockDocument
 import com.trinitybytes.minka.core.network.MockReply
 import com.trinitybytes.minka.core.network.MockRoute
 import com.trinitybytes.minka.core.network.MockStorage
 import com.trinitybytes.minka.features.auth.domain.normalizeContact
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import java.time.Clock
 import java.util.UUID
@@ -24,15 +22,14 @@ const val DEMO_VERIFICATION_CODE = "482915"
 
 /**
  * The identity half of the in-app mock API. It applies the rules of Figma flow 01: 5 failed
- * sign-ins lock the contact for 15 minutes, a code allows 5 attempts and can be resent after 60
+ * sign-ins lock the account (all its contacts) for 15 minutes, a code allows 5 attempts and can be resent after 60
  * seconds, and password reset links expire in 30 minutes.
  */
 class MockAuthServer(
-    private val storage: MockStorage,
+    storage: MockStorage,
     private val clock: Clock,
 ) {
-    private val mutex = Mutex()
-    private var cache: AuthDb? = null
+    private val document = MockDocument(storage, STORAGE_KEY, AuthDb.serializer()) { AuthDb.seed() }
 
     fun routes(): Set<MockRoute> = setOf(
         MockRoute(HttpMethod.Post, "auth/sessions") { signIn(it.body()) },
@@ -58,36 +55,40 @@ class MockAuthServer(
     private suspend fun signIn(request: SignInRequest): MockReply = transaction { db ->
         val contact = normalizeContact(request.contact)
         val now = clock.millis()
-        db.lockedUntil[contact]?.let { until ->
-            if (until > now) return@transaction locked(until - now)
-            db.lockedUntil.remove(contact)
-            db.failedSignIns.remove(contact)
-        }
         val account = db.accounts.firstOrNull { it.matches(contact) }
+        // One counter and one lock per account, whichever of its contacts is typed; unknown contacts count apart.
+        val key = account?.let { "$ACCOUNT_KEY_PREFIX${it.id}" } ?: contact
+        db.lockedUntil[key]?.let { until ->
+            if (until > now) return@transaction locked(until - now)
+            db.lockedUntil.remove(key)
+            db.failedSignIns.remove(key)
+        }
         if (account == null || account.password != request.password) {
-            val failures = (db.failedSignIns[contact] ?: 0) + 1
+            val failures = (db.failedSignIns[key] ?: 0) + 1
             if (failures >= MAX_SIGN_IN_ATTEMPTS) {
-                db.failedSignIns.remove(contact)
-                db.lockedUntil[contact] = now + LOCK_MILLIS
+                db.failedSignIns.remove(key)
+                db.lockedUntil[key] = now + LOCK_MILLIS
                 return@transaction locked(LOCK_MILLIS)
             }
-            db.failedSignIns[contact] = failures
+            db.failedSignIns[key] = failures
             return@transaction MockReply.error(
                 HttpStatusCode.Unauthorized,
                 AuthErrorCodes.INVALID_CREDENTIALS,
                 attemptsLeft = MAX_SIGN_IN_ATTEMPTS - failures,
             )
         }
-        db.failedSignIns.remove(contact)
+        db.failedSignIns.remove(key)
         openSession(db, account)
     }
 
     private suspend fun signInWithGoogle(request: GoogleSignInRequest): MockReply = transaction { db ->
         val google = GOOGLE_ACCOUNTS.firstOrNull { it.id == request.accountId }
             ?: return@transaction MockReply.error(HttpStatusCode.NotFound, "not_found")
-        val account = db.accounts.firstOrNull { it.matches(google.email) }
-            ?: AccountRecord(newId(), google.name, google.email, phone = null, password = null).also(db.accounts::add)
-        openSession(db, account)
+        db.accounts.firstOrNull { it.matches(google.email) }?.let { return@transaction openSession(db, it) }
+        // A new account still has the profile setup ahead (1.16-1.21): the client is told so.
+        val account = AccountRecord(newId(), google.name, google.email, phone = null, password = null)
+        db.accounts += account
+        openSession(db, account, HttpStatusCode.Created, isNewAccount = true)
     }
 
     private suspend fun register(request: RegistrationRequest): MockReply = transaction { db ->
@@ -95,6 +96,8 @@ class MockAuthServer(
         if (db.accounts.any { it.matches(contact) }) {
             return@transaction MockReply.error(HttpStatusCode.Conflict, AuthErrorCodes.CONTACT_TAKEN)
         }
+        // Only the newest code of a contact can be confirmed.
+        db.challenges.values.removeAll { it.accountId == null && it.registration.contact == contact }
         val challenge = ChallengeRecord(
             id = newId(),
             registration = request.copy(contact = contact),
@@ -120,8 +123,17 @@ class MockAuthServer(
                 MockReply.error(HttpStatusCode.UnprocessableEntity, AuthErrorCodes.WRONG_CODE, attemptsLeft = left)
             }
         }
-        db.challenges.remove(id)
+        // Already verified: the right code opens a new session, e.g. when the client lost the first one.
+        challenge.accountId?.let { accountId ->
+            val account = db.accounts.firstOrNull { it.id == accountId }
+                ?: return@transaction MockReply.error(HttpStatusCode.NotFound, "not_found")
+            return@transaction openSession(db, account, HttpStatusCode.Created)
+        }
         val registration = challenge.registration
+        if (db.accounts.any { it.matches(registration.contact) }) {
+            db.challenges.remove(id)
+            return@transaction MockReply.error(HttpStatusCode.Conflict, AuthErrorCodes.CONTACT_TAKEN)
+        }
         val isPhone = '@' !in registration.contact
         val account = AccountRecord(
             id = newId(),
@@ -133,6 +145,7 @@ class MockAuthServer(
             termsAcceptedAt = registration.termsAcceptedAt,
         )
         db.accounts += account
+        db.challenges[id] = challenge.copy(accountId = account.id)
         openSession(db, account, HttpStatusCode.Created)
     }
 
@@ -155,10 +168,15 @@ class MockAuthServer(
         MockReply.json(HttpStatusCode.OK, renewed.toDto())
     }
 
-    private fun openSession(db: AuthDb, account: AccountRecord, status: HttpStatusCode = HttpStatusCode.OK): MockReply {
+    private fun openSession(
+        db: AuthDb,
+        account: AccountRecord,
+        status: HttpStatusCode = HttpStatusCode.OK,
+        isNewAccount: Boolean = false,
+    ): MockReply {
         val token = UUID.randomUUID().toString()
         db.sessions[token] = account.id
-        return MockReply.json(status, SessionDto(token, UserDto(account.id, account.name, account.contact)))
+        return MockReply.json(status, SessionDto(token, UserDto(account.id, account.name, account.contact), isNewAccount))
     }
 
     private fun locked(millis: Long) = MockReply.error(
@@ -171,12 +189,8 @@ class MockAuthServer(
 
     private fun newId() = UUID.randomUUID().toString()
 
-    /** Runs [block] on the loaded state and persists it afterwards, one request at a time. */
-    private suspend fun transaction(block: (AuthDb) -> MockReply): MockReply = mutex.withLock {
-        val db = cache ?: (storage.read(STORAGE_KEY)?.let { MinkaJson.decodeFromString<AuthDb>(it) } ?: AuthDb.seed())
-            .also { cache = it }
-        block(db).also { storage.write(STORAGE_KEY, MinkaJson.encodeToString(db)) }
-    }
+    /** Runs [block] on a copy of the stored state, one request at a time; the copy is kept only once written. */
+    private suspend fun transaction(block: (AuthDb) -> MockReply): MockReply = document.update(block)
 
     private fun ChallengeRecord.toDto() = ChallengeDto(
         id = id,
@@ -187,6 +201,9 @@ class MockAuthServer(
 
     private companion object {
         const val STORAGE_KEY = "auth"
+
+        /** Prefix of the failure and lock keys of a known account, so no typed contact can collide with them. */
+        const val ACCOUNT_KEY_PREFIX = "account:"
         const val MAX_SIGN_IN_ATTEMPTS = 5
         const val LOCK_MILLIS = 15 * 60 * 1000L
         const val MAX_CODE_ATTEMPTS = 5
@@ -223,6 +240,8 @@ private data class ChallengeRecord(
     val registration: RegistrationRequest,
     val attemptsLeft: Int,
     val resendAvailableAt: Long,
+    /** The account the code created once verified; the challenge stays so it can be verified again. */
+    val accountId: String? = null,
 )
 
 @Serializable

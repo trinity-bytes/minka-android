@@ -1,13 +1,11 @@
 package com.trinitybytes.minka.features.onboarding.infrastructure
 
-import com.trinitybytes.minka.core.network.MinkaJson
+import com.trinitybytes.minka.core.network.MockDocument
 import com.trinitybytes.minka.core.network.MockReply
 import com.trinitybytes.minka.core.network.MockRoute
 import com.trinitybytes.minka.core.network.MockStorage
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 
 /**
@@ -15,9 +13,8 @@ import kotlinx.serialization.Serializable
  * and each user's choices. There is no geocoding service, so the nearest district is the closest
  * centroid, and an unknown location falls back to [DEFAULT_DISTRICT_ID] (README).
  */
-class MockProfileServer(private val storage: MockStorage) {
-    private val mutex = Mutex()
-    private var cache: ProfileDb? = null
+class MockProfileServer(storage: MockStorage) {
+    private val document = MockDocument(storage, STORAGE_KEY, ProfileDb.serializer()) { ProfileDb() }
 
     fun routes(): Set<MockRoute> = setOf(
         MockRoute(HttpMethod.Get, "profile/districts") {
@@ -52,12 +49,9 @@ class MockProfileServer(private val storage: MockStorage) {
     }
 
     /** Applies [change] to the profile of [userId], persists it and answers with the result. */
-    private suspend fun update(userId: String, change: (ProfileRecord) -> ProfileRecord): MockReply = mutex.withLock {
-        val db = cache ?: (storage.read(STORAGE_KEY)?.let { MinkaJson.decodeFromString<ProfileDb>(it) } ?: ProfileDb())
-            .also { cache = it }
+    private suspend fun update(userId: String, change: (ProfileRecord) -> ProfileRecord): MockReply = document.update { db ->
         val profile = change(db.profiles[userId] ?: ProfileRecord())
         db.profiles[userId] = profile
-        storage.write(STORAGE_KEY, MinkaJson.encodeToString(db))
         MockReply.json(
             HttpStatusCode.OK,
             ProfileDto(DISTRICTS.firstOrNull { it.id == profile.districtId }?.toDto(), profile.interestIds),

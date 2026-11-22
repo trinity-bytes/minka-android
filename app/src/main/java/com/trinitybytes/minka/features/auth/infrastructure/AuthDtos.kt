@@ -36,8 +36,8 @@ data class UserDto(val id: String, val name: String, val contact: String) {
 }
 
 @Serializable
-data class SessionDto(val token: String, val user: UserDto) {
-    fun toDomain() = Session(token, user.toDomain())
+data class SessionDto(val token: String, val user: UserDto, val isNewAccount: Boolean = false) {
+    fun toDomain() = Session(token, user.toDomain(), isNewAccount)
 }
 
 @Serializable
