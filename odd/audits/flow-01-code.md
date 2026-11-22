@@ -40,8 +40,13 @@
 | D6 | low | Duplicated helpers (`call` in both Ktor repositories, three countdown loops, contact validation, mock DB loading); cross-feature use of `SessionStore`, `ResolveLaunch`, `BeginOnboarding`. | Refactor without behavior change; after this round. `isOffline` is unified as part of C3. |
 | D8 | low | `AdvanceSetup`, `CompleteOnboarding`, `BeginOnboarding` return `Unit` and still let a DataStore `IOException` escape. | Needs a signature change across the onboarding ViewModels; with D2. |
 | D9 | low | Every resend resets the verify attempts while the mock code never changes, so guessing is unbounded at 5 per minute. | The fixed code is the demo contract of the mock (README); a real backend issues a new code per resend. |
+| D10 | low | C16 window: if saving the profile-setup step fails right after the server's 201 for a new Google account (disk full, process killed), the retry sees an existing account and lands on Home, skipping 1.16–1.21. | Fixing it in the mock couples the auth and profile servers; a real backend derives "needs setup" from the profile. Accepted as a known mock limitation. |
 | D7 | low | Lock countdown recomposes the whole sign-in tree every second; district list not lazy; events collected without lifecycle awareness; disabled alphas repeated per component. | No user-visible defect today. |
 
 ## Pass 3: refutation
 
 An independent reviewer re-checked every claim against the code: none was wrong. It corrected line ranges (C3, C4, C12, C14), the scope of C5 (sign-in actions outside the scroll) and C8 (read side, `Unit` use cases), and three fixes that would have broken behavior as first worded: C3's retry replayed stale input, C7's `copy()` is shallow, C8 could not return `Unexpected` from `Unit` use cases. It found C16–C19 and D9, which were added above. Deferrals D1–D7 were judged reasonable.
+
+## Outcome (2026-11-22)
+
+Fixed C1–C19 in commits 020a52f (mock server and use cases), fb20463 (design system), 4188965 (forms), 3046209 (splash, welcome, navigation). An independent verifier probed the high-risk unit (lockout, persisted mock state): C1, C6, C7, C8, C17 pass with no regressions, and state saved before the change still decodes; C16 is partial (D10). Its probes were added as regression tests (`MockAuthServerLockAndStorageTest`, `MockDocumentTest`). Unit suite: 156 green (baseline 125). Compose UI tests compile; they were not run (no device).
