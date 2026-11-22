@@ -1,10 +1,10 @@
 package com.trinitybytes.minka.features.items.infrastructure
 
+import com.trinitybytes.minka.features.auth.infrastructure.DEMO_USER_ID
 import com.trinitybytes.minka.features.items.domain.Category
 import com.trinitybytes.minka.features.items.domain.Condition
 
 private const val PHOTO_BASE = "android.resource://com.trinitybytes.minka/drawable/"
-private const val DEMO_USER_ID = "user-ana"
 private const val DEMO_USER_NAME = "Ana Quispe"
 private const val LUCIA_MEMBER_SINCE = 1672531200000L
 private const val SEED_CREATED = 1720000000000L

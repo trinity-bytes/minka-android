@@ -20,6 +20,9 @@ import kotlinx.serialization.Serializable
 
 /** Seed account of the mock API (README, "Cuenta demo"). */
 const val DEMO_EMAIL = "ana.quispe@gmail.com"
+
+/** User id of the seeded demo account; other mock servers seed its profile and listings. */
+const val DEMO_USER_ID = "user-ana"
 const val DEMO_PHONE = "987654321"
 const val DEMO_PASSWORD = "Minka2026!"
 
@@ -293,7 +296,7 @@ private data class AuthDb(
         fun seed() = AuthDb(
             accounts = mutableListOf(
                 AccountRecord(
-                    id = "user-ana",
+                    id = DEMO_USER_ID,
                     name = "Ana Quispe",
                     email = DEMO_EMAIL,
                     phone = DEMO_PHONE,

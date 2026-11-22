@@ -1,5 +1,7 @@
 package com.trinitybytes.minka.features.onboarding.infrastructure
 
+import com.trinitybytes.minka.features.auth.infrastructure.DEMO_USER_ID
+
 import com.trinitybytes.minka.core.network.MockCall
 import com.trinitybytes.minka.core.network.MockDocument
 import com.trinitybytes.minka.core.network.MockReply
@@ -16,7 +18,7 @@ import kotlinx.serialization.Serializable
  * centroid, and an unknown location falls back to [DEFAULT_DISTRICT_ID] (README).
  */
 class MockProfileServer(storage: MockStorage, private val sessions: MockSessions) {
-    private val document = MockDocument(storage, STORAGE_KEY, ProfileDb.serializer()) { ProfileDb() }
+    private val document = MockDocument(storage, STORAGE_KEY, ProfileDb.serializer()) { ProfileDb.seeded() }
 
     fun routes(): Set<MockRoute> = setOf(
         MockRoute(HttpMethod.Get, "profile/districts") { call ->
@@ -113,4 +115,16 @@ private fun DistrictRecord.toDto() = DistrictDto(id, name)
 private data class ProfileRecord(val districtId: String? = null, val interestIds: List<String> = emptyList())
 
 @Serializable
-private data class ProfileDb(val profiles: MutableMap<String, ProfileRecord> = mutableMapOf())
+private data class ProfileDb(val profiles: MutableMap<String, ProfileRecord> = mutableMapOf()) {
+    companion object {
+        /** The demo account already finished setup in Miraflores, so Inicio can show distances (README). */
+        fun seeded() = ProfileDb(
+            mutableMapOf(
+                DEMO_USER_ID to ProfileRecord(
+                    districtId = MockDistricts.DEFAULT_DISTRICT_ID,
+                    interestIds = listOf("hogar", "libros", "plantas"),
+                ),
+            ),
+        )
+    }
+}
