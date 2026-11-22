@@ -40,13 +40,13 @@ com.trinitybytes.minka
 │   ├── designsystem/          ← tema (color, tipografía, formas) y componentes reutilizables
 │   ├── domain/                ← tipos compartidos (resultados, errores)
 │   ├── di/                    ← módulos de Hilt transversales
-│   ├── network/               ← cliente HTTP (cuando exista backend)
+│   ├── network/               ← cliente Ktor y el mock API que corre dentro de la app
 │   └── database/              ← Room (caché local)
 └── features/
     └── <feature>/
         ├── domain/            ← modelos y puertos (interfaces de repositorio). Kotlin puro.
         ├── application/       ← casos de uso
-        ├── infrastructure/    ← adaptadores: fakes, API, Room
+        ├── infrastructure/    ← adaptadores: API (Ktor), rutas del mock API, Room, DataStore
         └── presentation/      ← pantallas Compose + ViewModel
 ```
 
@@ -54,7 +54,7 @@ Reglas:
 
 1. `domain` no depende de Android ni de ninguna otra capa.
 2. `presentation` solo conoce `application` y `domain`; nunca un adaptador concreto.
-3. Hilt une los puertos con su adaptador. Cambiar de fake a backend real es cambiar un binding, no tocar dominio ni UI.
+3. Hilt une los puertos con su adaptador. Los adaptadores hablan HTTP; si algún día hay servidor, se cambia el engine de Ktor, no el dominio ni la UI.
 4. Cada pantalla expone un `UiState` inmutable (`StateFlow`) y recibe eventos: flujo de datos unidireccional.
 5. Un solo módulo de Gradle al principio. Si los límites entre paquetes se mantienen limpios, extraer módulos después es mecánico.
 
@@ -71,7 +71,7 @@ Versiones fijadas en `gradle/libs.versions.toml`, alineadas con las que ya compi
 | Inyección de dependencias | Hilt + KSP | En el scaffold |
 | Concurrencia | Coroutines + Flow | En el scaffold |
 | Persistencia | Room + DataStore | Se agrega con la primera feature que lo necesite |
-| Red | Retrofit + OkHttp + kotlinx.serialization | Se agrega con el backend real |
+| Red | Ktor Client + `MockEngine` + kotlinx.serialization | Fase 2 |
 | Imágenes | Coil 3 | Se agrega con `items` |
 | QR | Generación + CameraX/ML Kit para escanear | Se agrega con `exchanges` |
 | Tests | JUnit 4, kotlinx-coroutines-test, Turbine, Compose UI test | JUnit y coroutines-test en el scaffold |
@@ -80,21 +80,13 @@ Versiones fijadas en `gradle/libs.versions.toml`, alineadas con las que ya compi
 
 ## 4. Backend
 
-**Contract-first, con fakes primero.**
+**No hay backend, por tiempo indefinido.** La app habla con un **mock API que corre dentro de ella**.
 
-1. Cada feature define sus puertos en `domain`. El primer adaptador es un **fake en memoria** dentro de `infrastructure`, con datos de ejemplo realistas.
-2. Todo el MVP se puede construir y probar sin servidor.
-3. En paralelo se escribe el contrato de la API (OpenAPI) a partir de los puertos.
-4. Cuando llegue el backend real, se agrega el adaptador remoto y se cambia el binding de Hilt.
-
-**Decisión abierta: qué backend real.**
-
-| Opción | A favor | En contra |
-|---|---|---|
-| Supabase | Auth, Postgres, almacenamiento de fotos y tiempo real (chat) ya resueltos; cliente oficial para Kotlin | Dependencia de un proveedor; se programa menos backend |
-| Backend propio en Ktor + PostgreSQL | Kotlin de punta a punta; control total; aprendizaje de backend | Chat en tiempo real, fotos y auth se construyen a mano |
-
-Se decide antes de la fase 4. Hasta entonces, los fakes no fuerzan ninguna de las dos.
+1. Los adaptadores de `infrastructure` usan un `HttpClient` de Ktor con DTOs y JSON reales.
+2. El engine del cliente es un `MockEngine` (`core/network/MockApi`): cada feature registra sus rutas (`MockRoute`) con multibinding de Hilt, y cada ruta responde JSON con el mismo formato de error (`ApiError`, con un `code` estable).
+3. El estado del "servidor" (cuentas, publicaciones, intercambios) se guarda en el dispositivo, así que sobrevive a reinicios de la app.
+4. Las respuestas tardan unos 600 ms para que los estados de carga del diseño se vean.
+5. Si algún día aparece un servidor, se cambia el engine y la URL base; dominio, casos de uso y UI no se tocan.
 
 ## 5. Diseño
 
@@ -104,10 +96,9 @@ Fuente de verdad: Figma `uMjLWyytKzdU4AgXuNBRZM`.
 |---|---|
 | Mapa de pantallas y estados + wireframes v2 | `307:80` |
 | Mockups v1 · Light (134 pantallas) | `333:2` |
-| Mockups v1 · Dark | `368:5490` |
 
-- La página **Foundations** (`291:1298`) manda: sus paneles de color fijan el mapeo exacto a roles de Material 3 en claro y oscuro, y las descripciones de **Components** (`291:1299`) nombran la API de Compose.
-- Colores: `MaterialTheme.colorScheme` para los roles de Material 3 y `MinkaTheme.colors` para lo que no tiene rol (marca, acentos, `raised`, `overlay`). El tema sigue el modo oscuro del sistema; sin color dinámico.
+- La página **Foundations** (`291:1298`) manda: sus paneles de color fijan el mapeo exacto a roles de Material 3 en claro, y las descripciones de **Components** (`291:1299`) nombran la API de Compose.
+- Colores: `MaterialTheme.colorScheme` para los roles de Material 3 y `MinkaTheme.colors` para lo que no tiene rol (marca, acentos, `raised`, `overlay`). La aplicación ofrece un único tema claro sin color dinámico. El modo oscuro se descartó el 22-11-2026 porque su costo supera su valor. Compose BOM 2026.11.01 incluye Material 3 1.5.0 estable y requiere compilar con el SDK 37.1.
 - Tipografía: Fraunces (display, headline y Title/Large, con `SOFT 0`, `WONK 1` y tamaño óptico por estilo) e Inter (resto), como fuentes variables empaquetadas. `MinkaTheme.typography.sticker` para el estilo sin lugar en Material 3.
 - Formas, espaciado y elevación: `MaterialTheme.shapes`, `MinkaShapes` (`control`, `bento`, `full`), `MinkaSpacing.s4`…`s64` y las sombras teñidas de `MinkaElevation` con `Modifier.minkaShadow`.
 - Íconos: Material Icons Round (`Icons.Rounded.*`).
@@ -133,25 +124,24 @@ Fuente de verdad: Figma `uMjLWyytKzdU4AgXuNBRZM`.
 | Fase | Objetivo | Entregable |
 |---|---|---|
 | 0 | Scaffold | Proyecto que compila: Hilt, Compose, navegación, tema base, este plan |
-| 1 | Sistema de diseño | Tema completo desde Figma (Light/Dark), Fraunces + Inter, formas, espaciado, componentes base, ícono de la app |
-| 2 | Onboarding + IAM con fakes | Flujo 1.01–1.22 de Figma, sesión en DataStore |
-| 3 | Items con fakes | Publicar, explorar, buscar, detalle; caché en Room |
-| 4 | Exchanges + chat con fakes | Proponer, aceptar, chatear, confirmar con QR. Decisión de backend |
-| 5 | Backend real | Adaptadores remotos, contrato OpenAPI, prueba cerrada en Play |
+| 1 | Sistema de diseño | Tema completo desde Figma (Light), Fraunces + Inter, formas, espaciado, componentes base, ícono de la app |
+| 2 | Onboarding + IAM sobre el mock API | Flujo 1.01–1.22 de Figma, sesión en DataStore |
+| 3 | Items sobre el mock API | Publicar, explorar, buscar, detalle; caché en Room |
+| 4 | Exchanges + chat sobre el mock API | Proponer, aceptar, chatear, confirmar con QR |
+| 5 | Prueba cerrada | Release firmado con R8, prueba cerrada en Play |
 | 6 | Post-MVP | Perfil completo, notificaciones, gamificación, comunidad |
 
 ### Progreso
 
 - [x] Fase 0 — Scaffold
 - [x] Fase 1 — Sistema de diseño
-- [ ] Fase 2 — Onboarding + IAM
+- [x] Fase 2 — Onboarding + IAM
 - [ ] Fase 3 — Items
 - [ ] Fase 4 — Exchanges + chat
-- [ ] Fase 5 — Backend real
+- [ ] Fase 5 — Prueba cerrada
 - [ ] Fase 6 — Post-MVP
 
 ## 9. Decisiones abiertas
 
-1. Backend real: Supabase o Ktor propio (antes de la fase 4).
-2. Dominio de la landing (por ejemplo `minkaapp.com`); afecta los enlaces profundos (App Links).
-3. `applicationId` definitivo antes de la primera subida a Play.
+1. Dominio de la landing (por ejemplo `minkaapp.com`); afecta los enlaces profundos (App Links).
+2. `applicationId` definitivo antes de la primera subida a Play.

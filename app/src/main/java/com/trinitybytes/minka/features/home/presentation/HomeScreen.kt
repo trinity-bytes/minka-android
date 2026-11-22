@@ -2,8 +2,10 @@ package com.trinitybytes.minka.features.home.presentation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -19,7 +21,7 @@ import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 /** Placeholder start screen until the onboarding flow (phase 2) takes its place. */
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
-    Scaffold(modifier = modifier) { padding ->
+    Scaffold(modifier = modifier, contentWindowInsets = WindowInsets.safeDrawing) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

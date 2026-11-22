@@ -16,8 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.Preview
 import com.trinitybytes.minka.core.designsystem.theme.MinkaElevation
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
@@ -25,8 +26,10 @@ import com.trinitybytes.minka.core.designsystem.theme.minkaShadow
 
 /**
  * Figma Dialog (`299:102`): overlay surface, radius extraLarge and the modal shadow, with an
- * optional secondary icon, a Fraunces headline and the actions at the end. [destructive] turns
- * the confirm button into the Destructive style for irreversible actions.
+ * optional icon (secondary unless [iconTint] says otherwise), a Fraunces headline and the actions
+ * at the end. [confirmStyle] is a text button by default, as M3 dialogs ask for non-destructive
+ * actions; pass [MinkaButtonStyle.Destructive] for irreversible ones. The [dismissText] button calls [onDismissClick], which defaults to [onDismiss] (the
+ * scrim and back gesture); pass it when that button leads somewhere else.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +42,10 @@ fun MinkaDialog(
     modifier: Modifier = Modifier,
     dismissText: String? = null,
     icon: ImageVector? = null,
-    destructive: Boolean = false,
+    confirmStyle: MinkaButtonStyle = MinkaButtonStyle.Text,
+    iconTint: Color = MaterialTheme.colorScheme.secondary,
+    onDismissClick: () -> Unit = onDismiss,
+    textContent: (@Composable () -> Unit)? = null,
 ) {
     BasicAlertDialog(onDismissRequest = onDismiss, modifier = modifier) {
         val shape = MaterialTheme.shapes.extraLarge
@@ -53,21 +59,22 @@ fun MinkaDialog(
                 verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
             ) {
                 if (icon != null) {
-                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                    Icon(icon, contentDescription = null, tint = iconTint)
                 }
                 Text(title, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurface)
-                Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (textContent != null) textContent()
+                else Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s8, alignment = Alignment.End),
                 ) {
                     if (dismissText != null) {
-                        MinkaButton(text = dismissText, onClick = onDismiss, style = MinkaButtonStyle.Text)
+                        MinkaButton(text = dismissText, onClick = onDismissClick, style = MinkaButtonStyle.Text)
                     }
                     MinkaButton(
                         text = confirmText,
                         onClick = onConfirm,
-                        style = if (destructive) MinkaButtonStyle.Destructive else MinkaButtonStyle.Filled,
+                        style = confirmStyle,
                     )
                 }
             }
@@ -75,7 +82,7 @@ fun MinkaDialog(
     }
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun MinkaDialogPreview() {
     MinkaTheme {

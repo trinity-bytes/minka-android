@@ -2,6 +2,7 @@ package com.trinitybytes.minka.core.designsystem.theme
 
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -45,8 +46,13 @@ class TypographyTest {
     }
 
     @Test
-    fun `sticker label is Inter extra bold with wide tracking`() {
-        assertStyle(MinkaTheme.typography.sticker, 13, 18, 6f, FontWeight.ExtraBold)
+    fun `sticker label is Inter extra bold tracked at 6 percent like Figma`() {
+        with(MinkaTheme.typography.sticker) {
+            assertEquals(13.sp, fontSize)
+            assertEquals(18.sp, lineHeight)
+            assertEquals(0.06.em, letterSpacing)
+            assertEquals(FontWeight.ExtraBold, fontWeight)
+        }
     }
 
     @Test

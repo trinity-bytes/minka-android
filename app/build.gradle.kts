@@ -9,7 +9,9 @@ plugins {
 android {
     namespace = "com.trinitybytes.minka"
     compileSdk {
-        version = release(37)
+        version = release(37) {
+            minorApiLevel = 1
+        }
     }
 
     defaultConfig {
@@ -50,6 +52,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
+    // System splash on every API level (Figma 1.01, design A1)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -68,6 +72,15 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
+
+    // Network: Ktor client over the in-app MockEngine (no real backend)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.mock)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
+    // Local storage
+    implementation(libs.androidx.datastore.preferences)
 
     // Unit tests
     testImplementation(libs.junit)

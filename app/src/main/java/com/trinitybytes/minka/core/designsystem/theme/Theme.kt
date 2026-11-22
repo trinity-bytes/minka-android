@@ -1,7 +1,7 @@
 package com.trinitybytes.minka.core.designsystem.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
@@ -12,14 +12,14 @@ import androidx.compose.runtime.ReadOnlyComposable
  */
 @Composable
 fun MinkaTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
-        LocalMinkaColors provides if (darkTheme) DarkMinkaColors else LightMinkaColors,
+        LocalMinkaColors provides LightMinkaColors,
     ) {
-        MaterialTheme(
-            colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
+        MaterialExpressiveTheme(
+            colorScheme = LightColorScheme,
+            motionScheme = MotionScheme.expressive(),
             typography = MinkaTypography,
             shapes = MinkaMaterialShapes,
             content = content,

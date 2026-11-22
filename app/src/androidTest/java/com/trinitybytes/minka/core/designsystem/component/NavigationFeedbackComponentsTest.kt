@@ -1,11 +1,33 @@
 package com.trinitybytes.minka.core.designsystem.component
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -13,6 +35,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,10 +58,103 @@ class NavigationFeedbackComponentsTest {
     }
 
     @Test
+    fun offlineScreenShowsFigma122AndReportsRetryAndBack() {
+        var retries = 0
+        var backs = 0
+        compose.setContent { MinkaTheme { MinkaOfflineScreen(onBack = { backs++ }, onRetry = { retries++ }) } }
+
+        compose.onNodeWithText("Sin conexión").assertIsDisplayed()
+        compose.onNodeWithText("Revisa tu wifi o tus datos móviles.").assertIsDisplayed()
+        compose.onNodeWithText("Reintentar").performClick()
+        compose.onNodeWithContentDescription("Volver").performClick()
+
+        assertEquals(1, retries)
+        assertEquals(1, backs)
+    }
+
+    @Test
+    fun loadErrorScreenOffersReintentar() {
+        var retries = 0
+        compose.setContent { MinkaTheme { MinkaLoadErrorScreen(onBack = null, onRetry = { retries++ }) } }
+
+        compose.onNodeWithText("No pudimos cargar esta lista").assertIsDisplayed()
+        compose.onNodeWithText("Reintentar").performClick()
+
+        assertEquals(1, retries)
+    }
+
+    @Test
+    fun messageEffectShowsTheActionAndReportsIt() {
+        var shown = 0
+        var actions = 0
+        compose.setContent {
+            MinkaTheme {
+                val hostState = remember { SnackbarHostState() }
+                MinkaSnackbarHost(hostState)
+                MinkaMessageEffect(
+                    hostState = hostState,
+                    message = "offline",
+                    text = "Sin conexión. Lo escrito sigue aquí.",
+                    onShown = { shown++ },
+                    actionLabel = "Reintentar",
+                    onAction = { actions++ },
+                )
+            }
+        }
+
+        compose.onNodeWithText("Sin conexión. Lo escrito sigue aquí.").assertIsDisplayed()
+        compose.onNodeWithText("Reintentar").performClick()
+        compose.waitForIdle()
+
+        assertEquals(1, shown)
+        assertEquals(1, actions)
+    }
+
+    @Test
+    fun dialogConfirmIsATextButtonByDefault() {
+        compose.setContent {
+            MinkaTheme {
+                MinkaDialog(title = "Cuenta bloqueada", text = "Vuelve más tarde.", confirmText = "Entendido", onConfirm = {}, onDismiss = {})
+            }
+        }
+
+        compose.onNodeWithText("Entendido").assertIsDisplayed()
+    }
+
+    @Test
     fun largeTopAppBarShowsTheTitle() {
         compose.setContent { MinkaTheme { MinkaTopAppBar(title = "Explorar", size = MinkaTopAppBarSize.Large) } }
 
         compose.onNodeWithText("Explorar").assertIsDisplayed()
+    }
+
+    @Test
+    fun loadingIndicatorExposesIndeterminateProgress() {
+        compose.setContent { MinkaTheme { MinkaLoadingIndicator(Modifier.testTag("loading")) } }
+        compose.onNodeWithTag("loading").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo.Indeterminate),
+        )
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Test
+    fun largeTopAppBarCollapsesWhenContentScrolls() {
+        lateinit var behavior: TopAppBarScrollBehavior
+        compose.setContent {
+            MinkaTheme {
+                behavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+                Scaffold(
+                    modifier = Modifier.nestedScroll(behavior.nestedScrollConnection),
+                    topBar = { MinkaTopAppBar("Explore", size = MinkaTopAppBarSize.Large, scrollBehavior = behavior) },
+                ) { padding ->
+                    Column(Modifier.padding(padding).testTag("scroll").verticalScroll(rememberScrollState())) {
+                        repeat(50) { Text("Item $it", Modifier.height(48.dp)) }
+                    }
+                }
+            }
+        }
+        compose.onNodeWithTag("scroll").performTouchInput { swipeUp() }
+        compose.runOnIdle { assertTrue(behavior.state.heightOffset < 0f) }
     }
 
     @Test

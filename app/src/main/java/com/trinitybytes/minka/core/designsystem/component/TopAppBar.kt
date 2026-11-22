@@ -2,6 +2,10 @@ package com.trinitybytes.minka.core.designsystem.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Favorite
@@ -9,15 +13,19 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 
@@ -34,13 +42,14 @@ enum class MinkaTopAppBarSize {
  * Top app bar on the page surface. With [onBack] it shows the back arrow; [actions] are 48 dp
  * icon buttons. The title styles come from the theme typography (titleLarge and headlineMedium).
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MinkaTopAppBar(
     title: String,
     modifier: Modifier = Modifier,
     size: MinkaTopAppBarSize = MinkaTopAppBarSize.Small,
     onBack: (() -> Unit)? = null,
+    scrollBehavior: TopAppBarScrollBehavior? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val navigationIcon: @Composable () -> Unit = {
@@ -54,23 +63,26 @@ fun MinkaTopAppBar(
     val onSurface = MaterialTheme.colorScheme.onSurface
     when (size) {
         MinkaTopAppBarSize.Small -> TopAppBar(
-            title = { Text(title) },
+            title = { Text(title, modifier = Modifier.semantics { heading() }) },
             modifier = modifier,
+            windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
             navigationIcon = navigationIcon,
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(actionIconContentColor = onSurface),
         )
-        MinkaTopAppBarSize.Large -> LargeTopAppBar(
-            title = { Text(title) },
+        MinkaTopAppBarSize.Large -> LargeFlexibleTopAppBar(
+            title = { Text(title, modifier = Modifier.semantics { heading() }) },
             modifier = modifier,
+            windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
             navigationIcon = navigationIcon,
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(actionIconContentColor = onSurface),
+            scrollBehavior = scrollBehavior,
         )
     }
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun MinkaTopAppBarPreview() {
     MinkaTheme {
