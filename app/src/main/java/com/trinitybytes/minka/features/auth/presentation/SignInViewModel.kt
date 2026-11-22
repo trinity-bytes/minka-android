@@ -73,16 +73,18 @@ data class SignInUiState(
 /** `m:ss`, as in the 1.08 dialog ("Vuelve a intentarlo en 14:59"). */
 fun formatCountdown(seconds: Long): String = "%d:%02d".format(seconds / 60, seconds % 60)
 
+private const val KEY_CONTACT = "signin_contact"
+
 @HiltViewModel
 class SignInViewModel @Inject constructor(
     private val signIn: SignIn,
     private val getGoogleAccounts: GetGoogleAccounts,
     private val signInWithGoogle: SignInWithGoogle,
     private val resolveLaunch: ResolveLaunch,
-    private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SignInUiState(contact = savedStateHandle["signin_contact"] ?: ""))
+    private val _uiState = MutableStateFlow(SignInUiState(contact = savedStateHandle[KEY_CONTACT] ?: ""))
     val uiState: StateFlow<SignInUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<SignInEvent>(Channel.BUFFERED)
@@ -103,7 +105,7 @@ class SignInViewModel @Inject constructor(
 
     fun onContactChange(value: String) = _uiState.update { state ->
         if (!state.fieldsEnabled) return@update state
-        savedStateHandle["signin_contact"] = value
+        savedStateHandle[KEY_CONTACT] = value
         // Once a message shows, it follows the typing so it disappears as soon as the value is valid.
         state.copy(contact = value, contactError = state.contactError?.let { contactError(value) })
     }

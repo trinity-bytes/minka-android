@@ -19,7 +19,6 @@ import javax.inject.Inject
 sealed interface AllSetEvent {
     /** Onboarding is complete; Inicio opens with nothing behind it. */
     data object GoHome : AllSetEvent
-    data object Unexpected : AllSetEvent
 }
 
 /** Figma 1.21: "¡Todo listo, Ana!" and the district chosen in 1.16, when the profile has it. */
@@ -27,6 +26,7 @@ data class AllSetUiState(
     val firstName: String = "",
     val districtName: String? = null,
     val isFinishing: Boolean = false,
+    val message: SetupMessage? = null,
 )
 
 @HiltViewModel
@@ -48,16 +48,17 @@ class AllSetViewModel @Inject constructor(
         }
     }
 
+    fun onMessageShown() = _uiState.update { it.copy(message = null) }
+
     /** "Explorar Mink'a": 1.21 "lleva a Inicio". */
     fun onExplore() {
         if (_uiState.value.isFinishing) return
-        _uiState.update { it.copy(isFinishing = true) }
+        _uiState.update { it.copy(isFinishing = true, message = null) }
         viewModelScope.launch {
             when (completeOnboarding()) {
                 is Outcome.Success -> _events.send(AllSetEvent.GoHome)
                 is Outcome.Failure -> {
-                    _uiState.update { it.copy(isFinishing = false) }
-                    _events.send(AllSetEvent.Unexpected)
+                    _uiState.update { it.copy(isFinishing = false, message = SetupMessage.Unexpected) }
                 }
             }
         }

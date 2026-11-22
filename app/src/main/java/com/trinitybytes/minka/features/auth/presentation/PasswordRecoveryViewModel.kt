@@ -46,20 +46,24 @@ data class PasswordRecoveryUiState(
     val canResend: Boolean get() = sent != null && !isLoading && resendSecondsLeft == null
 }
 
+private const val KEY_CONTACT = "recovery_contact"
+
 @HiltViewModel
 class PasswordRecoveryViewModel @Inject constructor(
     private val requestPasswordReset: RequestPasswordReset,
-    private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(PasswordRecoveryUiState(contact = savedStateHandle["recovery_contact"] ?: ""))
+    private val _uiState = MutableStateFlow(
+        PasswordRecoveryUiState(contact = savedStateHandle[KEY_CONTACT] ?: ""),
+    )
     val uiState: StateFlow<PasswordRecoveryUiState> = _uiState.asStateFlow()
 
     private var countdown: Job? = null
 
     fun onContactChange(value: String) = _uiState.update { state ->
         if (!state.fieldsEnabled) return@update state
-        savedStateHandle["recovery_contact"] = value
+        savedStateHandle[KEY_CONTACT] = value
         // Once the message shows, it follows the typing so it disappears as soon as the value is valid.
         state.copy(contact = value, contactError = state.contactError && contactKindOf(value) == null)
     }

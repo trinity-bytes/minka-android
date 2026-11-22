@@ -63,13 +63,16 @@ data class VerifyCodeUiState(
     val canResend: Boolean get() = !isLoading && resendSecondsLeft == null
 }
 
+private const val KEY_ATTEMPTS = "verify_attempts"
+private const val KEY_DEADLINE = "verify_deadline"
+
 @HiltViewModel
 class VerifyCodeViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val verifyRegistration: VerifyRegistration,
     private val resendCode: ResendCode,
     private val beginOnboarding: BeginOnboarding,
-    private val clock: Clock = Clock.systemUTC(),
+    private val clock: Clock,
 ) : ViewModel() {
 
     private val challengeId: String = checkNotNull(savedStateHandle[ARG_CHALLENGE_ID])
@@ -77,8 +80,8 @@ class VerifyCodeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(
         VerifyCodeUiState(
             destination = checkNotNull(savedStateHandle[ARG_DESTINATION]),
-            attemptsLeft = savedStateHandle["verify_attempts"] ?: checkNotNull(savedStateHandle[ARG_ATTEMPTS_LEFT]),
-            codeError = if ((savedStateHandle.get<Int>("verify_attempts") ?: 1) <= 0) CodeError.Exhausted else null,
+            attemptsLeft = savedStateHandle[KEY_ATTEMPTS] ?: checkNotNull(savedStateHandle[ARG_ATTEMPTS_LEFT]),
+            codeError = if ((savedStateHandle.get<Int>(KEY_ATTEMPTS) ?: 1) <= 0) CodeError.Exhausted else null,
         ),
     )
     val uiState: StateFlow<VerifyCodeUiState> = _uiState.asStateFlow()
@@ -92,8 +95,11 @@ class VerifyCodeViewModel @Inject constructor(
     private var lastRequest: (() -> Unit)? = null
 
     init {
-        val deadline = savedStateHandle.get<Long>("verify_deadline") ?: (clock.millis() + checkNotNull(savedStateHandle.get<Int>(ARG_RESEND_AFTER_SECONDS)) * 1_000L).also {
-            savedStateHandle["verify_deadline"] = it
+        val deadline = savedStateHandle.get<Long>(KEY_DEADLINE) ?: run {
+            val seconds = checkNotNull(savedStateHandle.get<Int>(ARG_RESEND_AFTER_SECONDS))
+            val initialDeadline = clock.millis() + seconds * 1_000L
+            savedStateHandle[KEY_DEADLINE] = initialDeadline
+            initialDeadline
         }
         runCountdown(deadline)
     }
@@ -117,10 +123,16 @@ class VerifyCodeViewModel @Inject constructor(
             when (result) {
                 is Outcome.Success -> _events.send(VerifyEvent.Verified)
                 is Outcome.Failure -> when (val error = result.error) {
-                    is AuthError.WrongCode -> { savedStateHandle["verify_attempts"] = error.attemptsLeft; _uiState.update {
-                        it.copy(attemptsLeft = error.attemptsLeft, codeError = CodeError.Wrong(error.attemptsLeft))
-                    } }
-                    AuthError.CodeExpired -> { savedStateHandle["verify_attempts"] = 0; _uiState.update { it.copy(attemptsLeft = 0, codeError = CodeError.Exhausted) } }
+                    is AuthError.WrongCode -> {
+                        savedStateHandle[KEY_ATTEMPTS] = error.attemptsLeft
+                        _uiState.update {
+                            it.copy(attemptsLeft = error.attemptsLeft, codeError = CodeError.Wrong(error.attemptsLeft))
+                        }
+                    }
+                    AuthError.CodeExpired -> {
+                        savedStateHandle[KEY_ATTEMPTS] = 0
+                        _uiState.update { it.copy(attemptsLeft = 0, codeError = CodeError.Exhausted) }
+                    }
                     else -> _uiState.update { it.copy(message = error.toMessage()) }
                 }
             }
@@ -138,7 +150,7 @@ class VerifyCodeViewModel @Inject constructor(
             when (result) {
                 is Outcome.Success -> {
                     val challenge = result.value
-                    savedStateHandle["verify_attempts"] = challenge.attemptsLeft
+                    savedStateHandle[KEY_ATTEMPTS] = challenge.attemptsLeft
                     _uiState.update { it.copy(code = "", codeError = null, attemptsLeft = challenge.attemptsLeft) }
                     startCountdown(challenge.resendAfterSeconds.toLong())
                 }
@@ -158,10 +170,10 @@ class VerifyCodeViewModel @Inject constructor(
         lastRequest?.invoke()
     }
 
-    /** Store an absolute deadline; codes themselves remain in memory only. */
+    /** Same one-second timing as 1.08 and 1.11; store the deadline, but keep codes in memory only. */
     private fun startCountdown(seconds: Long) {
         val deadline = clock.millis() + seconds.coerceAtLeast(0) * 1_000L
-        savedStateHandle["verify_deadline"] = deadline
+        savedStateHandle[KEY_DEADLINE] = deadline
         runCountdown(deadline)
     }
 

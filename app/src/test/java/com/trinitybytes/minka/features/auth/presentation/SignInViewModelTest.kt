@@ -43,6 +43,10 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class SignInViewModelTest {
 
+    companion object {
+        private const val KEY_CONTACT = "signin_contact"
+    }
+
     private val dispatcher = StandardTestDispatcher()
     private val repository = FakeRepository()
     private val store = FakeSessionStore()
@@ -59,19 +63,26 @@ class SignInViewModelTest {
         GetGoogleAccounts(repository),
         SignInWithGoogle(repository, store, BeginOnboarding(progressStore)),
         ResolveLaunch(store, progressStore),
+        SavedStateHandle(),
     )
 
     private val SignInViewModel.state get() = uiState.value
 
     @Test
     fun `contact restores and persists`() {
-        val handle = SavedStateHandle(mapOf("signin_contact" to "ana@example.com"))
-        val model = SignInViewModel(SignIn(repository, store), GetGoogleAccounts(repository), SignInWithGoogle(repository, store, BeginOnboarding(progressStore)), ResolveLaunch(store, progressStore), handle)
+        val handle = SavedStateHandle(mapOf(KEY_CONTACT to "ana@example.com"))
+        val model = SignInViewModel(
+            SignIn(repository, store),
+            GetGoogleAccounts(repository),
+            SignInWithGoogle(repository, store, BeginOnboarding(progressStore)),
+            ResolveLaunch(store, progressStore),
+            handle,
+        )
         assertEquals("ana@example.com", model.state.contact)
         model.onContactChange("luis@example.com")
         model.onPasswordChange("secret")
         assertFalse(handle.keys().any { it.contains("password", ignoreCase = true) })
-        assertEquals("luis@example.com", handle.get<String>("signin_contact"))
+        assertEquals("luis@example.com", handle.get<String>(KEY_CONTACT))
     }
 
     @Test

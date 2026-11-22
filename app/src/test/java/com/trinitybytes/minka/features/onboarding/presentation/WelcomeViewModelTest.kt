@@ -8,13 +8,17 @@ import org.junit.Test
 
 class WelcomeViewModelTest {
 
+    companion object {
+        private const val KEY_STEP = "welcome_step"
+    }
+
     @Test
     fun `step restores and changes persist`() {
-        val handle = SavedStateHandle(mapOf("welcome_step" to 1))
+        val handle = SavedStateHandle(mapOf(KEY_STEP to 1))
         val viewModel = WelcomeViewModel(handle)
         assertEquals(1, viewModel.uiState.value.step)
         viewModel.next()
-        assertEquals(2, handle.get<Int>("welcome_step"))
+        assertEquals(2, handle.get<Int>(KEY_STEP))
     }
 
     @Test

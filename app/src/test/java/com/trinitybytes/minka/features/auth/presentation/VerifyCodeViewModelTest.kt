@@ -43,6 +43,11 @@ import java.time.ZoneId
 @OptIn(ExperimentalCoroutinesApi::class)
 class VerifyCodeViewModelTest {
 
+    companion object {
+        private const val KEY_ATTEMPTS = "verify_attempts"
+        private const val KEY_DEADLINE = "verify_deadline"
+    }
+
     private val dispatcher = StandardTestDispatcher()
     private val repository = FakeRegistrationRepository()
     private val sessionStore = FakeSessionStore()
@@ -86,22 +91,29 @@ class VerifyCodeViewModelTest {
             VerifyCodeViewModel.ARG_DESTINATION to "ana@example.com",
             VerifyCodeViewModel.ARG_ATTEMPTS_LEFT to 5,
             VerifyCodeViewModel.ARG_RESEND_AFTER_SECONDS to 60,
-            "verify_attempts" to 0,
-            "verify_deadline" to -1L,
+            KEY_ATTEMPTS to 0,
+            KEY_DEADLINE to -1L,
         ))
         val clock = object : Clock() {
             override fun getZone(): ZoneId = ZoneId.of("UTC")
             override fun withZone(zone: ZoneId): Clock = this
             override fun instant(): Instant = Instant.ofEpochMilli(dispatcher.scheduler.currentTime)
         }
-        val model = VerifyCodeViewModel(handle, VerifyRegistration(repository, sessionStore), ResendCode(repository), BeginOnboarding(progressStore), clock)
+        val model = VerifyCodeViewModel(
+            handle,
+            VerifyRegistration(repository, sessionStore),
+            ResendCode(repository),
+            BeginOnboarding(progressStore),
+            clock,
+        )
         assertEquals(CodeError.Exhausted, model.state.codeError)
         assertNull(model.state.resendSecondsLeft)
         model.onCodeChange("123456")
         assertFalse(model.state.canVerify)
-        model.resend(); runCurrent()
-        assertEquals(5, handle.get<Int>("verify_attempts"))
-        assertEquals(60_000L, handle.get<Long>("verify_deadline"))
+        model.resend()
+        runCurrent()
+        assertEquals(5, handle.get<Int>(KEY_ATTEMPTS))
+        assertEquals(60_000L, handle.get<Long>(KEY_DEADLINE))
         assertNull(model.state.codeError)
     }
 
@@ -109,7 +121,9 @@ class VerifyCodeViewModelTest {
     fun `failed beginning setup shows unexpected without saving session or navigation`() = runTest(dispatcher) {
         val broken = object : OnboardingProgressStore {
             override val progress = MutableStateFlow<OnboardingProgress?>(null)
-            override suspend fun save(progress: OnboardingProgress) { throw IOException() }
+            override suspend fun save(progress: OnboardingProgress) {
+                throw IOException()
+            }
         }
         val handle = SavedStateHandle(mapOf(
             VerifyCodeViewModel.ARG_CHALLENGE_ID to "challenge-1",
@@ -117,10 +131,18 @@ class VerifyCodeViewModelTest {
             VerifyCodeViewModel.ARG_ATTEMPTS_LEFT to 5,
             VerifyCodeViewModel.ARG_RESEND_AFTER_SECONDS to 0,
         ))
-        val model = VerifyCodeViewModel(handle, VerifyRegistration(repository, sessionStore), ResendCode(repository), BeginOnboarding(broken))
+        val model = VerifyCodeViewModel(
+            handle,
+            VerifyRegistration(repository, sessionStore),
+            ResendCode(repository),
+            BeginOnboarding(broken),
+            TEST_CLOCK,
+        )
         val events = mutableListOf<VerifyEvent>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.events.toList(events) }
-        model.onCodeChange("482915"); model.verify(); advanceUntilIdle()
+        model.onCodeChange("482915")
+        model.verify()
+        advanceUntilIdle()
         assertEquals(VerifyMessage.Unexpected, model.state.message)
         assertNull(sessionStore.session.value)
         assertTrue(events.isEmpty())
@@ -133,25 +155,33 @@ class VerifyCodeViewModelTest {
             VerifyCodeViewModel.ARG_DESTINATION to "ana@example.com",
             VerifyCodeViewModel.ARG_ATTEMPTS_LEFT to 5,
             VerifyCodeViewModel.ARG_RESEND_AFTER_SECONDS to 60,
-            "verify_attempts" to 2,
-            "verify_deadline" to 20_000L,
+            KEY_ATTEMPTS to 2,
+            KEY_DEADLINE to 20_000L,
         ))
         val clock = object : Clock() {
             override fun getZone(): ZoneId = ZoneId.of("UTC")
             override fun withZone(zone: ZoneId): Clock = this
             override fun instant(): Instant = Instant.ofEpochMilli(dispatcher.scheduler.currentTime)
         }
-        val model = VerifyCodeViewModel(handle, VerifyRegistration(repository, sessionStore), ResendCode(repository), BeginOnboarding(progressStore), clock)
+        val model = VerifyCodeViewModel(
+            handle,
+            VerifyRegistration(repository, sessionStore),
+            ResendCode(repository),
+            BeginOnboarding(progressStore),
+            clock,
+        )
         assertEquals(2, model.state.attemptsLeft)
         assertEquals(20L, model.state.resendSecondsLeft)
         model.onCodeChange("123456")
         repository.verifyAnswer = { Outcome.Failure(AuthError.WrongCode(1)) }
-        model.verify(); runCurrent()
-        assertEquals(1, handle.get<Int>("verify_attempts"))
+        model.verify()
+        runCurrent()
+        assertEquals(1, handle.get<Int>(KEY_ATTEMPTS))
         assertFalse(handle.keys().any { it == "code" || it == "verify_code" })
-        advanceTimeBy(21_000); runCurrent()
+        advanceTimeBy(21_000)
+        runCurrent()
         assertNull(model.state.resendSecondsLeft)
-        assertEquals(20_000L, handle.get<Long>("verify_deadline"))
+        assertEquals(20_000L, handle.get<Long>(KEY_DEADLINE))
     }
 
     @Test

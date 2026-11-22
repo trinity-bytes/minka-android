@@ -19,10 +19,14 @@ data class WelcomeUiState(val step: Int = 0) {
     }
 }
 
+private const val KEY_STEP = "welcome_step"
+
 @HiltViewModel
 class WelcomeViewModel @Inject constructor(private val savedStateHandle: SavedStateHandle) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(WelcomeUiState(step = (savedStateHandle.get<Int>("welcome_step") ?: 0).coerceIn(0, WelcomeUiState.LAST_STEP)))
+    private val _uiState = MutableStateFlow(
+        WelcomeUiState(step = (savedStateHandle.get<Int>(KEY_STEP) ?: 0).coerceIn(0, WelcomeUiState.LAST_STEP)),
+    )
     val uiState: StateFlow<WelcomeUiState> = _uiState.asStateFlow()
 
     fun next() = onStepShown((_uiState.value.step + 1).coerceAtMost(WelcomeUiState.LAST_STEP))
@@ -33,7 +37,7 @@ class WelcomeViewModel @Inject constructor(private val savedStateHandle: SavedSt
     /** The user swiped the carousel to [step]. */
     fun onStepShown(step: Int) {
         if (step in 0..WelcomeUiState.LAST_STEP) {
-            savedStateHandle["welcome_step"] = step
+            savedStateHandle[KEY_STEP] = step
             _uiState.update { it.copy(step = step) }
         }
     }

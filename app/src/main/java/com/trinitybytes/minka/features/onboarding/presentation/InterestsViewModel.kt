@@ -40,15 +40,21 @@ data class InterestsUiState(
     val canContinue: Boolean get() = selectedIds.isNotEmpty() && !isSaving
 }
 
+private const val KEY_INTEREST_IDS = "interest_ids"
+
 @HiltViewModel
 class InterestsViewModel @Inject constructor(
     private val getInterests: GetInterests,
     private val saveInterests: SaveInterests,
     private val skipInterests: SkipInterests,
-    private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(InterestsUiState(selectedIds = savedStateHandle.get<ArrayList<String>>("interest_ids")?.toSet() ?: emptySet()))
+    private val _uiState = MutableStateFlow(
+        InterestsUiState(
+            selectedIds = savedStateHandle.get<ArrayList<String>>(KEY_INTEREST_IDS)?.toSet() ?: emptySet(),
+        ),
+    )
     val uiState: StateFlow<InterestsUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<InterestsEvent>(Channel.BUFFERED)
@@ -74,7 +80,7 @@ class InterestsViewModel @Inject constructor(
     fun onInterestToggled(id: String) = _uiState.update { state ->
         if (state.isSaving) return@update state
         val selected = if (id in state.selectedIds) state.selectedIds - id else state.selectedIds + id
-        savedStateHandle["interest_ids"] = ArrayList(selected)
+        savedStateHandle[KEY_INTEREST_IDS] = ArrayList(selected)
         state.copy(selectedIds = selected)
     }
 

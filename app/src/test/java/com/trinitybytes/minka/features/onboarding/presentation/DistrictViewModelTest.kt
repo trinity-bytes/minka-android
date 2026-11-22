@@ -38,6 +38,11 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class DistrictViewModelTest {
 
+    companion object {
+        private const val KEY_QUERY = "district_query"
+        private const val KEY_SELECTED = "district_selected"
+    }
+
     private val dispatcher = StandardTestDispatcher()
     private val repository = FakeProfileRepository()
     private val location = FakeLocationProvider()
@@ -54,21 +59,27 @@ class DistrictViewModelTest {
         GetDistricts(repository),
         LocateDistrict(location, repository),
         ChooseDistrict(sessionStore, repository, progress),
+        SavedStateHandle(),
     )
 
     private val DistrictViewModel.state get() = uiState.value
 
     @Test
     fun `search and selection restore and persist`() = runTest(dispatcher) {
-        val handle = SavedStateHandle(mapOf("district_query" to "bar", "district_selected" to "barranco"))
-        val model = DistrictViewModel(GetDistricts(repository), LocateDistrict(location, repository), ChooseDistrict(sessionStore, repository, progress), handle)
+        val handle = SavedStateHandle(mapOf(KEY_QUERY to "bar", KEY_SELECTED to "barranco"))
+        val model = DistrictViewModel(
+            GetDistricts(repository),
+            LocateDistrict(location, repository),
+            ChooseDistrict(sessionStore, repository, progress),
+            handle,
+        )
         advanceUntilIdle()
         assertEquals("bar", model.state.query)
         assertEquals("barranco", model.state.selectedId)
         model.onQueryChange("san")
         model.onDistrictSelected("san-isidro")
-        assertEquals("san", handle.get<String>("district_query"))
-        assertEquals("san-isidro", handle.get<String>("district_selected"))
+        assertEquals("san", handle.get<String>(KEY_QUERY))
+        assertEquals("san-isidro", handle.get<String>(KEY_SELECTED))
     }
 
     @Test

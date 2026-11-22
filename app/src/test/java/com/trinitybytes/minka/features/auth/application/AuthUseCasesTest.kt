@@ -55,9 +55,14 @@ class AuthUseCasesTest {
         val sessions = FakeSessionStore()
         val broken = object : OnboardingProgressStore {
             override val progress = MutableStateFlow<OnboardingProgress?>(null)
-            override suspend fun save(progress: OnboardingProgress) { throw IOException() }
+            override suspend fun save(progress: OnboardingProgress) {
+                throw IOException()
+            }
         }
-        assertEquals(Outcome.Failure(AuthError.Unexpected), SignInWithGoogle(repository, sessions, BeginOnboarding(broken))("google"))
+        assertEquals(
+            Outcome.Failure(AuthError.Unexpected),
+            SignInWithGoogle(repository, sessions, BeginOnboarding(broken))("google"),
+        )
         assertNull(sessions.session.value)
     }
 
