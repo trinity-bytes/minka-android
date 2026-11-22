@@ -31,6 +31,15 @@ class OnboardingUseCasesTest {
     }
 
     @Test
+    fun `progress writes return unexpected on storage failure`() = runTest {
+        val expected = Outcome.Failure(ProfileError.Unexpected)
+        assertEquals(expected, BeginOnboarding(brokenProgress)("user"))
+        assertEquals(expected, AdvanceSetup(signedInSessionStore(), brokenProgress)(SetupStep.AllSet))
+        assertEquals(expected, CompleteOnboarding(signedInSessionStore(), brokenProgress)())
+        assertEquals(expected, AdvanceSetup(brokenSessions, FakeProgressStore())(SetupStep.AllSet))
+    }
+
+    @Test
     fun `a setup step that cannot be stored is an unexpected failure, not a crash`() = runTest {
         val repository = FakeProfileRepository()
 

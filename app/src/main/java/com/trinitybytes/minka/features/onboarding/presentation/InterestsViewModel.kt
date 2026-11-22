@@ -1,5 +1,6 @@
 package com.trinitybytes.minka.features.onboarding.presentation
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trinitybytes.minka.core.domain.Outcome
@@ -39,14 +40,21 @@ data class InterestsUiState(
     val canContinue: Boolean get() = selectedIds.isNotEmpty() && !isSaving
 }
 
+private const val KEY_INTEREST_IDS = "interest_ids"
+
 @HiltViewModel
 class InterestsViewModel @Inject constructor(
     private val getInterests: GetInterests,
     private val saveInterests: SaveInterests,
     private val skipInterests: SkipInterests,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(InterestsUiState())
+    private val _uiState = MutableStateFlow(
+        InterestsUiState(
+            selectedIds = savedStateHandle.get<ArrayList<String>>(KEY_INTEREST_IDS)?.toSet() ?: emptySet(),
+        ),
+    )
     val uiState: StateFlow<InterestsUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<InterestsEvent>(Channel.BUFFERED)
@@ -71,7 +79,9 @@ class InterestsViewModel @Inject constructor(
 
     fun onInterestToggled(id: String) = _uiState.update { state ->
         if (state.isSaving) return@update state
-        state.copy(selectedIds = if (id in state.selectedIds) state.selectedIds - id else state.selectedIds + id)
+        val selected = if (id in state.selectedIds) state.selectedIds - id else state.selectedIds + id
+        savedStateHandle[KEY_INTEREST_IDS] = ArrayList(selected)
+        state.copy(selectedIds = selected)
     }
 
     fun onContinue() {
@@ -95,9 +105,12 @@ class InterestsViewModel @Inject constructor(
         if (_uiState.value.isSaving) return
         _uiState.update { it.copy(isSaving = true, message = null) }
         viewModelScope.launch {
-            skipInterests()
+            val result = skipInterests()
             _uiState.update { it.copy(isSaving = false) }
-            _events.send(InterestsEvent.Done)
+            when (result) {
+                is Outcome.Success -> _events.send(InterestsEvent.Done)
+                is Outcome.Failure -> _uiState.update { it.copy(message = result.error.toMessage()) }
+            }
         }
     }
 

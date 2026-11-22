@@ -1,5 +1,6 @@
 package com.trinitybytes.minka.features.auth.presentation
 
+import androidx.lifecycle.SavedStateHandle
 import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.features.auth.application.RequestPasswordReset
 import com.trinitybytes.minka.features.auth.domain.AuthError
@@ -32,6 +33,10 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class PasswordRecoveryViewModelTest {
 
+    companion object {
+        private const val KEY_CONTACT = "recovery_contact"
+    }
+
     private val dispatcher = StandardTestDispatcher()
     private val repository = FakeRepository()
 
@@ -41,9 +46,18 @@ class PasswordRecoveryViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel() = PasswordRecoveryViewModel(RequestPasswordReset(repository))
+    private fun viewModel() = PasswordRecoveryViewModel(RequestPasswordReset(repository), SavedStateHandle())
 
     private val PasswordRecoveryViewModel.state get() = uiState.value
+
+    @Test
+    fun `contact restores and persists`() {
+        val handle = SavedStateHandle(mapOf(KEY_CONTACT to "ana@example.com"))
+        val model = PasswordRecoveryViewModel(RequestPasswordReset(repository), handle)
+        assertEquals("ana@example.com", model.state.contact)
+        model.onContactChange("luis@example.com")
+        assertEquals("luis@example.com", handle.get<String>(KEY_CONTACT))
+    }
 
     @Test
     fun `enviar enlace stays disabled while the field is invalid`() = runTest(dispatcher) {

@@ -2,6 +2,7 @@ package com.trinitybytes.minka.features.onboarding.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.features.onboarding.application.CompleteOnboarding
 import com.trinitybytes.minka.features.onboarding.application.GetSetupSummary
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,6 +26,7 @@ data class AllSetUiState(
     val firstName: String = "",
     val districtName: String? = null,
     val isFinishing: Boolean = false,
+    val message: SetupMessage? = null,
 )
 
 @HiltViewModel
@@ -46,13 +48,19 @@ class AllSetViewModel @Inject constructor(
         }
     }
 
+    fun onMessageShown() = _uiState.update { it.copy(message = null) }
+
     /** "Explorar Mink'a": 1.21 "lleva a Inicio". */
     fun onExplore() {
         if (_uiState.value.isFinishing) return
-        _uiState.update { it.copy(isFinishing = true) }
+        _uiState.update { it.copy(isFinishing = true, message = null) }
         viewModelScope.launch {
-            completeOnboarding()
-            _events.send(AllSetEvent.GoHome)
+            when (completeOnboarding()) {
+                is Outcome.Success -> _events.send(AllSetEvent.GoHome)
+                is Outcome.Failure -> {
+                    _uiState.update { it.copy(isFinishing = false, message = SetupMessage.Unexpected) }
+                }
+            }
         }
     }
 }

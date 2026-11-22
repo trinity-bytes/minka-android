@@ -55,8 +55,10 @@ class ResolveLaunch @Inject constructor(
 
 /** A verified registration starts the profile setup at the district step (1.16). */
 class BeginOnboarding @Inject constructor(private val progressStore: OnboardingProgressStore) {
-    suspend operator fun invoke(userId: String) =
+    suspend operator fun invoke(userId: String): ProfileOutcome<Unit> = storingOnDevice {
         progressStore.save(OnboardingProgress.Pending(userId, SetupStep.District))
+        Outcome.Success(Unit)
+    }
 }
 
 class GetDistricts @Inject constructor(private val repository: ProfileRepository) {
@@ -124,9 +126,10 @@ class AdvanceSetup @Inject constructor(
     private val sessionStore: SessionStore,
     private val progressStore: OnboardingProgressStore,
 ) {
-    suspend operator fun invoke(next: SetupStep) {
-        val userId = sessionStore.session.first()?.user?.id ?: return
+    suspend operator fun invoke(next: SetupStep): ProfileOutcome<Unit> = storingOnDevice {
+        val userId = sessionStore.session.first()?.user?.id ?: return@storingOnDevice Outcome.Success(Unit)
         progressStore.save(OnboardingProgress.Pending(userId, next))
+        Outcome.Success(Unit)
     }
 }
 
@@ -152,9 +155,10 @@ class CompleteOnboarding @Inject constructor(
     private val sessionStore: SessionStore,
     private val progressStore: OnboardingProgressStore,
 ) {
-    suspend operator fun invoke() {
-        val userId = sessionStore.session.first()?.user?.id ?: return
+    suspend operator fun invoke(): ProfileOutcome<Unit> = storingOnDevice {
+        val userId = sessionStore.session.first()?.user?.id ?: return@storingOnDevice Outcome.Success(Unit)
         progressStore.save(OnboardingProgress.Completed(userId))
+        Outcome.Success(Unit)
     }
 }
 

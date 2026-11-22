@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Clock
 import javax.inject.Inject
 
 /** 1.14: "Código de 6 dígitos por correo o SMS." */
@@ -62,12 +63,16 @@ data class VerifyCodeUiState(
     val canResend: Boolean get() = !isLoading && resendSecondsLeft == null
 }
 
+private const val KEY_ATTEMPTS = "verify_attempts"
+private const val KEY_DEADLINE = "verify_deadline"
+
 @HiltViewModel
 class VerifyCodeViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: SavedStateHandle,
     private val verifyRegistration: VerifyRegistration,
     private val resendCode: ResendCode,
     private val beginOnboarding: BeginOnboarding,
+    private val clock: Clock,
 ) : ViewModel() {
 
     private val challengeId: String = checkNotNull(savedStateHandle[ARG_CHALLENGE_ID])
@@ -75,7 +80,8 @@ class VerifyCodeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(
         VerifyCodeUiState(
             destination = checkNotNull(savedStateHandle[ARG_DESTINATION]),
-            attemptsLeft = checkNotNull(savedStateHandle[ARG_ATTEMPTS_LEFT]),
+            attemptsLeft = savedStateHandle[KEY_ATTEMPTS] ?: checkNotNull(savedStateHandle[ARG_ATTEMPTS_LEFT]),
+            codeError = if ((savedStateHandle.get<Int>(KEY_ATTEMPTS) ?: 1) <= 0) CodeError.Exhausted else null,
         ),
     )
     val uiState: StateFlow<VerifyCodeUiState> = _uiState.asStateFlow()
@@ -89,7 +95,13 @@ class VerifyCodeViewModel @Inject constructor(
     private var lastRequest: (() -> Unit)? = null
 
     init {
-        startCountdown(checkNotNull(savedStateHandle.get<Int>(ARG_RESEND_AFTER_SECONDS)).toLong())
+        val deadline = savedStateHandle.get<Long>(KEY_DEADLINE) ?: run {
+            val seconds = checkNotNull(savedStateHandle.get<Int>(ARG_RESEND_AFTER_SECONDS))
+            val initialDeadline = clock.millis() + seconds * 1_000L
+            savedStateHandle[KEY_DEADLINE] = initialDeadline
+            initialDeadline
+        }
+        runCountdown(deadline)
     }
 
     /** Keeps up to 6 digits; editing lifts a wrong-code message, but not the exhausted one. */
@@ -106,15 +118,21 @@ class VerifyCodeViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, message = null) }
         viewModelScope.launch {
             // The setup is saved before the session: a crash in between lands on Welcome, never past the setup (S4).
-            val result = verifyRegistration(challengeId, state.code) { beginOnboarding(it.user.id) }
+            val result = verifyRegistration(challengeId, state.code) { beginOnboarding(it.user.id) is Outcome.Success }
             _uiState.update { it.copy(isLoading = false) }
             when (result) {
                 is Outcome.Success -> _events.send(VerifyEvent.Verified)
                 is Outcome.Failure -> when (val error = result.error) {
-                    is AuthError.WrongCode -> _uiState.update {
-                        it.copy(attemptsLeft = error.attemptsLeft, codeError = CodeError.Wrong(error.attemptsLeft))
+                    is AuthError.WrongCode -> {
+                        savedStateHandle[KEY_ATTEMPTS] = error.attemptsLeft
+                        _uiState.update {
+                            it.copy(attemptsLeft = error.attemptsLeft, codeError = CodeError.Wrong(error.attemptsLeft))
+                        }
                     }
-                    AuthError.CodeExpired -> _uiState.update { it.copy(attemptsLeft = 0, codeError = CodeError.Exhausted) }
+                    AuthError.CodeExpired -> {
+                        savedStateHandle[KEY_ATTEMPTS] = 0
+                        _uiState.update { it.copy(attemptsLeft = 0, codeError = CodeError.Exhausted) }
+                    }
                     else -> _uiState.update { it.copy(message = error.toMessage()) }
                 }
             }
@@ -132,6 +150,7 @@ class VerifyCodeViewModel @Inject constructor(
             when (result) {
                 is Outcome.Success -> {
                     val challenge = result.value
+                    savedStateHandle[KEY_ATTEMPTS] = challenge.attemptsLeft
                     _uiState.update { it.copy(code = "", codeError = null, attemptsLeft = challenge.attemptsLeft) }
                     startCountdown(challenge.resendAfterSeconds.toLong())
                 }
@@ -151,16 +170,21 @@ class VerifyCodeViewModel @Inject constructor(
         lastRequest?.invoke()
     }
 
-    /** Same timing as 1.08 and 1.11: one tick per second, cleared when it reaches zero. */
+    /** Same one-second timing as 1.08 and 1.11; store the deadline, but keep codes in memory only. */
     private fun startCountdown(seconds: Long) {
+        val deadline = clock.millis() + seconds.coerceAtLeast(0) * 1_000L
+        savedStateHandle[KEY_DEADLINE] = deadline
+        runCountdown(deadline)
+    }
+
+    private fun runCountdown(deadline: Long) {
         countdown?.cancel()
-        _uiState.update { it.copy(resendSecondsLeft = seconds.takeIf { s -> s > 0 }) }
+        fun remaining(): Long = ((deadline - clock.millis()).coerceAtLeast(0) + 999) / 1_000
+        _uiState.update { it.copy(resendSecondsLeft = remaining().takeIf { left -> left > 0 }) }
         countdown = viewModelScope.launch {
-            var left = seconds
-            while (left > 0) {
+            while (remaining() > 0) {
                 delay(1_000)
-                left--
-                _uiState.update { it.copy(resendSecondsLeft = left.takeIf { s -> s > 0 }) }
+                _uiState.update { it.copy(resendSecondsLeft = remaining().takeIf { left -> left > 0 }) }
             }
         }
     }

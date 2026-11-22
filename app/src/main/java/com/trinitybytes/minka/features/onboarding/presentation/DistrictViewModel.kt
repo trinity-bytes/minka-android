@@ -1,5 +1,6 @@
 package com.trinitybytes.minka.features.onboarding.presentation
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trinitybytes.minka.core.domain.Outcome
@@ -71,14 +72,23 @@ data class DistrictUiState(
 private fun String.searchKey(): String =
     Normalizer.normalize(trim().lowercase(), Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
 
+private const val KEY_QUERY = "district_query"
+private const val KEY_SELECTED = "district_selected"
+
 @HiltViewModel
 class DistrictViewModel @Inject constructor(
     private val getDistricts: GetDistricts,
     private val locateDistrict: LocateDistrict,
     private val chooseDistrict: ChooseDistrict,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(DistrictUiState())
+    private val _uiState = MutableStateFlow(
+        DistrictUiState(
+            query = savedStateHandle[KEY_QUERY] ?: "",
+            selectedId = savedStateHandle[KEY_SELECTED],
+        ),
+    )
     val uiState: StateFlow<DistrictUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<DistrictEvent>(Channel.BUFFERED)
@@ -104,9 +114,16 @@ class DistrictViewModel @Inject constructor(
         }
     }
 
-    fun onQueryChange(value: String) = _uiState.update { it.copy(query = value) }
+    fun onQueryChange(value: String) = _uiState.update {
+        savedStateHandle[KEY_QUERY] = value
+        it.copy(query = value)
+    }
 
-    fun onDistrictSelected(id: String) = _uiState.update { if (it.isSaving) it else it.copy(selectedId = id) }
+    fun onDistrictSelected(id: String) = _uiState.update {
+        if (it.isSaving) return@update it
+        savedStateHandle[KEY_SELECTED] = id
+        it.copy(selectedId = id)
+    }
 
     /** "Usar mi ubicación": the location is read only after the system dialog grants it. */
     fun onUseMyLocation() {
@@ -131,6 +148,8 @@ class DistrictViewModel @Inject constructor(
             when (val result = locateDistrict()) {
                 is Outcome.Success -> _uiState.update { state ->
                     val district = result.value
+                    savedStateHandle[KEY_SELECTED] = district.id
+                    savedStateHandle[KEY_QUERY] = ""
                     state.copy(
                         isLocating = false,
                         selectedId = district.id,

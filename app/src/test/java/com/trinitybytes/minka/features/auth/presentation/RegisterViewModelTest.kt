@@ -1,5 +1,6 @@
 package com.trinitybytes.minka.features.auth.presentation
 
+import androidx.lifecycle.SavedStateHandle
 import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.features.auth.application.Register
 import com.trinitybytes.minka.features.auth.domain.AuthError
@@ -29,6 +30,12 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterViewModelTest {
 
+    companion object {
+        private const val KEY_NAME = "register_name"
+        private const val KEY_CONTACT = "register_contact"
+        private const val KEY_TERMS = "register_terms"
+    }
+
     private val dispatcher = StandardTestDispatcher()
     private val repository = FakeRegistrationRepository()
 
@@ -38,7 +45,7 @@ class RegisterViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel() = RegisterViewModel(Register(repository, TEST_CLOCK))
+    private fun viewModel() = RegisterViewModel(Register(repository, TEST_CLOCK), SavedStateHandle())
 
     private val RegisterViewModel.state get() = uiState.value
 
@@ -48,6 +55,30 @@ class RegisterViewModelTest {
         onPasswordChange("Trueque2026!")
         onConfirmPasswordChange("Trueque2026!")
         onTermsChange(true)
+    }
+
+    @Test
+    fun `non-secret form input restores and persists but passwords do not`() {
+        val handle = SavedStateHandle(
+            mapOf(
+                KEY_NAME to "Ana",
+                KEY_CONTACT to "ana@example.com",
+                KEY_TERMS to true,
+            ),
+        )
+        val model = RegisterViewModel(Register(repository, TEST_CLOCK), handle)
+        assertEquals("Ana", model.state.name)
+        assertEquals("ana@example.com", model.state.contact)
+        assertTrue(model.state.termsAccepted)
+        model.onNameChange("Luis")
+        model.onContactChange("luis@example.com")
+        model.onTermsChange(false)
+        model.onPasswordChange("secret")
+        model.onConfirmPasswordChange("secret")
+        assertEquals("Luis", handle.get<String>(KEY_NAME))
+        assertEquals("luis@example.com", handle.get<String>(KEY_CONTACT))
+        assertEquals(false, handle.get<Boolean>(KEY_TERMS))
+        assertFalse(handle.keys().any { it.contains("password", ignoreCase = true) })
     }
 
     @Test

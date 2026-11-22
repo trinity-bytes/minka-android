@@ -1,6 +1,9 @@
 package com.trinitybytes.minka.features.onboarding.presentation
 
+import androidx.lifecycle.SavedStateHandle
 import com.trinitybytes.minka.core.domain.Outcome
+import com.trinitybytes.minka.features.onboarding.domain.OnboardingProgressStore
+import java.io.IOException
 import com.trinitybytes.minka.features.onboarding.ANA
 import com.trinitybytes.minka.features.onboarding.FakePermissionPolicy
 import com.trinitybytes.minka.features.onboarding.FakeProfileRepository
@@ -40,6 +43,10 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class SetupStepsViewModelTest {
 
+    companion object {
+        private const val KEY_INTEREST_IDS = "interest_ids"
+    }
+
     private val dispatcher = StandardTestDispatcher()
     private val repository = FakeProfileRepository()
     private val sessionStore = signedInSessionStore()
@@ -56,12 +63,77 @@ class SetupStepsViewModelTest {
         GetInterests(repository),
         SaveInterests(sessionStore, repository, progress),
         SkipInterests(AdvanceSetup(sessionStore, progress)),
+        SavedStateHandle(),
     )
 
     private fun notificationsViewModel(progress: FakeProgressStore, api33: Boolean) = NotificationsViewModel(
         NotificationsNeedRequest(FakePermissionPolicy(notificationsNeedRequest = api33)),
         FinishNotificationsStep(AdvanceSetup(sessionStore, progress)),
     )
+
+    @Test
+    fun `interests restore and persist`() = runTest(dispatcher) {
+        val progress = progressAt(SetupStep.Interests)
+        val handle = SavedStateHandle(mapOf(KEY_INTEREST_IDS to arrayListOf("libros")))
+        val model = InterestsViewModel(
+            GetInterests(repository),
+            SaveInterests(sessionStore, repository, progress),
+            SkipInterests(AdvanceSetup(sessionStore, progress)),
+            handle,
+        )
+        advanceUntilIdle()
+        assertEquals(setOf("libros"), model.uiState.value.selectedIds)
+        model.onInterestToggled("plantas")
+        assertEquals(setOf("libros", "plantas"), handle.get<ArrayList<String>>(KEY_INTEREST_IDS)!!.toSet())
+    }
+
+    @Test
+    fun `failed progress write shows error without navigating`() = runTest(dispatcher) {
+        val broken = object : OnboardingProgressStore {
+            override val progress = kotlinx.coroutines.flow.MutableStateFlow<OnboardingProgress?>(null)
+            override suspend fun save(progress: OnboardingProgress) {
+                throw IOException()
+            }
+        }
+        val interests = InterestsViewModel(
+            GetInterests(repository),
+            SaveInterests(sessionStore, repository, broken),
+            SkipInterests(AdvanceSetup(sessionStore, broken)),
+            SavedStateHandle(),
+        )
+        val notifications = NotificationsViewModel(
+            NotificationsNeedRequest(FakePermissionPolicy(false)),
+            FinishNotificationsStep(AdvanceSetup(sessionStore, broken)),
+        )
+        val allSet = AllSetViewModel(
+            GetSetupSummary(sessionStore, repository),
+            CompleteOnboarding(sessionStore, broken),
+        )
+        val interestEvents = mutableListOf<InterestsEvent>()
+        val notificationEvents = mutableListOf<NotificationsEvent>()
+        val allSetEvents = mutableListOf<AllSetEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { interests.events.toList(interestEvents) }
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            notifications.events.toList(notificationEvents)
+        }
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { allSet.events.toList(allSetEvents) }
+        advanceUntilIdle()
+        interests.onSkip()
+        notifications.onNotNow()
+        allSet.onExplore()
+        advanceUntilIdle()
+        assertEquals(SetupMessage.Unexpected, interests.uiState.value.message)
+        assertTrue(interestEvents.isEmpty())
+        assertTrue(notificationEvents.isEmpty())
+        assertTrue(allSetEvents.isEmpty())
+        assertEquals(SetupMessage.Unexpected, notifications.uiState.value.message)
+        assertEquals(SetupMessage.Unexpected, allSet.uiState.value.message)
+        assertFalse(allSet.uiState.value.isFinishing)
+        notifications.onMessageShown()
+        allSet.onMessageShown()
+        assertNull(notifications.uiState.value.message)
+        assertNull(allSet.uiState.value.message)
+    }
 
     @Test
     fun `continuar waits for one interest and saves the chosen ones`() = runTest(dispatcher) {
