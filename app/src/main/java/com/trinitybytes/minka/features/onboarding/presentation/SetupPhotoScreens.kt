@@ -143,7 +143,7 @@ fun AllSetContent(uiState: AllSetUiState, onExplore: () -> Unit, modifier: Modif
     }
 }
 
-/** The 1.20/1.21 layout: a photo stage over all the free space, centered texts and the actions. */
+/** The 1.20/1.21 layout: a photo stage, centered texts and the actions, adapted by [AdaptivePhotoLayout]. */
 @Composable
 private fun PhotoStepLayout(
     stage: PhotoStage,
@@ -154,14 +154,13 @@ private fun PhotoStepLayout(
     actions: @Composable () -> Unit,
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(
+        AdaptivePhotoLayout(
+            photo = { photoModifier -> PhotoStageBox(stage, photoModifier) },
             modifier = Modifier
                 .safeDrawingPadding()
                 .padding(MinkaSpacing.s16),
-            verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            PhotoStageBox(stage, Modifier.weight(1f).fillMaxWidth())
             Text(
                 text = title,
                 style = titleStyle,

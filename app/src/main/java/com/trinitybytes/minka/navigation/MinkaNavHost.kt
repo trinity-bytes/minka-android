@@ -1,6 +1,7 @@
 package com.trinitybytes.minka.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.NavHostController
@@ -17,12 +18,8 @@ import com.trinitybytes.minka.features.onboarding.presentation.DistrictScreen
 import com.trinitybytes.minka.features.onboarding.presentation.InterestsScreen
 import com.trinitybytes.minka.features.onboarding.presentation.NotificationsScreen
 import com.trinitybytes.minka.features.onboarding.presentation.SplashDestination
-import com.trinitybytes.minka.features.onboarding.presentation.SplashScreen
 import com.trinitybytes.minka.features.onboarding.presentation.WelcomeScreen
 import kotlinx.serialization.Serializable
-
-@Serializable
-data object SplashRoute
 
 @Serializable
 data object WelcomeRoute
@@ -70,51 +67,42 @@ data object AllSetRoute
 @Serializable
 data object HomeRoute
 
+/**
+ * The app graph, starting at [startDestination] (from [startRoute], resolved behind the system
+ * splash). User taps that navigate go through `dropUnlessResumed`: a second tap during the
+ * transition is dropped, so a double back never pops the root and a double tap never pushes twice.
+ */
 @Composable
-fun MinkaNavHost() {
+fun MinkaNavHost(startDestination: Any) {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = SplashRoute) {
-        composable<SplashRoute> {
-            SplashScreen(
-                onNavigate = { destination ->
-                    val route: Any = when (destination) {
-                        SplashDestination.Home -> HomeRoute
-                        SplashDestination.Welcome -> WelcomeRoute
-                        is SplashDestination.Setup -> destination.step.route()
-                    }
-                    navController.navigate(route) {
-                        popUpTo<SplashRoute> { inclusive = true }
-                    }
-                },
-            )
-        }
+    NavHost(navController = navController, startDestination = startDestination) {
         composable<WelcomeRoute> {
             WelcomeScreen(
-                onCreateAccount = { navController.navigate(RegisterRoute) },
-                onSignIn = { navController.navigate(SignInRoute()) },
-                onContinueWithGoogle = { navController.navigate(SignInRoute(withGoogle = true)) },
+                onCreateAccount = dropUnlessResumed { navController.navigate(RegisterRoute) },
+                onSignIn = dropUnlessResumed { navController.navigate(SignInRoute()) },
+                onContinueWithGoogle = dropUnlessResumed { navController.navigate(SignInRoute(withGoogle = true)) },
             )
         }
         composable<SignInRoute> { entry ->
             SignInScreen(
                 withGoogle = entry.toRoute<SignInRoute>().withGoogle,
-                onBack = { navController.popBackStack() },
+                onBack = dropUnlessResumed { navController.popBackStack() },
                 onSignedIn = { pendingStep ->
                     // A signed-in user never goes back to the welcome or sign-in screens;
                     // a setup this account left pending on the device continues where it stopped (S4).
                     navController.replaceAll(pendingStep?.route() ?: HomeRoute)
                 },
-                onRecoverPassword = { navController.navigate(PasswordRecoveryRoute) },
-                onRegister = { navController.navigate(RegisterRoute) },
+                onRecoverPassword = dropUnlessResumed { navController.navigate(PasswordRecoveryRoute) },
+                onRegister = dropUnlessResumed { navController.navigate(RegisterRoute) },
             )
         }
         composable<PasswordRecoveryRoute> {
             // Back, from either 1.10 or 1.11, returns to sign-in, which is right below on the stack.
-            PasswordRecoveryScreen(onBack = { navController.popBackStack() })
+            PasswordRecoveryScreen(onBack = dropUnlessResumed { navController.popBackStack() })
         }
         composable<RegisterRoute> {
             RegisterScreen(
-                onBack = { navController.popBackStack() },
+                onBack = dropUnlessResumed { navController.popBackStack() },
                 onCodeSent = { challenge ->
                     navController.navigate(
                         VerifyCodeRoute(
@@ -130,7 +118,7 @@ fun MinkaNavHost() {
         composable<VerifyCodeRoute> {
             VerifyCodeScreen(
                 // Back returns to the form, which keeps what was typed.
-                onBack = { navController.popBackStack() },
+                onBack = dropUnlessResumed { navController.popBackStack() },
                 onVerified = {
                     // The account is signed in: the welcome and registration screens are left behind.
                     navController.navigate(DistrictRoute) {
@@ -142,15 +130,16 @@ fun MinkaNavHost() {
             )
         }
         composable<DistrictRoute> {
+            val back = dropUnlessResumed { navController.popBackStack() }
             DistrictScreen(
                 // After verification nothing is behind; a resumed setup may have nothing either.
-                onBack = navController.previousBackStackEntry?.let { { navController.popBackStack() } },
+                onBack = back.takeIf { navController.previousBackStackEntry != null },
                 onChosen = { navController.navigate(InterestsRoute) },
             )
         }
         composable<InterestsRoute> {
             InterestsScreen(
-                onBack = {
+                onBack = dropUnlessResumed {
                     // A setup resumed at this step (S4) has no district screen below: open it in its place.
                     if (navController.previousBackStackEntry != null) {
                         navController.popBackStack()
@@ -170,6 +159,13 @@ fun MinkaNavHost() {
         }
         composable<HomeRoute> { HomeScreen() }
     }
+}
+
+/** The route the app starts at for a launch [SplashDestination]. */
+fun SplashDestination.startRoute(): Any = when (this) {
+    SplashDestination.Home -> HomeRoute
+    SplashDestination.Welcome -> WelcomeRoute
+    is SplashDestination.Setup -> step.route()
 }
 
 /** Opens [route] with an empty back stack. */

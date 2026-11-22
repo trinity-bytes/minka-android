@@ -7,6 +7,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +20,8 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -51,10 +56,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trinitybytes.minka.R
+import com.trinitybytes.minka.core.designsystem.component.ExpandedWidthBreakpoint
+import com.trinitybytes.minka.core.designsystem.component.MinkaAdaptiveBox
 import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
 import com.trinitybytes.minka.core.designsystem.component.MinkaExpressiveShapes
+import com.trinitybytes.minka.core.designsystem.component.MinkaGoogleButton
+import com.trinitybytes.minka.core.designsystem.component.isExpandedWidth
 import com.trinitybytes.minka.core.designsystem.component.MinkaSticker
 import com.trinitybytes.minka.core.designsystem.component.MinkaStickerTone
 import com.trinitybytes.minka.core.designsystem.theme.MinkaShapes
@@ -142,13 +151,10 @@ private fun WelcomePage(
 ) {
     val content = WelcomeSteps[step]
     val isLastStep = step == WelcomeUiState.LAST_STEP
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s16, bottom = MinkaSpacing.s16),
-        verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
+    AdaptivePhotoLayout(
+        photo = { photoModifier -> PhotoStage(content, photoModifier) },
+        modifier = Modifier.fillMaxSize().padding(MinkaSpacing.s16),
     ) {
-        PhotoStage(content, Modifier.weight(1f).fillMaxWidth())
         Column(verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s12)) {
             Text(
                 text = stringResource(content.title),
@@ -177,12 +183,11 @@ private fun WelcomePage(
                     style = MinkaButtonStyle.Outlined,
                     size = MinkaButtonSize.Large,
                 )
-                MinkaButton(
+                // Design A4: the official G mark, as Google's sign-in branding requires.
+                MinkaGoogleButton(
                     text = stringResource(R.string.welcome_google),
                     onClick = onContinueWithGoogle,
                     modifier = Modifier.fillMaxWidth(),
-                    style = MinkaButtonStyle.Text,
-                    size = MinkaButtonSize.Large,
                 )
             }
         } else {
@@ -197,6 +202,60 @@ private fun WelcomePage(
         }
     }
 }
+
+/**
+ * A photo stage with texts and actions (Figma 1.02–1.04, 1.20, 1.21; design A2, A5).
+ *
+ * From [ExpandedWidthBreakpoint] the photo fills the start pane and the texts and actions sit
+ * bottom-aligned in the end pane, scrolling if they do not fit. Below it they stack: the texts and
+ * actions take what they need, up to all but [MinPhotoHeight], and scroll past that, so the photo
+ * shrinks first and the actions stay reachable in phone landscape and at 200 % font scale.
+ */
+@Composable
+internal fun AdaptivePhotoLayout(
+    photo: @Composable (Modifier) -> Unit,
+    modifier: Modifier = Modifier,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    MinkaAdaptiveBox(modifier) {
+        val scroll = rememberScrollState()
+        val gap = MinkaSpacing.s16
+        val bounded = constraints.hasBoundedHeight
+        val paneHeight = if (bounded) maxHeight else 0.dp
+        val textMaxHeight = if (bounded) (maxHeight - MinPhotoHeight - gap).coerceAtLeast(0.dp) else Dp.Infinity
+        if (isExpandedWidth) {
+            Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s24)) {
+                photo(Modifier.weight(1f).fillMaxHeight())
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(scroll)
+                        .heightIn(min = paneHeight),
+                    verticalArrangement = Arrangement.spacedBy(gap, Alignment.Bottom),
+                    horizontalAlignment = horizontalAlignment,
+                    content = content,
+                )
+            }
+        } else {
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(gap)) {
+                photo(Modifier.weight(1f).fillMaxWidth())
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = textMaxHeight)
+                        .verticalScroll(scroll),
+                    verticalArrangement = Arrangement.spacedBy(gap),
+                    horizontalAlignment = horizontalAlignment,
+                    content = content,
+                )
+            }
+        }
+    }
+}
+
+/** The least the photo stage shrinks to before the texts and actions start scrolling (design A5). */
+private val MinPhotoHeight = 96.dp
 
 /** The bento stage: a blob photo that runs off its right and bottom edges, the icon disc and a sticker. */
 @Composable

@@ -19,6 +19,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -95,7 +97,7 @@ class SplashViewModelTest {
     }
 
     @Test
-    fun `the splash keeps loading while the session is being restored`() = runTest(dispatcher) {
+    fun `the launch stays unresolved while the session is being restored`() = runTest(dispatcher) {
         val pending = MutableSharedFlow<Session?>()
         val viewModel = viewModel(pending)
 
@@ -105,6 +107,19 @@ class SplashViewModelTest {
         pending.emit(null)
         advanceUntilIdle()
         assertEquals(SplashUiState.Ready(SplashDestination.Welcome), viewModel.uiState.value)
+    }
+
+    @Test
+    fun `the system splash stays on screen until the launch is resolved`() = runTest(dispatcher) {
+        val pending = MutableSharedFlow<Session?>()
+        val viewModel = viewModel(pending)
+
+        advanceUntilIdle()
+        assertTrue(viewModel.keepSplashOnScreen)
+
+        pending.emit(session)
+        advanceUntilIdle()
+        assertFalse(viewModel.keepSplashOnScreen)
     }
 
     private class FakeSessionStore(override val session: Flow<Session?>) : SessionStore {

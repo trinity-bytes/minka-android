@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** Where the app goes once the splash has restored the session. */
+/** Where the app starts once the system splash has restored the session. */
 sealed interface SplashDestination {
     data object Home : SplashDestination
     data object Welcome : SplashDestination
@@ -22,17 +22,26 @@ sealed interface SplashDestination {
 }
 
 sealed interface SplashUiState {
-    /** The session is being read from the device; the loading indicator shows (Figma 1.01). */
+    /** The session is being read from the device; the system splash stays on screen (Figma 1.01). */
     data object Restoring : SplashUiState
 
     data class Ready(val destination: SplashDestination) : SplashUiState
 }
 
+/**
+ * Resolves where the app starts (Figma 1.01, design A1). `MainActivity` keeps the system splash on
+ * screen while [keepSplashOnScreen] holds and composes the navigation graph only once the
+ * destination is [SplashUiState.Ready], because a start destination cannot change afterwards.
+ */
 @HiltViewModel
 class SplashViewModel @Inject constructor(resolveLaunch: ResolveLaunch) : ViewModel() {
 
     private val _uiState = MutableStateFlow<SplashUiState>(SplashUiState.Restoring)
     val uiState: StateFlow<SplashUiState> = _uiState.asStateFlow()
+
+    /** Read by the system splash's keep-on-screen condition on every frame until it turns false. */
+    val keepSplashOnScreen: Boolean
+        get() = _uiState.value == SplashUiState.Restoring
 
     init {
         viewModelScope.launch {
