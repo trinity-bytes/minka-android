@@ -1,0 +1,39 @@
+# Items (phase 3)
+
+Objective: phase 3 of PLAN.md — publish, explore, search and listing detail over the in-app Ktor mock API, with a Room cache, plus the basic profile; built on Navigation 3.
+Branch: `feat/items-phase3` (from `develop`). Delivery strategy: ask-on-risk. Test runner: JUnit 4 via `./gradlew testDebugUnitTest`; Compose UI via `./gradlew connectedDebugAndroidTest` (API 37 emulator).
+
+## Specs
+
+- **S1 — Scope.** PLAN.md §8: "Publicar, explorar, buscar, detalle; caché en Room". Approved scope (2026-11-22): "36 estados de Figma: Inicio 2.01–2.05, Búsqueda 3.01–3.05 y 3.07, Detalle 4.01, 4.02 (solo pausada), 4.03, 4.05–4.07, Publicar 5.01–5.11 y Perfil 11.01 (básico), 11.02, 11.05 y 11.06." Plus 4.08 and 4.09 added by the design audit. "En la fase 3, los elementos que dependen de una fase posterior se ocultan hasta que esa fase los construya." The hidden list is PLAN.md §8 and `odd/audits/items-design.md` (scope findings 1–5, 12, and "Scope only").
+- **S2 — Navigation 3.** User decision (2026-11-22): "Migrar a Nav3 (Recommended)" — "Primera tarea: migrar los flujos de la fase 2 a Navigation 3 y comprobarlo con sus tests. Después, lista-detalle con scenes de Nav3." Phase 2 behavior (splash, back stack restored after process death, `dropUnlessResumed` double-tap guard, setup resume) must hold. Navigation Compose 2.x is removed at the end.
+- **S3 — App shell.** Audit finding 2: "Phase 3 shows Inicio, Buscar, Perfil; phase 4 adds Intercambios." Navigation bar on compact/medium, navigation rail at ≥840dp (Figma component "Navigation rail" `477:192`; `ExpandedWidthBreakpoint` in `core/designsystem/component/AdaptiveLayout.kt`). Publicar opens full screen from the FAB.
+- **S4 — Items data.** Hexagonal `features/items/{domain,application,infrastructure,presentation}`; ViewModels depend on use cases only. Listings, search, drafts, publish/pause/resume/delete go through the Ktor `MockEngine` (same pattern as `MockAuthServer`, `MockApi`). Room caches listings: audit finding 10 "Room cache backs this state" (2.05 offline shows the last saved content at full contrast).
+- **S5 — Inicio** (flow 02, `355:3712`): 2.01–2.05 and the expanded row. Findings 10, 16, E2; impact card and bell hidden.
+- **S6 — Búsqueda** (flow 03, `357:2541`): 3.01–3.05, 3.07; 3.05 list-detail at ≥840dp with Nav3 scenes. Findings 12 ("the primary action is 'Quitar filtros'"), 18, E3; "Reputación mínima" and "Mejor calificado" hidden.
+- **S7 — Detalle** (flow 04, `359:5982`): 4.01, 4.02 paused, 4.03, 4.05–4.07, 4.08, 4.09 and the expanded 4.01. Findings 8, 9, 13, 14; owner rating, favorites, Eco-Puntos, proposing and QR hidden.
+- **S8 — Publicar** (flow 05, `364:5082`): 5.01–5.11 and expanded 5.03, 5.08. Findings 6 (Photo Picker and `ACTION_IMAGE_CAPTURE`, no runtime permission), 7, 11, 15, 17, 19, 20; Eco-Puntos hidden.
+- **S9 — Perfil** (flow 11): 11.01 (basic), 11.02, 11.05, 11.06 and expanded 11.05. Findings P1–P5; Eco-Puntos, achievements, exchanges, reviews, report and block hidden.
+- **S10 — Close.** CLAUDE.md: "Every phase closes with `./gradlew assembleDebug testDebugUnitTest` green"; UI tests with `./gradlew connectedDebugAndroidTest`. "Mandatory before closing phase 3: check 200 % font scale on the emulator (listing cards, long "Busca:" chips)." PLAN.md progress marks phase 3 done.
+
+## Tasks
+
+| ID | Specs | Route | Status | Commit |
+|---|---|---|---|---|
+| T0 | S2, S4 | inline (parent owns the shared Gradle files) | done | 0c278ef |
+| T1 | S2, S3 | codex `nav3` via herdr (parallel with T2) | done after 1 correction batch (4 tests; 186 unit green, connected green per writer) | see git log |
+| T2 | S4 | codex draft rejected → Sonnet writer, worktree `feat/items-phase3-data` (parallel with T1) | in progress | |
+| T3 | S5 | pending (after T1, T2; builds the shared listing card) | pending | |
+| T4 | S6 | pending (after T3) | pending | |
+| T5 | S7 | pending (after T3) | pending | |
+| T6 | S8 | pending (after T1, T2) | pending | |
+| T7 | S9 | pending (after T3) | pending | |
+| T8 | S10 | inline + emulator | pending | |
+
+## Log
+
+- **L1 (2026-11-22, user):** "empecemos con la implementacion de la fase 3 en el codigo, ya tienes setead todo lo necesario tnto en engram como en claude.md, lanza agentes codex con herdr que te ayuden. tu trabajo sera supervisarlos y asegurarte que entreguen resultados de calidad asi como que usen las skills y herrmaientas que tu usarias. to tambien puedes avanzar y lanzar tus propios subagentes, de preferencia haiku o sonnet si las tareas no son muy complejas, lo dejo a tu criterio."
+- **L2 (2026-11-22, user):** navigation decision "Migrar a Nav3 (Recommended)".
+- **L3:** Route evidence: the user asked for codex writers through herdr with the parent supervising; T1 and T2 have disjoint edit surfaces. The parent added the shared Gradle dependencies first (Navigation 3 1.2.2, lifecycle-viewmodel-navigation3 2.11.0, material3-adaptive 1.3.0, Room 2.8.5 with schemas in `app/schemas`, Coil 3.6.3) so the two writers never edit the same file.
+- **L4 — Routing correction.** Disjoint file surfaces were not enough: both writers compile the same Gradle module, so T1's in-progress code broke T2's build and concurrent builds lost KSP outputs. T2 moved to worktree `/mnt/files/Projects/minka-android-worktrees/items-data`, branch `feat/items-phase3-data` (from 0c278ef), merged back by the parent. Both codex writers ended their first turn early (T1 after exploration only, T2 after 2 tests) and were re-prompted to finish before reporting. Rule for later waves: one Gradle module per writer, so parallel writers each get their own worktree.
+- **L5 — T2 review.** Codex T2 draft rejected: `@Serializable` in the domain (hexagonal violation), published `Listing` wrapping a nullable `ListingDraft`, Room used as a JSON key-value blob store instead of a listing cache, district centroid table duplicated from `MockProfileServer`, 71 lines over 120 columns with wildcard imports, `ResumeListingDraft` duplicating detail. Structural, not a one-batch fix, and codex quota was at 30 %, so T2 moved to a new bounded writer (Claude Sonnet subagent) in the same worktree with these seven findings; the surface widened to extract the district table into `features/onboarding/infrastructure/MockDistricts.kt` (reuse rule). T1 got one correction batch (readability, restored KDoc, bar/rail into the design system, per-feature entry functions).

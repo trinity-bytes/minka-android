@@ -7,14 +7,13 @@ coreKtx = "1.19.1"
 activityCompose = "1.13.0"
 coreSplashscreen = "1.0.1"
 lifecycle = "2.11.0"
-navigationCompose = "2.10.2"
 navigation3 = "1.2.2"
 lifecycleNavigation3 = "2.11.0"
 material3Adaptive = "1.3.0"
 room = "2.8.5"
 coil = "3.6.3"
 hilt = "2.60.1"
-hiltNavigationCompose = "1.4.0"
+hiltLifecycleViewModel = "1.4.0"
 kotlinxCoroutines = "1.11.0"
 kotlinxSerializationJson = "1.11.0"
 ktor = "3.6.1"
@@ -43,9 +42,6 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 
-# Navigation
-androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
-
 # Navigation 3 (adaptive scenes, PLAN.md phase 3)
 androidx-navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3" }
 androidx-navigation3-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3" }
@@ -57,7 +53,7 @@ androidx-compose-material3-adaptive-navigation3 = { group = "androidx.compose.ma
 # Hilt
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
-androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
+androidx-hilt-lifecycle-viewmodel-compose = { group = "androidx.hilt", name = "hilt-lifecycle-viewmodel-compose", version.ref = "hiltLifecycleViewModel" }
 
 # Kotlin
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }

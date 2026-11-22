@@ -9,6 +9,10 @@ import com.trinitybytes.minka.features.auth.application.ResendCode
 import com.trinitybytes.minka.features.auth.application.VerifyRegistration
 import com.trinitybytes.minka.features.auth.domain.AuthError
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
+import com.trinitybytes.minka.navigation.VerifyCodeRoute
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -20,7 +24,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
-import javax.inject.Inject
 
 /** 1.14: "Código de 6 dígitos por correo o SMS." */
 const val CODE_LENGTH = 6
@@ -66,13 +69,26 @@ data class VerifyCodeUiState(
 private const val KEY_ATTEMPTS = "verify_attempts"
 private const val KEY_DEADLINE = "verify_deadline"
 
-@HiltViewModel
-class VerifyCodeViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = VerifyCodeViewModel.Factory::class)
+class VerifyCodeViewModel @AssistedInject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val verifyRegistration: VerifyRegistration,
     private val resendCode: ResendCode,
     private val clock: Clock,
+    @Assisted private val route: VerifyCodeRoute? = null,
 ) : ViewModel() {
+
+    @AssistedFactory
+    interface Factory { fun create(route: VerifyCodeRoute?): VerifyCodeViewModel }
+
+    init {
+        route?.let {
+            if (!savedStateHandle.contains(ARG_CHALLENGE_ID)) savedStateHandle[ARG_CHALLENGE_ID] = it.challengeId
+            if (!savedStateHandle.contains(ARG_DESTINATION)) savedStateHandle[ARG_DESTINATION] = it.destination
+            if (!savedStateHandle.contains(ARG_ATTEMPTS_LEFT)) savedStateHandle[ARG_ATTEMPTS_LEFT] = it.attemptsLeft
+            if (!savedStateHandle.contains(ARG_RESEND_AFTER_SECONDS)) savedStateHandle[ARG_RESEND_AFTER_SECONDS] = it.resendAfterSeconds
+        }
+    }
 
     private val challengeId: String = checkNotNull(savedStateHandle[ARG_CHALLENGE_ID])
 
