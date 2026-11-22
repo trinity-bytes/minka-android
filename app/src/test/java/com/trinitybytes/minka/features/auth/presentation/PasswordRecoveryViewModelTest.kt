@@ -40,23 +40,62 @@ class PasswordRecoveryViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val repository = FakeRepository()
 
+    private val clock = object : java.time.Clock() {
+        override fun getZone(): java.time.ZoneId = java.time.ZoneId.of("UTC")
+        override fun withZone(zone: java.time.ZoneId): java.time.Clock = this
+        override fun instant(): java.time.Instant = java.time.Instant.ofEpochMilli(dispatcher.scheduler.currentTime)
+    }
+
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
 
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel() = PasswordRecoveryViewModel(RequestPasswordReset(repository), SavedStateHandle())
+    private fun viewModel() = PasswordRecoveryViewModel(RequestPasswordReset(repository), SavedStateHandle(), clock)
 
     private val PasswordRecoveryViewModel.state get() = uiState.value
 
     @Test
     fun `contact restores and persists`() {
         val handle = SavedStateHandle(mapOf(KEY_CONTACT to "ana@example.com"))
-        val model = PasswordRecoveryViewModel(RequestPasswordReset(repository), handle)
+        val model = PasswordRecoveryViewModel(RequestPasswordReset(repository), handle, clock)
         assertEquals("ana@example.com", model.state.contact)
         model.onContactChange("luis@example.com")
         assertEquals("luis@example.com", handle.get<String>(KEY_CONTACT))
+    }
+
+    @Test
+    fun `successful reset saves confirmation and deadline for recreation`() = runTest(dispatcher) {
+        repository.answer = { Outcome.Success(PasswordReset("ana@example.com", 30, 5)) }
+        val handle = SavedStateHandle()
+        val original = PasswordRecoveryViewModel(RequestPasswordReset(repository), handle, clock)
+        original.onContactChange("ana@example.com")
+        original.submit()
+        runCurrent()
+        assertEquals(5_000L, handle.get<Long>("recovery_deadline"))
+        advanceTimeBy(2_000)
+        val restored = PasswordRecoveryViewModel(RequestPasswordReset(repository), handle, clock)
+        assertEquals(RecoverySent("ana@example.com", ContactKind.Email, 30), restored.state.sent)
+        assertEquals(3L, restored.state.resendSecondsLeft)
+    }
+
+    @Test
+    fun `sent confirmation and deadline restore and expire`() = runTest(dispatcher) {
+        val handle = SavedStateHandle(mapOf(
+            "recovery_contact" to "ana@example.com",
+            "recovery_destination" to "ana@example.com",
+            "recovery_kind" to "Email",
+            "recovery_expiry" to 15,
+            "recovery_deadline" to 2_000L,
+        ))
+        val model = PasswordRecoveryViewModel(RequestPasswordReset(repository), handle, clock)
+        assertEquals(RecoverySent("ana@example.com", ContactKind.Email, 15), model.state.sent)
+        assertEquals(2L, model.state.resendSecondsLeft)
+        advanceTimeBy(2_000)
+        runCurrent()
+        assertNull(model.state.resendSecondsLeft)
+        assertTrue(model.state.canResend)
     }
 
     @Test

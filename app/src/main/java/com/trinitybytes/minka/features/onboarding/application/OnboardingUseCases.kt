@@ -4,6 +4,8 @@ import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.core.domain.map
 import com.trinitybytes.minka.core.domain.onSuccess
 import com.trinitybytes.minka.features.auth.domain.SessionStore
+import com.trinitybytes.minka.features.auth.domain.NewAccountHook
+import com.trinitybytes.minka.features.auth.domain.PendingSetupResolver
 import com.trinitybytes.minka.features.onboarding.domain.District
 import com.trinitybytes.minka.features.onboarding.domain.Interest
 import com.trinitybytes.minka.features.onboarding.domain.LocationProvider
@@ -35,7 +37,9 @@ sealed interface LaunchTarget {
 class ResolveLaunch @Inject constructor(
     private val sessionStore: SessionStore,
     private val progressStore: OnboardingProgressStore,
-) {
+) : PendingSetupResolver {
+    override suspend fun pendingStep(): SetupStep? = (invoke() as? LaunchTarget.Setup)?.step
+
     suspend operator fun invoke(): LaunchTarget = try {
         resolve()
     } catch (_: IOException) {
@@ -54,7 +58,9 @@ class ResolveLaunch @Inject constructor(
 }
 
 /** A verified registration starts the profile setup at the district step (1.16). */
-class BeginOnboarding @Inject constructor(private val progressStore: OnboardingProgressStore) {
+class BeginOnboarding @Inject constructor(private val progressStore: OnboardingProgressStore) : NewAccountHook {
+    override suspend fun begin(userId: String): Boolean = invoke(userId) is Outcome.Success
+
     suspend operator fun invoke(userId: String): ProfileOutcome<Unit> = storingOnDevice {
         progressStore.save(OnboardingProgress.Pending(userId, SetupStep.District))
         Outcome.Success(Unit)

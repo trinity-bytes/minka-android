@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trinitybytes.minka.core.domain.Outcome
+import com.trinitybytes.minka.core.domain.countdown
 import com.trinitybytes.minka.features.auth.application.GetGoogleAccounts
 import com.trinitybytes.minka.features.auth.application.SignIn
 import com.trinitybytes.minka.features.auth.application.SignInWithGoogle
@@ -12,13 +13,12 @@ import com.trinitybytes.minka.features.auth.domain.AuthOutcome
 import com.trinitybytes.minka.features.auth.domain.GoogleAccount
 import com.trinitybytes.minka.features.auth.domain.Session
 import com.trinitybytes.minka.features.auth.domain.contactKindOf
-import com.trinitybytes.minka.features.onboarding.application.LaunchTarget
-import com.trinitybytes.minka.features.onboarding.application.ResolveLaunch
+import com.trinitybytes.minka.features.auth.domain.PendingSetupResolver
 import com.trinitybytes.minka.features.onboarding.domain.SetupStep
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Clock
 import javax.inject.Inject
 
 /**
@@ -74,14 +75,16 @@ data class SignInUiState(
 fun formatCountdown(seconds: Long): String = "%d:%02d".format(seconds / 60, seconds % 60)
 
 private const val KEY_CONTACT = "signin_contact"
+private const val KEY_LOCK_DEADLINE = "signin_lock_deadline"
 
 @HiltViewModel
 class SignInViewModel @Inject constructor(
     private val signIn: SignIn,
     private val getGoogleAccounts: GetGoogleAccounts,
     private val signInWithGoogle: SignInWithGoogle,
-    private val resolveLaunch: ResolveLaunch,
+    private val pendingSetup: PendingSetupResolver,
     private val savedStateHandle: SavedStateHandle,
+    private val clock: Clock,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SignInUiState(contact = savedStateHandle[KEY_CONTACT] ?: ""))
@@ -95,6 +98,10 @@ class SignInViewModel @Inject constructor(
 
     /** What "Reintentar" (1.22) sends again, with what the form holds when it is tapped. */
     private var retryAction: RetryAction? = null
+
+    init {
+        savedStateHandle.get<Long>(KEY_LOCK_DEADLINE)?.let(::runLock)
+    }
 
     /** Called once per screen; with [withGoogle] the account sheet opens right away. */
     fun onStart(withGoogle: Boolean) {
@@ -152,6 +159,7 @@ class SignInViewModel @Inject constructor(
 
     fun dismissLock() {
         countdown?.cancel()
+        savedStateHandle.remove<Long>(KEY_LOCK_DEADLINE)
         _uiState.update { it.copy(lockSecondsLeft = null) }
     }
 
@@ -188,7 +196,7 @@ class SignInViewModel @Inject constructor(
     }
 
     /** The setup step this account left pending on the device (S4), or null when Inicio opens. */
-    private suspend fun pendingSetupStep(): SetupStep? = (resolveLaunch() as? LaunchTarget.Setup)?.step
+    private suspend fun pendingSetupStep(): SetupStep? = pendingSetup.pendingStep()
 
     /** A lock opens the 1.08 dialog; anything else is a snackbar over the form. */
     private fun report(error: AuthError) {
@@ -200,14 +208,17 @@ class SignInViewModel @Inject constructor(
 
     /** 1.08: the dialog counts down every second and closes when the lock ends. */
     private fun startLock(seconds: Long) {
+        val deadline = clock.millis() + seconds.coerceAtLeast(0) * 1_000L
+        savedStateHandle[KEY_LOCK_DEADLINE] = deadline
+        runLock(deadline)
+    }
+
+    private fun runLock(deadline: Long) {
         countdown?.cancel()
-        _uiState.update { it.copy(lockSecondsLeft = seconds) }
-        countdown = viewModelScope.launch {
-            var left = seconds
-            while (left > 0) {
-                delay(1_000)
-                left--
-                _uiState.update { it.copy(lockSecondsLeft = left.takeIf { s -> s > 0 }) }
+        countdown = viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            countdown(deadline, clock).collect { left ->
+                _uiState.update { it.copy(lockSecondsLeft = left.takeIf { it > 0 }) }
+                if (left == 0L) savedStateHandle.remove<Long>(KEY_LOCK_DEADLINE)
             }
         }
     }

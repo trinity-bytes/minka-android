@@ -4,18 +4,20 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trinitybytes.minka.core.domain.Outcome
+import com.trinitybytes.minka.core.domain.countdown
 import com.trinitybytes.minka.features.auth.application.RequestPasswordReset
 import com.trinitybytes.minka.features.auth.domain.AuthError
 import com.trinitybytes.minka.features.auth.domain.ContactKind
 import com.trinitybytes.minka.features.auth.domain.contactKindOf
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Clock
 import javax.inject.Inject
 
 /** One-off feedback shown in a snackbar; [Offline] (1.22) offers "Reintentar" over the kept step. */
@@ -47,19 +49,35 @@ data class PasswordRecoveryUiState(
 }
 
 private const val KEY_CONTACT = "recovery_contact"
+private const val KEY_DESTINATION = "recovery_destination"
+private const val KEY_KIND = "recovery_kind"
+private const val KEY_EXPIRY = "recovery_expiry"
+private const val KEY_DEADLINE = "recovery_deadline"
 
 @HiltViewModel
 class PasswordRecoveryViewModel @Inject constructor(
     private val requestPasswordReset: RequestPasswordReset,
     private val savedStateHandle: SavedStateHandle,
+    private val clock: Clock,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
-        PasswordRecoveryUiState(contact = savedStateHandle[KEY_CONTACT] ?: ""),
+        PasswordRecoveryUiState(
+            contact = savedStateHandle[KEY_CONTACT] ?: "",
+            sent = savedStateHandle.get<String>(KEY_DESTINATION)?.let { destination ->
+                val kind = savedStateHandle.get<String>(KEY_KIND)?.let { runCatching { ContactKind.valueOf(it) }.getOrNull() }
+                val expiry = savedStateHandle.get<Int>(KEY_EXPIRY)
+                if (kind != null && expiry != null) RecoverySent(destination, kind, expiry) else null
+            },
+        ),
     )
     val uiState: StateFlow<PasswordRecoveryUiState> = _uiState.asStateFlow()
 
     private var countdown: Job? = null
+
+    init {
+        if (_uiState.value.sent != null) savedStateHandle.get<Long>(KEY_DEADLINE)?.let(::runCountdown)
+    }
 
     fun onContactChange(value: String) = _uiState.update { state ->
         if (!state.fieldsEnabled) return@update state
@@ -100,6 +118,9 @@ class PasswordRecoveryViewModel @Inject constructor(
                 is Outcome.Success -> {
                     val reset = result.value
                     val kind = contactKindOf(reset.destination) ?: contactKindOf(contact) ?: ContactKind.Email
+                    savedStateHandle[KEY_DESTINATION] = reset.destination
+                    savedStateHandle[KEY_KIND] = kind.name
+                    savedStateHandle[KEY_EXPIRY] = reset.expiresInMinutes
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -118,14 +139,17 @@ class PasswordRecoveryViewModel @Inject constructor(
 
     /** Same timing as the 1.08 lock: one tick per second, cleared when it reaches zero. */
     private fun startCountdown(seconds: Long) {
+        val deadline = clock.millis() + seconds.coerceAtLeast(0) * 1_000L
+        savedStateHandle[KEY_DEADLINE] = deadline
+        runCountdown(deadline)
+    }
+
+    private fun runCountdown(deadline: Long) {
         countdown?.cancel()
-        _uiState.update { it.copy(resendSecondsLeft = seconds.takeIf { s -> s > 0 }) }
-        countdown = viewModelScope.launch {
-            var left = seconds
-            while (left > 0) {
-                delay(1_000)
-                left--
-                _uiState.update { it.copy(resendSecondsLeft = left.takeIf { s -> s > 0 }) }
+        countdown = viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            countdown(deadline, clock).collect { left ->
+                _uiState.update { it.copy(resendSecondsLeft = left.takeIf { it > 0 }) }
+                if (left == 0L) savedStateHandle.remove<Long>(KEY_DEADLINE)
             }
         }
     }

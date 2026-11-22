@@ -87,10 +87,10 @@ class AuthUseCasesTest {
             Outcome.Failure(AuthError.Unexpected),
             SignInWithGoogle(repository, brokenStore, BeginOnboarding(progress))("google-ana"),
         )
-        assertEquals(Outcome.Failure(AuthError.Unexpected), VerifyRegistration(repository, brokenStore)("c-1", "482915"))
+        assertEquals(Outcome.Failure(AuthError.Unexpected), VerifyRegistration(repository, brokenStore, BeginOnboarding(FakeProgressStore()))("c-1", "482915"))
         assertEquals(
             Outcome.Failure(AuthError.Unexpected),
-            VerifyRegistration(repository, FakeSessionStore())("c-1", "482915") { throw IOException("disk full") },
+            VerifyRegistration(repository, FakeSessionStore(), { throw IOException("disk full") })("c-1", "482915"),
         )
     }
 

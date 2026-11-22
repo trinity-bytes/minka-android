@@ -6,6 +6,10 @@ import com.trinitybytes.minka.core.datastore.minkaPreferencesDataStore
 import com.trinitybytes.minka.core.network.MockRoute
 import com.trinitybytes.minka.core.network.MockSessions
 import com.trinitybytes.minka.core.network.MockStorage
+import com.trinitybytes.minka.features.auth.domain.NewAccountHook
+import com.trinitybytes.minka.features.auth.domain.PendingSetupResolver
+import com.trinitybytes.minka.features.onboarding.application.BeginOnboarding
+import com.trinitybytes.minka.features.onboarding.application.ResolveLaunch
 import com.trinitybytes.minka.features.onboarding.domain.LocationProvider
 import com.trinitybytes.minka.features.onboarding.domain.OnboardingProgressStore
 import com.trinitybytes.minka.features.onboarding.domain.PermissionPolicy
@@ -25,6 +29,12 @@ abstract class OnboardingModule {
 
     @Binds
     abstract fun bindProfileRepository(repository: KtorProfileRepository): ProfileRepository
+
+    @Binds
+    abstract fun bindNewAccountHook(implementation: BeginOnboarding): NewAccountHook
+
+    @Binds
+    abstract fun bindPendingSetupResolver(implementation: ResolveLaunch): PendingSetupResolver
 
     companion object {
         @Provides

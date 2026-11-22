@@ -12,7 +12,7 @@ import com.trinitybytes.minka.features.auth.domain.Session
 import com.trinitybytes.minka.features.auth.domain.SessionStore
 import com.trinitybytes.minka.features.auth.domain.TERMS_VERSION
 import com.trinitybytes.minka.features.auth.domain.VerificationChallenge
-import com.trinitybytes.minka.features.onboarding.application.BeginOnboarding
+import com.trinitybytes.minka.features.auth.domain.NewAccountHook
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.io.IOException
@@ -40,13 +40,13 @@ class GetGoogleAccounts @Inject constructor(private val repository: AuthReposito
 class SignInWithGoogle @Inject constructor(
     private val repository: AuthRepository,
     private val sessionStore: SessionStore,
-    private val beginOnboarding: BeginOnboarding,
+    private val newAccountHook: NewAccountHook,
 ) {
     suspend operator fun invoke(accountId: String): AuthOutcome<Session> = storingOnDevice {
         when (val result = repository.signInWithGoogle(accountId)) {
             is Outcome.Failure -> result
             is Outcome.Success -> {
-                if (result.value.isNewAccount && beginOnboarding(result.value.user.id) is Outcome.Failure) {
+                if (result.value.isNewAccount && !newAccountHook.begin(result.value.user.id)) {
                     Outcome.Failure(AuthError.Unexpected)
                 } else {
                     sessionStore.save(result.value)
@@ -78,19 +78,19 @@ class Register @Inject constructor(
 class VerifyRegistration @Inject constructor(
     private val repository: AuthRepository,
     private val sessionStore: SessionStore,
+    private val newAccountHook: NewAccountHook,
 ) {
     /**
-     * [beforeSignIn] runs once the code is accepted and before the session is stored, so whatever it
-     * saves already exists whenever the session does, even if the app dies in between.
+     * The new-account hook runs after the code is accepted and before the session is stored, so
+     * setup already exists whenever the session does, even if the app dies in between.
      */
     suspend operator fun invoke(
         challengeId: String,
         code: String,
-        beforeSignIn: suspend (Session) -> Boolean = { true },
     ): AuthOutcome<Session> = storingOnDevice {
         when (val result = repository.verifyCode(challengeId, code)) {
             is Outcome.Failure -> result
-            is Outcome.Success -> if (!beforeSignIn(result.value)) {
+            is Outcome.Success -> if (!newAccountHook.begin(result.value.user.id)) {
                 Outcome.Failure(AuthError.Unexpected)
             } else {
                 sessionStore.save(result.value)
