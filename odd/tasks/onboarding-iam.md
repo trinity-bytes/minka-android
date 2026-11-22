@@ -51,6 +51,15 @@ Slices (feature-branch-chain):
 | 2 | `feat/onboarding-iam-02-auth-domain` | PR 1 | T2 domain, session store, use cases | 364 |
 | 3 | `feat/onboarding-iam-03-auth-mock-api` | PR 2 | T2 Ktor adapter, mock auth server, Hilt, README | 664 (size:exception: adapter and server are tested together) |
 | 4 | `feat/onboarding-iam-04-welcome` | PR 3 | T3 | ~1150 incl. 3 photos and vector shapes (size:exception: one screen flow) |
+| 5 | `feat/onboarding-iam-05-sign-in` | PR 4 | T4 (1.05–1.09) | 1364 (size:exception: one screen with five states) |
+| 6 | `feat/onboarding-iam-06-recovery` | PR 5 | T5 (1.10–1.11) | 804 |
+| 7 | `feat/onboarding-iam-07-register` | PR 6 | T6 (1.12–1.15) | 2042 (size:exception: registration + verification) |
+| 8 | `feat/onboarding-iam-08-setup` | PR 7 | T7 (1.16–1.21) | 2829 (size:exception: four setup screens, ports and mock routes) |
+| 9 | `feat/onboarding-iam-09-offline` | PR 8 | T8 (1.22) + verifier fixes | 799 |
+| 10 | `feat/onboarding-iam-10-resume` | PR 9 | T9, T10 + flow 01 audit (`odd/tasks/flow-01-audit.md`) | 3251 (size:exception: audit fixes in three units) |
+| 11 | `feat/onboarding-iam-11-cleanup` | PR 10 | flow 01 closure (`odd/tasks/flow-01-closure.md`): dark mode removal, D1–D4, D6–D8 | 2576 (size:exception: five units merged after review) |
+
+Sizes are authored lines (insertions + deletions, images excluded) against the previous slice. All slices were merged locally into `develop` on 2026-11-22 (see `odd/tasks/flow-01-closure.md`); nothing is pushed.
 
 ## Log
 
@@ -75,3 +84,4 @@ Slices (feature-branch-chain):
 - **L19 (2026-11-22, user):** "luego de explorar y revisitar el proyecto. entendi que no necesitamos dark mode, es inneceario y un trade off que no va a dar mas de lo que cuesta. asi que quiero que guardes esa decision porque en la siguiente sesion vamos a realizar algunos cambios en el olan." — the L17 advisory "Dark visuals not compared" is dropped. Removing existing dark code or Figma frames is not authorized yet; the plan change comes next session. State at stop: T9 code + tests and the `SignInScreenTest` matcher fix are uncommitted on `feat/onboarding-iam-10-resume`; `connectedDebugAndroidTest` 40 tests, 39 passed before the fix and `SignInScreenTest` 6/6 after it (the full UI suite was not re-run). The nav change (sign-in → pending setup step) has no UI test. Slice table still lists only PRs 1–4.
 - **L20 (2026-11-22, user):** "si, commitea todo en oocal" — T9 committed as b84bdc7, the matcher fix as 5655813, local only (no push).
 - **L21 (2026-11-22, user):** "revises y audites el flujo que estamos implementando en dos frentes, diseño y luego arquitectura interna [...] iremos revisando flujo por flujo [...] primero lo haremos en el diseño del figma y luego cuando se apruebe recién revisamos el codigo" — Design audit of section A (1.01–1.04) with the android-design (M3 Expressive) skill; built separately as "Review · Tramo A propuesto (2026-11-22)" (453:5986), then "aprobado" and merged into the flow (333:10): 1.01 becomes the system SplashScreen spec (Cookie icon only, 192dp safe zone, no wordmark or loader, kept on screen with `setKeepOnScreenCondition` while the session restores; code has no `installSplashScreen` yet); "Omitir" hidden on 1.04; Button set gets `Style=Google` (Enabled 456:6082, Disabled 456:6090: outlined + official G) used by "Continuar con Google"; 1.04 caption adds the 200% text rule; new "Ventanas ≥840dp" row (456:6144) with two-pane 1.02 and 1.04. Code review of section A pending.
+- **L22 (2026-11-22):** slice table completed with PRs 5–11. Dark mode was removed from code and Figma and the actionable deferred findings were fixed in `odd/tasks/flow-01-closure.md`; the whole chain is merged locally into `develop`.
