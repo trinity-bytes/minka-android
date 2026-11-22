@@ -11,6 +11,8 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 import com.trinitybytes.minka.features.onboarding.domain.District
@@ -51,6 +53,20 @@ class SetupScreensTest {
         compose.onNodeWithText("San Isidro").performClick()
 
         compose.onNodeWithText("San Isidro").assertIsSelected()
+        compose.onNodeWithText("Continuar").assertIsEnabled()
+    }
+
+    @Test
+    fun districtListScrollsToStableKeyAndSelectsAnOffscreenDistrict() {
+        val manyDistricts = (0..100).map { District("id-$it", "District $it") }
+        compose.setContent {
+            var state by remember { mutableStateOf(DistrictUiState(districts = manyDistricts, isLoading = false)) }
+            MinkaTheme {
+                DistrictContent(state, null, {}, {}, { state = state.copy(selectedId = it) }, {}, {}, {}, {})
+            }
+        }
+        compose.onNodeWithTag("district_list").performScrollToKey("district:id-100")
+        compose.onNodeWithText("District 100").performClick().assertIsSelected()
         compose.onNodeWithText("Continuar").assertIsEnabled()
     }
 
