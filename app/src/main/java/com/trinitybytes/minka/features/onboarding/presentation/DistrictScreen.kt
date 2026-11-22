@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectableGroup
@@ -147,7 +147,7 @@ fun DistrictContent(
         contentAlignment = Alignment.TopCenter,
     ) {
         Scaffold(
-            contentWindowInsets = WindowInsets.safeContent,
+            contentWindowInsets = WindowInsets.safeDrawing,
             modifier = Modifier.formColumnWidth(),
             topBar = { MinkaTopAppBar(title = "", onBack = onBack) },
             snackbarHost = { MinkaSnackbarHost(snackbarHostState) },

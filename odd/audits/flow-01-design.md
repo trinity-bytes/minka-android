@@ -98,7 +98,7 @@
 ## Flow 01 implementation alignment (2026-11-22)
 
 - `MinkaTopAppBar` uses Material 3 `LargeFlexibleTopAppBar` with the existing collapsing behavior (ab72e56); the approved light theme and Inter/Fraunces typography remain unchanged.
-- The activity keeps transparent system bars and `adjustResize`. Flow screens and app bars use safe-content insets for system bars, keyboard, and gesture regions; scaffold padding is consumed without a second IME inset (78184cc). This is a code-level check: visual and keyboard/gesture verification on a device remains pending.
+- The activity keeps transparent system bars and `adjustResize`. Flow screens and app bars use safe-drawing insets (system bars, display cutout and keyboard); scaffold padding is consumed without a second IME inset. 78184cc first used safe-content insets, which also add the horizontal back-gesture regions as padding and shifted every layout inward (three adaptive UI tests failed on the API 37 emulator); edge-to-edge guidance reserves gesture insets for elements that compete with a gesture, so the screens went back to safe-drawing. Verified on the emulator: keyboard, gesture bar and landscape (see `odd/tasks/flow-01-closure.md`).
 
 ## Considered, not changed
 

@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
@@ -142,7 +142,7 @@ private fun MinkaErrorScreen(
     retrying: Boolean,
 ) {
     Scaffold(
-        contentWindowInsets = WindowInsets.safeContent,
+        contentWindowInsets = WindowInsets.safeDrawing,
         modifier = modifier,
         topBar = { MinkaTopAppBar(title = "", onBack = onBack) },
     ) { padding ->
