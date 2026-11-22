@@ -7,12 +7,13 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -150,6 +151,7 @@ fun SignInContent(
         contentAlignment = Alignment.TopCenter,
     ) {
         Scaffold(
+            contentWindowInsets = WindowInsets.safeContent,
             modifier = Modifier.formColumnWidth().nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 MinkaTopAppBar(
@@ -165,8 +167,7 @@ fun SignInContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .consumeWindowInsets(padding)
-                    .imePadding(),
+                    .consumeWindowInsets(padding),
             ) {
                 val viewportHeight = maxHeight
                 // The actions scroll with the form, so they stay reachable in landscape with the

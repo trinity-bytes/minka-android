@@ -8,11 +8,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -116,6 +117,7 @@ fun PasswordRecoveryContent(
         contentAlignment = Alignment.TopCenter,
     ) {
         Scaffold(
+            contentWindowInsets = WindowInsets.safeContent,
             modifier = Modifier.formColumnWidth().nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 // 1.10 uses the large bar with its headline; 1.11 a small bar with only the back arrow.
@@ -137,7 +139,6 @@ fun PasswordRecoveryContent(
                     .fillMaxSize()
                     .padding(padding)
                     .consumeWindowInsets(padding)
-                    .imePadding()
                     .padding(start = MinkaSpacing.s16, end = MinkaSpacing.s16, top = MinkaSpacing.s8, bottom = MinkaSpacing.s16),
                 verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s16),
             ) {

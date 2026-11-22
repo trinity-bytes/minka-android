@@ -2,6 +2,10 @@ package com.trinitybytes.minka.core.designsystem.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Favorite
@@ -61,6 +65,7 @@ fun MinkaTopAppBar(
         MinkaTopAppBarSize.Small -> TopAppBar(
             title = { Text(title, modifier = Modifier.semantics { heading() }) },
             modifier = modifier,
+            windowInsets = WindowInsets.safeContent.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
             navigationIcon = navigationIcon,
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(actionIconContentColor = onSurface),
@@ -68,6 +73,7 @@ fun MinkaTopAppBar(
         MinkaTopAppBarSize.Large -> LargeFlexibleTopAppBar(
             title = { Text(title, modifier = Modifier.semantics { heading() }) },
             modifier = modifier,
+            windowInsets = WindowInsets.safeContent.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
             navigationIcon = navigationIcon,
             actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(actionIconContentColor = onSurface),

@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -85,7 +85,7 @@ fun NotificationsScreen(onDone: () -> Unit, viewModel: NotificationsViewModel = 
     }
     Box(Modifier.fillMaxSize()) {
         NotificationsContent(onEnable = viewModel::onEnable, onNotNow = viewModel::onNotNow)
-        MinkaSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())
+        MinkaSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).safeContentPadding())
     }
 }
 
@@ -135,7 +135,7 @@ fun AllSetScreen(onGoHome: () -> Unit, viewModel: AllSetViewModel = hiltViewMode
     }
     Box(Modifier.fillMaxSize()) {
         AllSetContent(uiState = uiState, onExplore = viewModel::onExplore)
-        MinkaSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())
+        MinkaSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).safeContentPadding())
     }
 }
 
@@ -178,7 +178,7 @@ private fun PhotoStepLayout(
         AdaptivePhotoLayout(
             photo = { photoModifier -> PhotoStageBox(stage, photoModifier) },
             modifier = Modifier
-                .safeDrawingPadding()
+                .safeContentPadding()
                 .padding(MinkaSpacing.s16),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

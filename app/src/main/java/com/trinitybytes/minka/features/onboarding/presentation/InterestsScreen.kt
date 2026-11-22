@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -107,6 +109,7 @@ fun InterestsContent(
         contentAlignment = Alignment.TopCenter,
     ) {
         Scaffold(
+            contentWindowInsets = WindowInsets.safeContent,
             modifier = Modifier.formColumnWidth(),
             topBar = { MinkaTopAppBar(title = "", onBack = onBack) },
             snackbarHost = { MinkaSnackbarHost(snackbarHostState) },
