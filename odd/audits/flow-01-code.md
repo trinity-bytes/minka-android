@@ -41,7 +41,7 @@
 | D8 | low | `AdvanceSetup`, `CompleteOnboarding`, `BeginOnboarding` return `Unit` and still let a DataStore `IOException` escape. | Resolved in this commit: typed failures prevent navigation and show unexpected-error feedback. |
 | D9 | low | Every resend resets the verify attempts while the mock code never changes, so guessing is unbounded at 5 per minute. | The fixed code is the demo contract of the mock (README); a real backend issues a new code per resend. |
 | D10 | low | C16 window: if saving the profile-setup step fails right after the server's 201 for a new Google account (disk full, process killed), the retry sees an existing account and lands on Home, skipping 1.16–1.21. | Fixing it in the mock couples the auth and profile servers; a real backend derives "needs setup" from the profile. Accepted as a known mock limitation. |
-| D7 | low | Lock countdown recomposes the whole sign-in tree every second; district list not lazy; events collected without lifecycle awareness; disabled alphas repeated per component. | Partial: shared disabled opacity tokens in this commit; countdown, district list, and lifecycle-aware events remain open. |
+| D7 | low | Lock countdown recomposes the whole sign-in tree every second; district list not lazy; events collected without lifecycle awareness; disabled alphas repeated per component. | Resolved in 6a05158, e5d47cc, ab72e56 and 5732dbe: shared disabled tokens, lifecycle-aware events, keyed lazy districts and countdown text isolation. Instrumented recomposition and lifecycle tests compile; device execution remains pending. |
 
 ## Pass 3: refutation
 
