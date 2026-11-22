@@ -1,6 +1,7 @@
 package com.trinitybytes.minka.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,8 +19,13 @@ import com.trinitybytes.minka.features.onboarding.presentation.DistrictScreen
 import com.trinitybytes.minka.features.onboarding.presentation.InterestsScreen
 import com.trinitybytes.minka.features.onboarding.presentation.NotificationsScreen
 import com.trinitybytes.minka.features.onboarding.presentation.SplashDestination
+import com.trinitybytes.minka.features.onboarding.presentation.SplashUiState
 import com.trinitybytes.minka.features.onboarding.presentation.WelcomeScreen
 import kotlinx.serialization.Serializable
+
+/** Invisible first route, under the system splash until the launch is resolved (Figma 1.01). */
+@Serializable
+data object SplashRoute
 
 @Serializable
 data object WelcomeRoute
@@ -68,14 +74,25 @@ data object AllSetRoute
 data object HomeRoute
 
 /**
- * The app graph, starting at [startDestination] (from [startRoute], resolved behind the system
- * splash). User taps that navigate go through `dropUnlessResumed`: a second tap during the
- * transition is dropped, so a double back never pops the root and a double tap never pushes twice.
+ * The app graph. It is composed from the first frame so a recreated activity restores its back
+ * stack (process death, D2); it starts at [SplashRoute], which leaves for [startRoute] once [launch]
+ * is ready and drops itself from the stack. User taps that navigate go through `dropUnlessResumed`:
+ * a second tap during the transition is dropped, so a double back never pops the root and a double
+ * tap never pushes twice.
  */
 @Composable
-fun MinkaNavHost(startDestination: Any) {
+fun MinkaNavHost(launch: SplashUiState) {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(navController = navController, startDestination = SplashRoute) {
+        composable<SplashRoute> {
+            LaunchedEffect(launch) {
+                if (launch is SplashUiState.Ready) {
+                    navController.navigate(launch.destination.startRoute()) {
+                        popUpTo<SplashRoute> { inclusive = true }
+                    }
+                }
+            }
+        }
         composable<WelcomeRoute> {
             WelcomeScreen(
                 onCreateAccount = dropUnlessResumed { navController.navigate(RegisterRoute) },

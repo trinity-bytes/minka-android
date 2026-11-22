@@ -10,10 +10,8 @@ import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
-import com.trinitybytes.minka.features.onboarding.presentation.SplashUiState
 import com.trinitybytes.minka.features.onboarding.presentation.SplashViewModel
 import com.trinitybytes.minka.navigation.MinkaNavHost
-import com.trinitybytes.minka.navigation.startRoute
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -30,8 +28,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             MinkaTheme {
                 val launch by launchViewModel.uiState.collectAsStateWithLifecycle()
-                // The start destination cannot change once the graph is composed: wait for it.
-                (launch as? SplashUiState.Ready)?.let { MinkaNavHost(startDestination = it.destination.startRoute()) }
+                // Composed right away so a recreated activity gets its back stack back.
+                MinkaNavHost(launch)
             }
         }
     }
