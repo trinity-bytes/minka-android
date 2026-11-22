@@ -21,6 +21,7 @@ import com.trinitybytes.minka.R
 import com.trinitybytes.minka.core.designsystem.component.MinkaBadge
 import com.trinitybytes.minka.core.designsystem.component.MinkaBadgeTone
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
+import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 import com.trinitybytes.minka.features.items.domain.Listing
 import java.text.NumberFormat
 import java.util.Locale
@@ -56,12 +57,14 @@ fun ListingCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     layout: ListingCardLayout = ListingCardLayout.Grid,
+    /** Marks the result whose detail is open beside the list (Figma expanded 3.05: `brand/mint`). */
+    selected: Boolean = false,
 ) {
     Surface(
         onClick = onClick,
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        color = if (selected) MinkaTheme.colors.mint else MaterialTheme.colorScheme.surfaceContainerLowest,
     ) {
         if (layout == ListingCardLayout.Grid) {
             Column(Modifier.padding(MinkaSpacing.s8), verticalArrangement = Arrangement.spacedBy(MinkaSpacing.s4)) {

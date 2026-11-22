@@ -1,23 +1,20 @@
 package com.trinitybytes.minka.features.items.presentation.search
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.trinitybytes.minka.navigation.ShellNavigator
-import com.trinitybytes.minka.R
+import com.trinitybytes.minka.features.items.presentation.detail.ListingDetailRoute
 import com.trinitybytes.minka.navigation.SearchTab
+import com.trinitybytes.minka.navigation.ShellNavigator
 
-/** Search destinations contributed to the signed-in shell. */
-fun EntryProviderScope<NavKey>.searchEntries(@Suppress("UNUSED_PARAMETER") navigator: ShellNavigator) {
-    entry<SearchTab> {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(stringResource(R.string.nav_search), style = MaterialTheme.typography.headlineMedium)
-        }
+/**
+ * Search destinations contributed to the signed-in shell. Buscar is the list pane of the list-detail scene:
+ * at 840 dp and up a result opens in the right pane, on compact widths it pushes the detail full screen.
+ */
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
+fun EntryProviderScope<NavKey>.searchEntries(navigator: ShellNavigator) {
+    entry<SearchTab>(metadata = ListDetailSceneStrategy.listPane()) {
+        SearchScreen(onOpenListing = { id -> navigator.open(ListingDetailRoute(id)) })
     }
 }

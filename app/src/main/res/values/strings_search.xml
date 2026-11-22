@@ -1,0 +1,41 @@
+<resources>
+    <!-- Buscar (Figma flow 03: 3.01-3.05 and 3.07). -->
+    <string name="search_title">Buscar</string>
+    <string name="search_placeholder">¿Qué buscas?</string>
+    <string name="search_clear_text">Borrar texto</string>
+    <string name="search_recents">Recientes</string>
+    <string name="search_recents_clear">Borrar</string>
+    <string name="search_categories">Categorías</string>
+    <string name="search_suggestion_category">En %1$s</string>
+    <string name="search_suggestion_nearby">%1$d cerca</string>
+    <string name="search_filters">Filtros</string>
+    <string name="search_filters_count">Filtros · %1$d</string>
+    <string name="search_filter_distance">≤ %1$s</string>
+    <plurals name="search_result_count">
+        <item quantity="one">%1$d resultado</item>
+        <item quantity="other">%1$d resultados</item>
+    </plurals>
+    <string name="search_empty_title">Sin resultados para "%1$s"</string>
+    <string name="search_empty_title_filters">Sin resultados</string>
+    <string name="search_empty_message">Prueba con otras palabras o quita los filtros para ver más publicaciones.</string>
+    <string name="search_empty_message_plain">Prueba con otras palabras.</string>
+    <string name="search_remove_filters">Quitar filtros</string>
+    <string name="search_error_title">No pudimos buscar</string>
+    <string name="search_error_offline">Sin conexión. Revisa tu internet e inténtalo otra vez.</string>
+    <string name="search_error_unexpected">Algo salió mal. Inténtalo otra vez.</string>
+    <string name="search_retry">Reintentar</string>
+    <string name="search_sheet_title">Filtros</string>
+    <string name="search_sheet_distance">Distancia · hasta %1$s</string>
+    <string name="search_sheet_distance_unlimited">Distancia · sin límite</string>
+    <string name="search_sheet_distance_slider">Distancia máxima</string>
+    <string name="search_sheet_condition">Estado mínimo</string>
+    <string name="search_sheet_sort">Ordenar por</string>
+    <string name="search_sort_nearest">Más cerca</string>
+    <string name="search_sort_newest">Más reciente</string>
+    <string name="search_sheet_clear">Limpiar</string>
+    <string name="search_sheet_apply">Ver resultados</string>
+    <plurals name="search_sheet_apply_count">
+        <item quantity="one">Ver %1$d resultado</item>
+        <item quantity="other">Ver %1$d resultados</item>
+    </plurals>
+</resources>
