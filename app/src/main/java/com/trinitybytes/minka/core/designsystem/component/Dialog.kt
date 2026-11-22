@@ -45,6 +45,7 @@ fun MinkaDialog(
     confirmStyle: MinkaButtonStyle = MinkaButtonStyle.Text,
     iconTint: Color = MaterialTheme.colorScheme.secondary,
     onDismissClick: () -> Unit = onDismiss,
+    textContent: (@Composable () -> Unit)? = null,
 ) {
     BasicAlertDialog(onDismissRequest = onDismiss, modifier = modifier) {
         val shape = MaterialTheme.shapes.extraLarge
@@ -61,7 +62,8 @@ fun MinkaDialog(
                     Icon(icon, contentDescription = null, tint = iconTint)
                 }
                 Text(title, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurface)
-                Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (textContent != null) textContent()
+                else Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(MinkaSpacing.s8, alignment = Alignment.End),

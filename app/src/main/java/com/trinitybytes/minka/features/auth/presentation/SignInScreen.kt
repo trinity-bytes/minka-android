@@ -89,8 +89,8 @@ fun SignInScreen(
             SignInEvent.OpenRecovery -> recover()
         }
     }
-    SignInStateCollector(viewModel.uiState, lock = { seconds ->
-        SignInLockDialog(seconds, viewModel::dismissLock, viewModel::recoverPassword)
+    SignInStateCollector(viewModel.uiState, lock = { countdownState ->
+        SignInLiveLockDialog(countdownState, viewModel::dismissLock, viewModel::recoverPassword)
     }) { uiState ->
         SignInContent(
             uiState = uiState,
@@ -217,20 +217,43 @@ internal fun SignInUiState.withoutCountdownTicks(): SignInUiState =
 @Composable
 internal fun SignInStateCollector(
     state: StateFlow<SignInUiState>,
-    lock: @Composable (Long) -> Unit,
+    lock: @Composable (StateFlow<SignInUiState>) -> Unit,
     form: @Composable (SignInUiState) -> Unit,
 ) {
     val formFlow = remember(state) { state.map { it.withoutCountdownTicks() }.distinctUntilChanged() }
     val formState by formFlow.collectAsStateWithLifecycle(initialValue = state.value.withoutCountdownTicks())
     form(formState)
-    SignInCountdown(state, lock)
+    if (formState.lockSecondsLeft != null) lock(state)
 }
 
 @Composable
-private fun SignInCountdown(state: StateFlow<SignInUiState>, lock: @Composable (Long) -> Unit) {
+internal fun SignInCountdownText(state: StateFlow<SignInUiState>) {
     val countdown = remember(state) { state.map { it.lockSecondsLeft }.distinctUntilChanged() }
     val seconds by countdown.collectAsStateWithLifecycle(initialValue = state.value.lockSecondsLeft)
-    seconds?.let { lock(it) }
+    seconds?.let {
+        Text(
+            text = stringResource(R.string.sign_in_locked_text, formatCountdown(it)),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun SignInLiveLockDialog(state: StateFlow<SignInUiState>, onDismiss: () -> Unit, onRecover: () -> Unit) {
+    MinkaDialog(
+        title = stringResource(R.string.sign_in_locked_title),
+        text = "",
+        confirmText = stringResource(R.string.sign_in_locked_ok),
+        onConfirm = onDismiss,
+        confirmStyle = MinkaButtonStyle.Text,
+        onDismiss = onDismiss,
+        dismissText = stringResource(R.string.sign_in_locked_recover),
+        onDismissClick = onRecover,
+        icon = Icons.Rounded.LockClock,
+        iconTint = MaterialTheme.colorScheme.tertiary,
+        textContent = { SignInCountdownText(state) },
+    )
 }
 
 @Composable

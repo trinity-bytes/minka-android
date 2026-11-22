@@ -18,16 +18,24 @@ class SignInRecompositionTest {
     @Test fun countdownTickDoesNotRecomposeForm() {
         val state = MutableStateFlow(SignInUiState(contact = "Ana", lockSecondsLeft = 60))
         var formCompositions = 0
+        var dialogCompositions = 0
         compose.setContent {
-            SignInStateCollector(state, lock = { Text("$it") }) {
+            SignInStateCollector(state, lock = { countdownState ->
+                SideEffect { dialogCompositions++ }
+                SignInCountdownText(countdownState)
+            }) {
                 SideEffect { formCompositions++ }
                 Text(it.contact)
             }
         }
         compose.waitForIdle()
         val before = formCompositions
+        val dialogBefore = dialogCompositions
         compose.runOnIdle { state.value = state.value.copy(lockSecondsLeft = 59) }
-        compose.onNodeWithText("59").assertExists()
-        compose.runOnIdle { assertEquals(before, formCompositions) }
+        compose.onNodeWithText("0:59", substring = true).assertExists()
+        compose.runOnIdle {
+            assertEquals(before, formCompositions)
+            assertEquals(dialogBefore, dialogCompositions)
+        }
     }
 }
