@@ -20,6 +20,15 @@ Load these skills with the Skill tool before the matching work, without waiting 
 | Release build, R8, app size | `r8-analyzer` |
 | Profiling traces, jank, startup | `android-profiler` |
 
+## CodeGraph first (MANDATORY)
+
+The project has a CodeGraph index (`.codegraph/`, git-ignored). For structural questions (where something lives, call flow, dependencies, references, impact of a change), use CodeGraph before Grep/Glob/Read sweeps:
+
+- Prefer the `codegraph_explore` MCP tool when available; otherwise the read-only CLI: `codegraph query`, `explore`, `node`, `callers`, `callees`, `impact`, `affected`, `files`, `status`.
+- Run `codegraph sync -q /mnt/files/Projects/minka-android` before CLI reads and after editing code; if sync fails, say so and fall back to normal search.
+- Before changing shared code (design system components, use cases, repositories), run `codegraph impact` on it.
+- Tell subagents to do the same.
+
 ## Project rules
 
 - Light theme only: never add dark mode back (removed from code and Figma on 2026-11-22).
