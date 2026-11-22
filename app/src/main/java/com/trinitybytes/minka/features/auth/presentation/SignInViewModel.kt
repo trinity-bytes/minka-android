@@ -16,6 +16,7 @@ import com.trinitybytes.minka.features.auth.domain.contactKindOf
 import com.trinitybytes.minka.features.auth.domain.PendingSetupResolver
 import com.trinitybytes.minka.features.onboarding.domain.SetupStep
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -81,7 +82,7 @@ class SignInViewModel @Inject constructor(
     private val signIn: SignIn,
     private val getGoogleAccounts: GetGoogleAccounts,
     private val signInWithGoogle: SignInWithGoogle,
-    private val resolveLaunch: PendingSetupResolver,
+    private val pendingSetup: PendingSetupResolver,
     private val savedStateHandle: SavedStateHandle,
     private val clock: Clock,
 ) : ViewModel() {
@@ -195,7 +196,7 @@ class SignInViewModel @Inject constructor(
     }
 
     /** The setup step this account left pending on the device (S4), or null when Inicio opens. */
-    private suspend fun pendingSetupStep(): SetupStep? = resolveLaunch.pendingStep()
+    private suspend fun pendingSetupStep(): SetupStep? = pendingSetup.pendingStep()
 
     /** A lock opens the 1.08 dialog; anything else is a snackbar over the form. */
     private fun report(error: AuthError) {
@@ -214,9 +215,7 @@ class SignInViewModel @Inject constructor(
 
     private fun runLock(deadline: Long) {
         countdown?.cancel()
-        val remaining = ((deadline - clock.millis()).coerceAtLeast(0) + 999) / 1_000
-        _uiState.update { it.copy(lockSecondsLeft = remaining.takeIf { it > 0 }) }
-        countdown = viewModelScope.launch {
+        countdown = viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             countdown(deadline, clock).collect { left ->
                 _uiState.update { it.copy(lockSecondsLeft = left.takeIf { it > 0 }) }
                 if (left == 0L) savedStateHandle.remove<Long>(KEY_LOCK_DEADLINE)

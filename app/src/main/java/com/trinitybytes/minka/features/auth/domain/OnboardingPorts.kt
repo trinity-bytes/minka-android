@@ -7,7 +7,9 @@ fun interface NewAccountHook {
     suspend fun begin(userId: String): Boolean
 }
 
-/** Returns the pending setup step after a successful sign-in. */
+/** Returns the pending setup step after a successful sign-in.
+ * Auth intentionally reads onboarding's domain [SetupStep] as a navigation target.
+ */
 fun interface PendingSetupResolver {
     suspend fun pendingStep(): SetupStep?
 }

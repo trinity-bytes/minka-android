@@ -40,13 +40,13 @@ class GetGoogleAccounts @Inject constructor(private val repository: AuthReposito
 class SignInWithGoogle @Inject constructor(
     private val repository: AuthRepository,
     private val sessionStore: SessionStore,
-    private val beginOnboarding: NewAccountHook,
+    private val newAccountHook: NewAccountHook,
 ) {
     suspend operator fun invoke(accountId: String): AuthOutcome<Session> = storingOnDevice {
         when (val result = repository.signInWithGoogle(accountId)) {
             is Outcome.Failure -> result
             is Outcome.Success -> {
-                if (result.value.isNewAccount && !beginOnboarding.begin(result.value.user.id)) {
+                if (result.value.isNewAccount && !newAccountHook.begin(result.value.user.id)) {
                     Outcome.Failure(AuthError.Unexpected)
                 } else {
                     sessionStore.save(result.value)
@@ -81,17 +81,16 @@ class VerifyRegistration @Inject constructor(
     private val newAccountHook: NewAccountHook,
 ) {
     /**
-     * [beforeSignIn] runs once the code is accepted and before the session is stored, so whatever it
-     * saves already exists whenever the session does, even if the app dies in between.
+     * The new-account hook runs after the code is accepted and before the session is stored, so
+     * setup already exists whenever the session does, even if the app dies in between.
      */
     suspend operator fun invoke(
         challengeId: String,
         code: String,
-        beforeSignIn: suspend (Session) -> Boolean = { true },
     ): AuthOutcome<Session> = storingOnDevice {
         when (val result = repository.verifyCode(challengeId, code)) {
             is Outcome.Failure -> result
-            is Outcome.Success -> if (!newAccountHook.begin(result.value.user.id) || !beforeSignIn(result.value)) {
+            is Outcome.Success -> if (!newAccountHook.begin(result.value.user.id)) {
                 Outcome.Failure(AuthError.Unexpected)
             } else {
                 sessionStore.save(result.value)

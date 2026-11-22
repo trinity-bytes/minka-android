@@ -10,6 +10,7 @@ import com.trinitybytes.minka.features.auth.domain.AuthError
 import com.trinitybytes.minka.features.auth.domain.ContactKind
 import com.trinitybytes.minka.features.auth.domain.contactKindOf
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -145,9 +146,7 @@ class PasswordRecoveryViewModel @Inject constructor(
 
     private fun runCountdown(deadline: Long) {
         countdown?.cancel()
-        val remaining = ((deadline - clock.millis()).coerceAtLeast(0) + 999) / 1_000
-        _uiState.update { it.copy(resendSecondsLeft = remaining.takeIf { it > 0 }) }
-        countdown = viewModelScope.launch {
+        countdown = viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             countdown(deadline, clock).collect { left ->
                 _uiState.update { it.copy(resendSecondsLeft = left.takeIf { it > 0 }) }
                 if (left == 0L) savedStateHandle.remove<Long>(KEY_DEADLINE)

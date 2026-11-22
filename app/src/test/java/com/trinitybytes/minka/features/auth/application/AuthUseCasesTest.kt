@@ -90,7 +90,7 @@ class AuthUseCasesTest {
         assertEquals(Outcome.Failure(AuthError.Unexpected), VerifyRegistration(repository, brokenStore, BeginOnboarding(FakeProgressStore()))("c-1", "482915"))
         assertEquals(
             Outcome.Failure(AuthError.Unexpected),
-            VerifyRegistration(repository, FakeSessionStore(), BeginOnboarding(FakeProgressStore()))("c-1", "482915") { throw IOException("disk full") },
+            VerifyRegistration(repository, FakeSessionStore(), { throw IOException("disk full") })("c-1", "482915"),
         )
     }
 

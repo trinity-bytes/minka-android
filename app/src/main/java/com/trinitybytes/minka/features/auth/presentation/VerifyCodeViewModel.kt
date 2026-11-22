@@ -9,6 +9,7 @@ import com.trinitybytes.minka.features.auth.application.ResendCode
 import com.trinitybytes.minka.features.auth.application.VerifyRegistration
 import com.trinitybytes.minka.features.auth.domain.AuthError
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -177,9 +178,7 @@ class VerifyCodeViewModel @Inject constructor(
 
     private fun runCountdown(deadline: Long) {
         countdown?.cancel()
-        val remaining = ((deadline - clock.millis()).coerceAtLeast(0) + 999) / 1_000
-        _uiState.update { it.copy(resendSecondsLeft = remaining.takeIf { left -> left > 0 }) }
-        countdown = viewModelScope.launch {
+        countdown = viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             countdown(deadline, clock).collect { left ->
                 _uiState.update { it.copy(resendSecondsLeft = left.takeIf { it > 0 }) }
             }
