@@ -222,7 +222,8 @@ internal fun SignInStateCollector(
     form: @Composable (SignInUiState) -> Unit,
 ) {
     val formFlow = remember(state) { state.map { it.withoutCountdownTicks() }.distinctUntilChanged() }
-    val formState by formFlow.collectAsStateWithLifecycle(initialValue = state.value.withoutCountdownTicks())
+    val initialForm = remember(state) { state.value.withoutCountdownTicks() }
+    val formState by formFlow.collectAsStateWithLifecycle(initialValue = initialForm)
     form(formState)
     if (formState.lockSecondsLeft != null) lock(state)
 }
@@ -230,7 +231,8 @@ internal fun SignInStateCollector(
 @Composable
 internal fun SignInCountdownText(state: StateFlow<SignInUiState>) {
     val countdown = remember(state) { state.map { it.lockSecondsLeft }.distinctUntilChanged() }
-    val seconds by countdown.collectAsStateWithLifecycle(initialValue = state.value.lockSecondsLeft)
+    val initialSeconds = remember(state) { state.value.lockSecondsLeft }
+    val seconds by countdown.collectAsStateWithLifecycle(initialValue = initialSeconds)
     seconds?.let {
         Text(
             text = stringResource(R.string.sign_in_locked_text, formatCountdown(it)),
