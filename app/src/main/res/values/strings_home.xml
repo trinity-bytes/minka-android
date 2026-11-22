@@ -1,0 +1,31 @@
+<resources>
+    <string name="feed_greeting">Hola</string>
+    <string name="feed_greeting_name">Hola, %1$s</string>
+    <string name="feed_nearby_count">Hay %1$d trueques cerca de %2$s.</string>
+    <string name="feed_see_all">Ver todo</string>
+    <string name="feed_nearby_sticker">Cerca de ti</string>
+    <string name="feed_search">Buscar objetos o servicios</string>
+    <string name="feed_nearby">Cerca de ti</string>
+    <string name="feed_interests">Para ti</string>
+    <string name="feed_empty_title">Aún no hay trueques cerca</string>
+    <string name="feed_empty_message">Amplía la distancia o sé la primera persona en publicar en tu barrio.</string>
+    <string name="feed_expand_distance">Ampliar distancia</string>
+    <string name="feed_offline">Sin conexión. Ves lo último guardado.</string>
+    <string name="feed_error">No pudimos cargar las publicaciones.</string>
+    <string name="feed_retry">Reintentar</string>
+    <string name="listing_wants">Busca: %1$s</string>
+    <string name="listing_distance_km">%1$s · %2$s km</string>
+    <string name="category_home">hogar</string>
+    <string name="category_clothing">ropa</string>
+    <string name="category_books">libros</string>
+    <string name="category_technology">tecnología</string>
+    <string name="category_plants">plantas</string>
+    <string name="category_sports">deportes</string>
+    <string name="category_tools">herramientas</string>
+    <string name="category_services">servicios</string>
+    <string name="category_any">de todo</string>
+    <string name="condition_new">Nuevo</string>
+    <string name="condition_like_new">Como nuevo</string>
+    <string name="condition_good">Buen estado</string>
+    <string name="condition_used">Usado</string>
+</resources>

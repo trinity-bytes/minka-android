@@ -12,6 +12,7 @@ import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,6 +24,9 @@ import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -43,7 +47,7 @@ import com.trinitybytes.minka.core.designsystem.component.MinkaNavigationBar
 import com.trinitybytes.minka.core.designsystem.component.MinkaNavigationItem
 import com.trinitybytes.minka.core.designsystem.component.MinkaNavigationRail
 import com.trinitybytes.minka.core.designsystem.component.isExpandedWidth
-import com.trinitybytes.minka.features.home.presentation.homeEntries
+import com.trinitybytes.minka.features.items.presentation.home.homeEntries
 import com.trinitybytes.minka.features.items.presentation.search.searchEntries
 import com.trinitybytes.minka.features.profile.presentation.profileEntries
 import kotlinx.serialization.Serializable
@@ -53,6 +57,11 @@ data object HomeTab : NavKey
 
 @Serializable
 data object SearchTab : NavKey
+
+/** Monotonically increasing request, consumed by the future Buscar search field. */
+val LocalSearchFocusRequest = staticCompositionLocalOf { 0 }
+
+internal val LocalHomeExpanded = staticCompositionLocalOf { false }
 
 @Serializable
 data object ProfileTab : NavKey
@@ -82,6 +91,8 @@ private enum class Tab(val root: NavKey, val label: Int, val icon: ImageVector) 
 @Composable
 fun MinkaShell(onPublish: () -> Unit = {}) {
     var selected by rememberSaveable { mutableStateOf(Tab.Home) }
+    var searchFocusRequest by rememberSaveable { mutableIntStateOf(0) }
+    var homeScrolled by rememberSaveable { mutableStateOf(false) }
     val home = rememberNavBackStack(HomeTab)
     val search = rememberNavBackStack(SearchTab)
     val profile = rememberNavBackStack(ProfileTab)
@@ -91,7 +102,11 @@ fun MinkaShell(onPublish: () -> Unit = {}) {
         ProfileTab to profile,
     )
     val provider = entryProvider<NavKey> {
-        homeEntries()
+        homeEntries(
+            onOpenSearch = { searchFocusRequest++; selected = Tab.Search },
+            onOpenListing = {},
+            onScrollChanged = { homeScrolled = it },
+        )
         searchEntries()
         profileEntries()
     }
@@ -131,14 +146,21 @@ fun MinkaShell(onPublish: () -> Unit = {}) {
             }
             Scaffold(
                 bottomBar = { if (!expanded) MinkaNavigationBar(items) },
-                floatingActionButton = { if (!expanded) PublishFab(onPublish) },
+                floatingActionButton = {
+                    if (!expanded) PublishFab(onPublish, extended = selected == Tab.Home && !homeScrolled)
+                },
             ) { padding ->
-                NavDisplay(
-                    entries = entries,
-                    modifier = Modifier.padding(padding),
-                    onBack = back,
-                    sceneStrategies = listOf(rememberListDetailSceneStrategy<NavKey>()),
-                )
+                CompositionLocalProvider(
+                    LocalSearchFocusRequest provides searchFocusRequest,
+                    LocalHomeExpanded provides expanded,
+                ) {
+                    NavDisplay(
+                        entries = entries,
+                        modifier = Modifier.padding(padding),
+                        onBack = back,
+                        sceneStrategies = listOf(rememberListDetailSceneStrategy<NavKey>()),
+                    )
+                }
             }
         }
     }
@@ -158,7 +180,17 @@ private fun decorated(
 )
 
 @Composable
-private fun PublishFab(onPublish: () -> Unit) {
+private fun PublishFab(onPublish: () -> Unit, extended: Boolean = false) {
+    if (extended) {
+        ExtendedFloatingActionButton(
+            onClick = onPublish,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
+            text = { Text(stringResource(R.string.nav_publish)) },
+        )
+        return
+    }
     FloatingActionButton(
         onClick = onPublish,
         containerColor = MaterialTheme.colorScheme.primaryContainer,
