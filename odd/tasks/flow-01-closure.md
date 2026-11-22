@@ -14,12 +14,12 @@ Branch: `feat/onboarding-iam-11-cleanup` (from `feat/onboarding-iam-10-resume`);
 
 | ID | Specs | Route | Status | Evidence |
 |---|---|---|---|---|
-| T1 | S1, S2 (D1) | Codex `theme` (worktree `theme`) | pending | |
-| T2 | S2 (D2, D8) | Codex `state` (worktree `state`) | pending | |
-| T3 | S2 (D3, D4) | Codex `backend` (worktree `backend`) | pending | |
+| T1 | S1, S2 (D1) | Codex `theme` (worktree `theme`) | done | 539a426, fc30282, merge 9a257b0 |
+| T2 | S2 (D2, D8) | Codex `state` (worktree `state`) | done | e6b3dce, a56fac4, merge 21c020d |
+| T3 | S2 (D3, D4) | Codex `backend` (worktree `backend`) | done | 73b2d11, 05633b9, merge 0be0922 |
 | T4 | S1 | inline (Figma) | done | Figma: `293:165` deleted, Color mode Dark removed, `293:5`, `382:5785`, `382:6018` |
-| T5 | S2 (D6) | Codex, wave 2 after T1–T3 merge | pending | |
-| T6 | S2 (D7) | Codex, wave 2 after T1–T3 merge | pending | |
+| T5 | S2 (D6) | Codex `dedupe` (worktree `dedupe`) | in progress | |
+| T6 | S2 (D7) + android-design alignment | Codex `perf` (worktree `perf`) | in progress | |
 | T7 | S4 | inline: UI suite, emulator smoke, docs, slice table, merge into `develop` | pending | |
 
 ## Log
@@ -29,3 +29,5 @@ Branch: `feat/onboarding-iam-11-cleanup` (from `feat/onboarding-iam-10-resume`);
 - **L3:** Routes. Writer trigger (a): T1–T3 are independent units with disjoint main surfaces, each several files; they run in parallel worktrees so their Gradle builds do not share one `build/` dir. T1 merges dark removal with D1 because both rewrite the theme. T5/T6 wait for T1–T3: D6 touches the repositories and ViewModels that T2/T3 change. Baseline: 156 unit tests green at 8275526.
 - **L4:** T4 (Figma `uMjLWyytKzdU4AgXuNBRZM`). The Dark mockups were already gone (user removed them earlier). Removed: Foundations "Panel Dark" (`293:165`) and the `Dark` mode of the `Color` variable collection (only `Light` remains); Foundations header (`293:5`) now states the single light theme and the 2026-11-22 decision; QR code (`382:5785`) and QR card (`382:6018`) descriptions no longer mention a Dark theme. Kept on purpose: the landing "Store badge / Theme=Dark" variant (the official black Google Play badge, 5 instances; a badge style, not an app theme) and "dark ink" wording in Button/Chip/Nav item (a color, not a mode). Archive pages untouched.
 - **L5:** Supervision. `codex-theme` stopped to delegate to a model its own config named and `codex-backend` stopped at its edit surface (`ProfileRepository` lives in `features/onboarding/domain/Onboarding.kt`; callers in `OnboardingUseCases.kt`). Both told to work inline; backend surface extended with those two paths, limited in `OnboardingUseCases.kt` to the port-forced change because `codex-state` owns that file's return types (merge resolved by the parent).
+- **L6:** Wave 1 reviews (parent). T1: one `MinkaTopAppBar` instead of two overloads, PLAN text back in Spanish, loader KDoc keeps Figma `331:3029`. BOM 2026.11.01 (Material 3 1.5.0) needs compile SDK 37.1: `platforms;android-37.1` installed in the local SDK. T2: formatting, `SavedStateHandle` keys as constants, no default values on `@Inject` constructors, Notifications/AllSet failures through `SetupMessage` + `MinkaMessageEffect`. T3: no empty `Authorization` header (one `authorize()` helper), `MockSessions` port in `core/network` so the profile server does not depend on the auth server, legacy passwords migrated once on load, D4 resolved. Merged tip 0be0922: `./gradlew assembleDebug testDebugUnitTest compileDebugAndroidTestKotlin` green, 177 unit tests (baseline 156).
+- **L7 (2026-11-22, user):** "estas usando las skills de android para las correcciones, no?" / "y la otra skill de android, la usas?" — Wave 1 only gave `android-design` to T1 and the parent reviewed without it. From here: the parent loads `android-design` and `android-cli` (CLI updated to 1.1 for `preview`/`screen`); wave 2 prompts name `android-design`, `jetpack-compose-performance`, `edge-to-edge` (T6) and `testing-setup` (T5). Screen check of the merged T1 with `android preview render`: sign-in and the Expressive `LoadingIndicator` render in the single light theme. Known conflict: `android-design` asks for light/dark support on every screen; the product owner's 2026-11-22 decision (one light theme) overrides it and is stated in the T6 prompt. T6 adds the skill's component swap `LargeTopAppBar` → `LargeFlexibleTopAppBar`.
