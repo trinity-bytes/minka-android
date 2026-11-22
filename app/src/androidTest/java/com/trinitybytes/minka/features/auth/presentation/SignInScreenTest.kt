@@ -1,11 +1,12 @@
 package com.trinitybytes.minka.features.auth.presentation
 
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertAll
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -97,7 +98,10 @@ class SignInScreenTest {
     fun loadingLocksTheFieldsAndShowsTheIndicator() {
         setSignIn(SignInUiState(contact = "ana.quispe@gmail.com", password = "Minka2026!", isLoading = true))
 
-        compose.onAllNodes(hasSetTextAction()).assertCountEquals(2).assertAll(isNotEnabled())
+        // A disabled text field drops its SetText action, so the fields are found by their editable text.
+        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.EditableText))
+            .assertCountEquals(2)
+            .assertAll(isNotEnabled())
         compose.onNodeWithContentDescription("Ingresar").assertIsDisplayed()
         compose.onNodeWithText("Continuar con Google").assertIsNotEnabled()
     }
