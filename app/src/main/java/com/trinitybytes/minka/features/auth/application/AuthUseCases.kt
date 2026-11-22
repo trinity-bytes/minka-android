@@ -42,9 +42,16 @@ class SignInWithGoogle @Inject constructor(
     private val beginOnboarding: BeginOnboarding,
 ) {
     suspend operator fun invoke(accountId: String): AuthOutcome<Session> = storingOnDevice {
-        repository.signInWithGoogle(accountId).onSuccess {
-            if (it.isNewAccount) beginOnboarding(it.user.id)
-            sessionStore.save(it)
+        when (val result = repository.signInWithGoogle(accountId)) {
+            is Outcome.Failure -> result
+            is Outcome.Success -> {
+                if (result.value.isNewAccount && beginOnboarding(result.value.user.id) is Outcome.Failure) {
+                    Outcome.Failure(AuthError.Unexpected)
+                } else {
+                    sessionStore.save(result.value)
+                    result
+                }
+            }
         }
     }
 }
@@ -78,11 +85,16 @@ class VerifyRegistration @Inject constructor(
     suspend operator fun invoke(
         challengeId: String,
         code: String,
-        beforeSignIn: suspend (Session) -> Unit = {},
+        beforeSignIn: suspend (Session) -> Boolean = { true },
     ): AuthOutcome<Session> = storingOnDevice {
-        repository.verifyCode(challengeId, code).onSuccess {
-            beforeSignIn(it)
-            sessionStore.save(it)
+        when (val result = repository.verifyCode(challengeId, code)) {
+            is Outcome.Failure -> result
+            is Outcome.Success -> if (!beforeSignIn(result.value)) {
+                Outcome.Failure(AuthError.Unexpected)
+            } else {
+                sessionStore.save(result.value)
+                result
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.trinitybytes.minka.features.auth.presentation
 
+import androidx.lifecycle.SavedStateHandle
 import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.features.auth.application.GetGoogleAccounts
 import com.trinitybytes.minka.features.auth.application.SignIn
@@ -61,6 +62,17 @@ class SignInViewModelTest {
     )
 
     private val SignInViewModel.state get() = uiState.value
+
+    @Test
+    fun `contact restores and persists`() {
+        val handle = SavedStateHandle(mapOf("signin_contact" to "ana@example.com"))
+        val model = SignInViewModel(SignIn(repository, store), GetGoogleAccounts(repository), SignInWithGoogle(repository, store, BeginOnboarding(progressStore)), ResolveLaunch(store, progressStore), handle)
+        assertEquals("ana@example.com", model.state.contact)
+        model.onContactChange("luis@example.com")
+        model.onPasswordChange("secret")
+        assertFalse(handle.keys().any { it.contains("password", ignoreCase = true) })
+        assertEquals("luis@example.com", handle.get<String>("signin_contact"))
+    }
 
     @Test
     fun `ingresar stays disabled until both fields are filled`() {

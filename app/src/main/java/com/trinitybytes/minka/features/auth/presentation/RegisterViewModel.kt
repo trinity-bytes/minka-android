@@ -1,5 +1,6 @@
 package com.trinitybytes.minka.features.auth.presentation
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trinitybytes.minka.core.domain.Outcome
@@ -70,20 +71,23 @@ data class RegisterUiState(
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
     private val register: Register,
+    private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(RegisterUiState())
+    private val _uiState = MutableStateFlow(RegisterUiState(name = savedStateHandle["register_name"] ?: "", contact = savedStateHandle["register_contact"] ?: "", termsAccepted = savedStateHandle["register_terms"] ?: false))
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<RegisterEvent>(Channel.BUFFERED)
     val events: Flow<RegisterEvent> = _events.receiveAsFlow()
 
+    /** Passwords remain in memory only and are never written to saved state. */
     /** Set once the confirmation was left filled in; from then on, a new password rechecks it. */
     private var confirmChecked = false
 
-    fun onNameChange(value: String) = edit { it.copy(name = value) }
+    fun onNameChange(value: String) = edit { savedStateHandle["register_name"] = value; it.copy(name = value) }
 
     fun onContactChange(value: String) = edit { state ->
+        savedStateHandle["register_contact"] = value
         // Once a message shows, it follows the typing; a taken contact clears as soon as it changes.
         state.copy(contact = value, contactError = state.contactError?.let { contactError(value) })
     }
@@ -101,7 +105,7 @@ class RegisterViewModel @Inject constructor(
     }
 
     /** Unchecking the terms shows "Debes aceptar los términos"; checking them clears it. */
-    fun onTermsChange(accepted: Boolean) = edit { it.copy(termsAccepted = accepted, termsError = !accepted) }
+    fun onTermsChange(accepted: Boolean) = edit { savedStateHandle["register_terms"] = accepted; it.copy(termsAccepted = accepted, termsError = !accepted) }
 
     /** 1.13: validation when a field is left; an untouched empty field is not flagged. */
     fun onContactFocusLost() = _uiState.update {

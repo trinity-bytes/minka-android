@@ -21,11 +21,14 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,11 +51,13 @@ import com.trinitybytes.minka.core.designsystem.component.MinkaButton
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonSize
 import com.trinitybytes.minka.core.designsystem.component.MinkaButtonStyle
 import com.trinitybytes.minka.core.designsystem.component.MinkaExpressiveShapes
+import com.trinitybytes.minka.core.designsystem.component.MinkaSnackbarHost
 import com.trinitybytes.minka.core.designsystem.component.MinkaSticker
 import com.trinitybytes.minka.core.designsystem.component.MinkaStickerTone
 import com.trinitybytes.minka.core.designsystem.theme.MinkaShapes
 import com.trinitybytes.minka.core.designsystem.theme.MinkaSpacing
 import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
+import kotlinx.coroutines.launch
 
 /**
  * Figma 1.20. "Activar notificaciones" shows the system dialog on Android 13+ (below it, the
@@ -61,6 +66,9 @@ import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 @Composable
 fun NotificationsScreen(onDone: () -> Unit, viewModel: NotificationsViewModel = hiltViewModel()) {
     val done by rememberUpdatedState(onDone)
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val errorText = stringResource(R.string.sign_in_unexpected)
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         viewModel.onPermissionResult(granted)
     }
@@ -70,10 +78,14 @@ fun NotificationsScreen(onDone: () -> Unit, viewModel: NotificationsViewModel = 
                 // Only emitted on Android 13+, where the permission exists.
                 NotificationsEvent.RequestPermission -> permission.launch(Manifest.permission.POST_NOTIFICATIONS)
                 NotificationsEvent.Done -> done()
+                NotificationsEvent.Unexpected -> scope.launch { snackbar.showSnackbar(errorText) }
             }
         }
     }
-    NotificationsContent(onEnable = viewModel::onEnable, onNotNow = viewModel::onNotNow)
+    Box(Modifier.fillMaxSize()) {
+        NotificationsContent(onEnable = viewModel::onEnable, onNotNow = viewModel::onNotNow)
+        MinkaSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())
+    }
 }
 
 @Composable
@@ -108,14 +120,21 @@ fun NotificationsContent(onEnable: () -> Unit, onNotNow: () -> Unit, modifier: M
 fun AllSetScreen(onGoHome: () -> Unit, viewModel: AllSetViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val goHome by rememberUpdatedState(onGoHome)
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val errorText = stringResource(R.string.sign_in_unexpected)
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
                 AllSetEvent.GoHome -> goHome()
+                AllSetEvent.Unexpected -> scope.launch { snackbar.showSnackbar(errorText) }
             }
         }
     }
-    AllSetContent(uiState = uiState, onExplore = viewModel::onExplore)
+    Box(Modifier.fillMaxSize()) {
+        AllSetContent(uiState = uiState, onExplore = viewModel::onExplore)
+        MinkaSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())
+    }
 }
 
 @Composable

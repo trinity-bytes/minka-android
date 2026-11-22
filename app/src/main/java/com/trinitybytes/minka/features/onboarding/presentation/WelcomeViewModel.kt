@@ -1,5 +1,6 @@
 package com.trinitybytes.minka.features.onboarding.presentation
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,18 +20,21 @@ data class WelcomeUiState(val step: Int = 0) {
 }
 
 @HiltViewModel
-class WelcomeViewModel @Inject constructor() : ViewModel() {
+class WelcomeViewModel @Inject constructor(private val savedStateHandle: SavedStateHandle) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(WelcomeUiState())
+    private val _uiState = MutableStateFlow(WelcomeUiState(step = (savedStateHandle.get<Int>("welcome_step") ?: 0).coerceIn(0, WelcomeUiState.LAST_STEP)))
     val uiState: StateFlow<WelcomeUiState> = _uiState.asStateFlow()
 
-    fun next() = _uiState.update { it.copy(step = (it.step + 1).coerceAtMost(WelcomeUiState.LAST_STEP)) }
+    fun next() = onStepShown((_uiState.value.step + 1).coerceAtMost(WelcomeUiState.LAST_STEP))
 
     /** "Omitir" goes straight to the access step: the app cannot be used without an account. */
-    fun skip() = _uiState.update { it.copy(step = WelcomeUiState.LAST_STEP) }
+    fun skip() = onStepShown(WelcomeUiState.LAST_STEP)
 
     /** The user swiped the carousel to [step]. */
     fun onStepShown(step: Int) {
-        if (step in 0..WelcomeUiState.LAST_STEP) _uiState.update { it.copy(step = step) }
+        if (step in 0..WelcomeUiState.LAST_STEP) {
+            savedStateHandle["welcome_step"] = step
+            _uiState.update { it.copy(step = step) }
+        }
     }
 }

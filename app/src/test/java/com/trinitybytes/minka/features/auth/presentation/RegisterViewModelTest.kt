@@ -1,5 +1,6 @@
 package com.trinitybytes.minka.features.auth.presentation
 
+import androidx.lifecycle.SavedStateHandle
 import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.features.auth.application.Register
 import com.trinitybytes.minka.features.auth.domain.AuthError
@@ -48,6 +49,24 @@ class RegisterViewModelTest {
         onPasswordChange("Trueque2026!")
         onConfirmPasswordChange("Trueque2026!")
         onTermsChange(true)
+    }
+
+    @Test
+    fun `non-secret form input restores and persists but passwords do not`() {
+        val handle = SavedStateHandle(mapOf("register_name" to "Ana", "register_contact" to "ana@example.com", "register_terms" to true))
+        val model = RegisterViewModel(Register(repository, TEST_CLOCK), handle)
+        assertEquals("Ana", model.state.name)
+        assertEquals("ana@example.com", model.state.contact)
+        assertTrue(model.state.termsAccepted)
+        model.onNameChange("Luis")
+        model.onContactChange("luis@example.com")
+        model.onTermsChange(false)
+        model.onPasswordChange("secret")
+        model.onConfirmPasswordChange("secret")
+        assertEquals("Luis", handle.get<String>("register_name"))
+        assertEquals("luis@example.com", handle.get<String>("register_contact"))
+        assertEquals(false, handle.get<Boolean>("register_terms"))
+        assertFalse(handle.keys().any { it.contains("password", ignoreCase = true) })
     }
 
     @Test

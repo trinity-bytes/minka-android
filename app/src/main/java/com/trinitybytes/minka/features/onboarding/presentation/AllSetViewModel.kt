@@ -2,6 +2,7 @@ package com.trinitybytes.minka.features.onboarding.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.features.onboarding.application.CompleteOnboarding
 import com.trinitybytes.minka.features.onboarding.application.GetSetupSummary
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,6 +19,7 @@ import javax.inject.Inject
 sealed interface AllSetEvent {
     /** Onboarding is complete; Inicio opens with nothing behind it. */
     data object GoHome : AllSetEvent
+    data object Unexpected : AllSetEvent
 }
 
 /** Figma 1.21: "¡Todo listo, Ana!" and the district chosen in 1.16, when the profile has it. */
@@ -51,8 +53,13 @@ class AllSetViewModel @Inject constructor(
         if (_uiState.value.isFinishing) return
         _uiState.update { it.copy(isFinishing = true) }
         viewModelScope.launch {
-            completeOnboarding()
-            _events.send(AllSetEvent.GoHome)
+            when (completeOnboarding()) {
+                is Outcome.Success -> _events.send(AllSetEvent.GoHome)
+                is Outcome.Failure -> {
+                    _uiState.update { it.copy(isFinishing = false) }
+                    _events.send(AllSetEvent.Unexpected)
+                }
+            }
         }
     }
 }

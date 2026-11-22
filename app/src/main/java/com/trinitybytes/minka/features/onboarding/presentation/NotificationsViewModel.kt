@@ -2,6 +2,7 @@ package com.trinitybytes.minka.features.onboarding.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.features.onboarding.application.FinishNotificationsStep
 import com.trinitybytes.minka.features.onboarding.application.NotificationsNeedRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,6 +18,7 @@ sealed interface NotificationsEvent {
 
     /** The setup continues with "Todo listo". */
     data object Done : NotificationsEvent
+    data object Unexpected : NotificationsEvent
 }
 
 /** Figma 1.20: the screen that explains the value, "luego el diálogo del sistema (Android 13+)". */
@@ -49,8 +51,13 @@ class NotificationsViewModel @Inject constructor(
         if (finishing) return
         finishing = true
         viewModelScope.launch {
-            finishNotificationsStep()
-            _events.send(NotificationsEvent.Done)
+            when (finishNotificationsStep()) {
+                is Outcome.Success -> _events.send(NotificationsEvent.Done)
+                is Outcome.Failure -> {
+                    finishing = false
+                    _events.send(NotificationsEvent.Unexpected)
+                }
+            }
         }
     }
 }

@@ -16,6 +16,7 @@ import com.trinitybytes.minka.features.onboarding.FakeProgressStore
 import com.trinitybytes.minka.features.onboarding.application.BeginOnboarding
 import com.trinitybytes.minka.features.onboarding.application.LaunchTarget
 import com.trinitybytes.minka.features.onboarding.application.ResolveLaunch
+import com.trinitybytes.minka.features.onboarding.domain.OnboardingProgressStore
 import com.trinitybytes.minka.features.onboarding.domain.OnboardingProgress
 import com.trinitybytes.minka.features.onboarding.domain.SetupStep
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +47,18 @@ class AuthUseCasesTest {
         override val session = MutableStateFlow<Session?>(null)
         override suspend fun save(session: Session) = throw IOException("disk full")
         override suspend fun clear() = throw IOException("disk full")
+    }
+
+    @Test
+    fun `new google account does not save a session when onboarding fails`() = runTest {
+        repository.answer = Outcome.Success(newGoogleSession)
+        val sessions = FakeSessionStore()
+        val broken = object : OnboardingProgressStore {
+            override val progress = MutableStateFlow<OnboardingProgress?>(null)
+            override suspend fun save(progress: OnboardingProgress) { throw IOException() }
+        }
+        assertEquals(Outcome.Failure(AuthError.Unexpected), SignInWithGoogle(repository, sessions, BeginOnboarding(broken))("google"))
+        assertNull(sessions.session.value)
     }
 
     @Test

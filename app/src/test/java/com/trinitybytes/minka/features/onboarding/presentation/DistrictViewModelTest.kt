@@ -1,5 +1,6 @@
 package com.trinitybytes.minka.features.onboarding.presentation
 
+import androidx.lifecycle.SavedStateHandle
 import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.features.onboarding.ANA
 import com.trinitybytes.minka.features.onboarding.BARRANCO
@@ -56,6 +57,19 @@ class DistrictViewModelTest {
     )
 
     private val DistrictViewModel.state get() = uiState.value
+
+    @Test
+    fun `search and selection restore and persist`() = runTest(dispatcher) {
+        val handle = SavedStateHandle(mapOf("district_query" to "bar", "district_selected" to "barranco"))
+        val model = DistrictViewModel(GetDistricts(repository), LocateDistrict(location, repository), ChooseDistrict(sessionStore, repository, progress), handle)
+        advanceUntilIdle()
+        assertEquals("bar", model.state.query)
+        assertEquals("barranco", model.state.selectedId)
+        model.onQueryChange("san")
+        model.onDistrictSelected("san-isidro")
+        assertEquals("san", handle.get<String>("district_query"))
+        assertEquals("san-isidro", handle.get<String>("district_selected"))
+    }
 
     @Test
     fun `continuar is disabled until a district is chosen`() = runTest(dispatcher) {

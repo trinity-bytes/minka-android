@@ -1,5 +1,6 @@
 package com.trinitybytes.minka.features.auth.presentation
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trinitybytes.minka.core.domain.Outcome
@@ -78,9 +79,10 @@ class SignInViewModel @Inject constructor(
     private val getGoogleAccounts: GetGoogleAccounts,
     private val signInWithGoogle: SignInWithGoogle,
     private val resolveLaunch: ResolveLaunch,
+    private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SignInUiState())
+    private val _uiState = MutableStateFlow(SignInUiState(contact = savedStateHandle["signin_contact"] ?: ""))
     val uiState: StateFlow<SignInUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<SignInEvent>(Channel.BUFFERED)
@@ -101,6 +103,7 @@ class SignInViewModel @Inject constructor(
 
     fun onContactChange(value: String) = _uiState.update { state ->
         if (!state.fieldsEnabled) return@update state
+        savedStateHandle["signin_contact"] = value
         // Once a message shows, it follows the typing so it disappears as soon as the value is valid.
         state.copy(contact = value, contactError = state.contactError?.let { contactError(value) })
     }
