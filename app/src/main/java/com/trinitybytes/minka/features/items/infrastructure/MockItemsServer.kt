@@ -36,7 +36,9 @@ class MockItemsServer(
     private val names: MockUserNames,
     private val profiles: ViewerProfiles,
 ) {
-    private val document = MockDocument(storage, STORAGE_KEY, ItemsDb.serializer()) { ItemsDb() }
+    private val document = MockDocument(storage, STORAGE_KEY, ItemsDb.serializer()) {
+        ItemsDb(listings = seedListings(clock.millis()).toMutableList())
+    }
 
     fun routes(): Set<MockRoute> = setOf(
         route(HttpMethod.Get, "feed") { _, user -> feed(user) },

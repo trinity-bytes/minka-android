@@ -7,7 +7,6 @@ import com.trinitybytes.minka.features.items.domain.Condition
 private const val PHOTO_BASE = "android.resource://com.trinitybytes.minka/drawable/"
 private const val DEMO_USER_NAME = "Ana Quispe"
 private const val LUCIA_MEMBER_SINCE = 1672531200000L
-private const val SEED_CREATED = 1720000000000L
 private const val DAY = 86_400_000L
 
 private class Neighbor(val id: String, val name: String, val since: Long)
@@ -31,6 +30,7 @@ private fun neighborListing(
     description: String,
     meetingPoint: String,
     daysAgo: Long,
+    now: Long,
 ) = StoredListing(
     id = id,
     ownerId = owner.id,
@@ -47,19 +47,21 @@ private fun neighborListing(
         district = district,
         meetingPoint = meetingPoint,
     ),
-    createdAt = SEED_CREATED - daysAgo * DAY,
-    updatedAt = SEED_CREATED - daysAgo * DAY,
+    createdAt = now - daysAgo * DAY,
+    updatedAt = now - daysAgo * DAY,
 )
 
 /**
  * The listings every fresh install starts with: ten from five other neighbors across the districts near
  * Miraflores (photos from the Figma mockups), and a published, a paused and a draft listing for the demo
- * account `user-ana`, so every tab of "Mis publicaciones" has content.
+ * account `user-ana`, so every tab of "Mis publicaciones" has content. Dates count back from [now], the
+ * server clock when the mock store is first created, so "publicada hace N días" stays believable.
  */
-internal fun seedListings(): List<StoredListing> = neighbors() + demoAccountListings()
+internal fun seedListings(now: Long = System.currentTimeMillis()): List<StoredListing> =
+    neighbors(now) + demoAccountListings(now)
 
 @Suppress("LongMethod")
-private fun neighbors(): List<StoredListing> = listOf(
+private fun neighbors(now: Long): List<StoredListing> = listOf(
     neighborListing(
         id = "seed-plates",
         owner = Lucia,
@@ -71,7 +73,8 @@ private fun neighbors(): List<StoredListing> = listOf(
         district = "Miraflores",
         description = "Seis platos hondos pintados a mano.",
         meetingPoint = "Parque Kennedy",
-        daysAgo = 0,
+        daysAgo = 1,
+        now = now,
     ),
     neighborListing(
         id = "seed-guitar",
@@ -85,6 +88,7 @@ private fun neighbors(): List<StoredListing> = listOf(
         description = "Cuerdas nuevas, suena muy bien. Incluye funda.",
         meetingPoint = "Parque Municipal de Barranco",
         daysAgo = 2,
+        now = now,
     ),
     neighborListing(
         id = "seed-table",
@@ -98,6 +102,7 @@ private fun neighbors(): List<StoredListing> = listOf(
         description = "Mesa redonda de madera maciza, ideal para sala o recibidor.",
         meetingPoint = "Parque El Olivar",
         daysAgo = 3,
+        now = now,
     ),
     neighborListing(
         id = "seed-stories",
@@ -111,6 +116,7 @@ private fun neighbors(): List<StoredListing> = listOf(
         description = "Doce cuentos infantiles ilustrados, tapa dura.",
         meetingPoint = "Parque de la Amistad",
         daysAgo = 4,
+        now = now,
     ),
     neighborListing(
         id = "seed-mtb",
@@ -124,6 +130,7 @@ private fun neighbors(): List<StoredListing> = listOf(
         description = "Aro 26, 21 cambios y frenos revisados en setiembre. Ideal para paseos por el malecón.",
         meetingPoint = "Plaza Manco Cápac",
         daysAgo = 2,
+        now = now,
     ),
     neighborListing(
         id = "seed-urban-bike",
@@ -137,6 +144,7 @@ private fun neighbors(): List<StoredListing> = listOf(
         description = "Cuadro de acero y sillín de cuero, casi sin uso.",
         meetingPoint = "Bajada de Baños",
         daysAgo = 6,
+        now = now,
     ),
     neighborListing(
         id = "seed-saddle",
@@ -150,6 +158,7 @@ private fun neighbors(): List<StoredListing> = listOf(
         description = "Juego de sillín y manubrio clásicos, listos para instalar.",
         meetingPoint = "Parque Kennedy",
         daysAgo = 5,
+        now = now,
     ),
     neighborListing(
         id = "seed-novels",
@@ -163,6 +172,7 @@ private fun neighbors(): List<StoredListing> = listOf(
         description = "Cinco novelas de tapa blanda, con algunas anotaciones a lápiz.",
         meetingPoint = "Parque de la Amistad",
         daysAgo = 8,
+        now = now,
     ),
     neighborListing(
         id = "seed-beginner-guitar",
@@ -176,6 +186,7 @@ private fun neighbors(): List<StoredListing> = listOf(
         description = "Guitarra criolla con cuerdas de nailon, perfecta para empezar.",
         meetingPoint = "Campo de Marte",
         daysAgo = 9,
+        now = now,
     ),
     neighborListing(
         id = "seed-dining-table",
@@ -189,10 +200,11 @@ private fun neighbors(): List<StoredListing> = listOf(
         description = "Mesa pequeña de madera oscura, con base metálica.",
         meetingPoint = "Campo de Marte",
         daysAgo = 10,
+        now = now,
     ),
 )
 
-private fun demoAccountListings(): List<StoredListing> = listOf(
+private fun demoAccountListings(now: Long): List<StoredListing> = listOf(
     StoredListing(
         id = "seed-ana-bike",
         ownerId = DEMO_USER_ID,
@@ -206,8 +218,8 @@ private fun demoAccountListings(): List<StoredListing> = listOf(
             wants = listOf(Category.BOOKS.name),
             district = "Miraflores",
         ),
-        createdAt = SEED_CREATED,
-        updatedAt = SEED_CREATED,
+        createdAt = now - 3 * DAY,
+        updatedAt = now - 3 * DAY,
     ),
     StoredListing(
         id = "seed-ana-table",
@@ -222,8 +234,8 @@ private fun demoAccountListings(): List<StoredListing> = listOf(
             wants = listOf(Category.PLANTS.name),
             district = "Miraflores",
         ),
-        createdAt = 1710000000000L,
-        updatedAt = 1710000000000L,
+        createdAt = now - 20 * DAY,
+        updatedAt = now - 5 * DAY,
     ),
     StoredListing(
         id = "seed-ana-draft",
@@ -236,8 +248,8 @@ private fun demoAccountListings(): List<StoredListing> = listOf(
             category = Category.HOME.name,
             district = "Miraflores",
         ),
-        createdAt = 1730000000000L,
-        updatedAt = 1730000000000L,
+        createdAt = now - DAY,
+        updatedAt = now - DAY,
     ),
 )
 

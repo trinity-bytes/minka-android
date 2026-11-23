@@ -10,8 +10,11 @@ import com.trinitybytes.minka.features.items.domain.ListingStatus
 import com.trinitybytes.minka.features.onboarding.infrastructure.ProfileDto
 import io.ktor.http.HttpMethod
 import java.time.Clock
+import java.time.Duration
+import java.time.Instant
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MockItemsServerTest {
@@ -65,5 +68,16 @@ class MockItemsServerTest {
         val harness = ItemsHarness(accountNames = mapOf("ana" to "Ana Torres"))
         val listing = harness.publishedDraft()
         assertEquals("Ana Torres", listing.owner.name)
+    }
+
+    @Test
+    fun `seed listings are dated relative to the server clock`() = runTest {
+        val nearby = ItemsHarness().repository.feed().value().value.nearby
+        val now = Instant.now()
+        assertTrue(nearby.isNotEmpty())
+        nearby.forEach { listing ->
+            assertTrue(listing.title, !listing.createdAt.isAfter(now))
+            assertTrue(listing.title, listing.createdAt.isAfter(now.minus(Duration.ofDays(60))))
+        }
     }
 }
