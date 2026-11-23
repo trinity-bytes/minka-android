@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Only the folder that holds listing photos is shareable. The camera app writes there through a
+    FileProvider URI; nothing else under the app files directory is reachable.
+-->
+<paths>
+    <files-path
+        name="listing_photos"
+        path="listing_photos/" />
+</paths>

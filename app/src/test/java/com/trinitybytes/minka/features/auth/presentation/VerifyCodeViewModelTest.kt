@@ -1,6 +1,7 @@
 package com.trinitybytes.minka.features.auth.presentation
 
 import androidx.lifecycle.SavedStateHandle
+import com.trinitybytes.minka.navigation.VerifyCodeRoute
 import com.trinitybytes.minka.core.domain.Outcome
 import com.trinitybytes.minka.features.auth.application.ResendCode
 import com.trinitybytes.minka.features.auth.application.VerifyRegistration
@@ -81,6 +82,26 @@ class VerifyCodeViewModelTest {
 
     private fun wrongCodes() {
         repository.verifyAnswer = { Outcome.Failure(AuthError.WrongCode(attemptsLeft = 4)) }
+    }
+
+    @Test
+    fun `route arguments populate saved state and preserve restored progress`() = runTest(dispatcher) {
+        val handle = SavedStateHandle(mapOf<String, Any>(KEY_ATTEMPTS to 2, KEY_DEADLINE to 20_000L))
+        val route = VerifyCodeRoute("challenge-route", "route@example.com", 5, 60)
+        val model = VerifyCodeViewModel(
+            handle,
+            VerifyRegistration(repository, sessionStore, BeginOnboarding(progressStore)),
+            ResendCode(repository),
+            TEST_CLOCK,
+            route,
+        )
+        assertEquals("challenge-route", handle.get<String>(VerifyCodeViewModel.ARG_CHALLENGE_ID))
+        assertEquals("route@example.com", handle.get<String>(VerifyCodeViewModel.ARG_DESTINATION))
+        assertEquals(5, handle.get<Int>(VerifyCodeViewModel.ARG_ATTEMPTS_LEFT))
+        assertEquals(60, handle.get<Int>(VerifyCodeViewModel.ARG_RESEND_AFTER_SECONDS))
+        assertEquals("route@example.com", model.state.destination)
+        assertEquals(2, model.state.attemptsLeft)
+        assertEquals(20_000L, handle.get<Long>(KEY_DEADLINE))
     }
 
     @Test

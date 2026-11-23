@@ -2,17 +2,21 @@ package com.trinitybytes.minka.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.dropUnlessResumed
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.ui.NavDisplay
 import com.trinitybytes.minka.features.auth.presentation.PasswordRecoveryScreen
 import com.trinitybytes.minka.features.auth.presentation.RegisterScreen
 import com.trinitybytes.minka.features.auth.presentation.SignInScreen
 import com.trinitybytes.minka.features.auth.presentation.VerifyCodeScreen
-import com.trinitybytes.minka.features.home.presentation.HomeScreen
+import com.trinitybytes.minka.features.auth.presentation.VerifyCodeViewModel
+import com.trinitybytes.minka.features.items.presentation.publish.PublishScreen
 import com.trinitybytes.minka.features.onboarding.domain.SetupStep
 import com.trinitybytes.minka.features.onboarding.presentation.AllSetScreen
 import com.trinitybytes.minka.features.onboarding.presentation.DistrictScreen
@@ -23,28 +27,28 @@ import com.trinitybytes.minka.features.onboarding.presentation.SplashUiState
 import com.trinitybytes.minka.features.onboarding.presentation.WelcomeScreen
 import kotlinx.serialization.Serializable
 
-/** Invisible first route, under the system splash until the launch is resolved (Figma 1.01). */
+/** Invisible first route, under the system splash until launch is resolved (Figma 1.01). */
 @Serializable
-data object SplashRoute
+data object SplashRoute : NavKey
 
 @Serializable
-data object WelcomeRoute
+data object WelcomeRoute : NavKey
 
 /** Sign-in (Figma 1.05–1.09); [withGoogle] opens the Google account picker right away. */
 @Serializable
-data class SignInRoute(val withGoogle: Boolean = false)
+data class SignInRoute(val withGoogle: Boolean = false) : NavKey
 
 /** Password recovery (Figma 1.10–1.11). */
 @Serializable
-data object PasswordRecoveryRoute
+data object PasswordRecoveryRoute : NavKey
 
 /** Registration data (Figma 1.12–1.13). */
 @Serializable
-data object RegisterRoute
+data object RegisterRoute : NavKey
 
 /**
- * Code verification (Figma 1.14–1.15) of the registration [challengeId]. The property names are
- * the keys `VerifyCodeViewModel` reads from its SavedStateHandle.
+ * Code verification (Figma 1.14–1.15) for [challengeId]. Its fields are passed to the
+ * ViewModel and populate the keys it reads from SavedStateHandle.
  */
 @Serializable
 data class VerifyCodeRoute(
@@ -52,145 +56,171 @@ data class VerifyCodeRoute(
     val destination: String,
     val attemptsLeft: Int,
     val resendAfterSeconds: Int,
-)
+) : NavKey
 
 /** Profile setup, district (Figma 1.16–1.18). */
 @Serializable
-data object DistrictRoute
+data object DistrictRoute : NavKey
 
 /** Profile setup, interests (Figma 1.19). */
 @Serializable
-data object InterestsRoute
+data object InterestsRoute : NavKey
 
 /** Profile setup, notifications (Figma 1.20). */
 @Serializable
-data object NotificationsRoute
+data object NotificationsRoute : NavKey
 
 /** Profile setup, "Todo listo" (Figma 1.21). */
 @Serializable
-data object AllSetRoute
+data object AllSetRoute : NavKey
 
 @Serializable
-data object HomeRoute
+data object HomeRoute : NavKey
+
+/** Publicar (Figma 5.01–5.11), full screen; with [draftId] it resumes that draft (audit P1). */
+@Serializable
+data class PublishRoute(val draftId: String? = null) : NavKey
 
 /**
- * The app graph. It is composed from the first frame so a recreated activity restores its back
- * stack (process death, D2); it starts at [SplashRoute], which leaves for [startRoute] once [launch]
- * is ready and drops itself from the stack. User taps that navigate go through `dropUnlessResumed`:
- * a second tap during the transition is dropped, so a double back never pops the root and a double
- * tap never pushes twice.
+ * Composed from the first frame so the Nav3 back stack restores after process death. [SplashRoute]
+ * stays invisible beneath the system splash, resolves [launch], then replaces itself with the
+ * resolved destination. User navigation taps use `dropUnlessResumed` to drop repeated actions
+ * during a transition, avoiding duplicate pushes or double back navigation.
  */
 @Composable
 fun MinkaNavHost(launch: SplashUiState) {
-    val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = SplashRoute) {
-        composable<SplashRoute> {
-            LaunchedEffect(launch) {
-                if (launch is SplashUiState.Ready) {
-                    navController.navigate(launch.destination.startRoute()) {
-                        popUpTo<SplashRoute> { inclusive = true }
+    val stack = rememberNavBackStack(SplashRoute)
+    fun replace(route: NavKey) {
+        stack.clear()
+        stack.add(route)
+    }
+    NavDisplay(
+        backStack = stack,
+        onBack = { if (stack.size > 1) stack.removeLastOrNull() },
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator(),
+        ),
+        entryProvider = entryProvider {
+            entry<SplashRoute> {
+                LaunchedEffect(launch) {
+                    if (launch is SplashUiState.Ready && stack.lastOrNull() == SplashRoute) {
+                        replace(launch.destination.startRoute())
                     }
                 }
             }
-        }
-        composable<WelcomeRoute> {
-            WelcomeScreen(
-                onCreateAccount = dropUnlessResumed { navController.navigate(RegisterRoute) },
-                onSignIn = dropUnlessResumed { navController.navigate(SignInRoute()) },
-                onContinueWithGoogle = dropUnlessResumed { navController.navigate(SignInRoute(withGoogle = true)) },
-            )
-        }
-        composable<SignInRoute> { entry ->
-            SignInScreen(
-                withGoogle = entry.toRoute<SignInRoute>().withGoogle,
-                onBack = dropUnlessResumed { navController.popBackStack() },
-                onSignedIn = { pendingStep ->
-                    // A signed-in user never goes back to the welcome or sign-in screens;
-                    // a setup this account left pending on the device continues where it stopped (S4).
-                    navController.replaceAll(pendingStep?.route() ?: HomeRoute)
-                },
-                onRecoverPassword = dropUnlessResumed { navController.navigate(PasswordRecoveryRoute) },
-                onRegister = dropUnlessResumed { navController.navigate(RegisterRoute) },
-            )
-        }
-        composable<PasswordRecoveryRoute> {
-            // Back, from either 1.10 or 1.11, returns to sign-in, which is right below on the stack.
-            PasswordRecoveryScreen(onBack = dropUnlessResumed { navController.popBackStack() })
-        }
-        composable<RegisterRoute> {
-            RegisterScreen(
-                onBack = dropUnlessResumed { navController.popBackStack() },
-                onCodeSent = { challenge ->
-                    navController.navigate(
-                        VerifyCodeRoute(
-                            challengeId = challenge.id,
-                            destination = challenge.destination,
-                            attemptsLeft = challenge.attemptsLeft,
-                            resendAfterSeconds = challenge.resendAfterSeconds,
-                        ),
-                    )
-                },
-            )
-        }
-        composable<VerifyCodeRoute> {
-            VerifyCodeScreen(
-                // Back returns to the form, which keeps what was typed.
-                onBack = dropUnlessResumed { navController.popBackStack() },
-                onVerified = {
-                    // The account is signed in: the welcome and registration screens are left behind.
-                    navController.navigate(DistrictRoute) {
-                        popUpTo(navController.graph.id) { inclusive = true }
-                    }
-                },
-                // Placeholder: there is no support channel yet.
-                onContactSupport = {},
-            )
-        }
-        composable<DistrictRoute> {
-            val back = dropUnlessResumed { navController.popBackStack() }
-            DistrictScreen(
-                // After verification nothing is behind; a resumed setup may have nothing either.
-                onBack = back.takeIf { navController.previousBackStackEntry != null },
-                onChosen = { navController.navigate(InterestsRoute) },
-            )
-        }
-        composable<InterestsRoute> {
-            InterestsScreen(
-                onBack = dropUnlessResumed {
-                    // A setup resumed at this step (S4) has no district screen below: open it in its place.
-                    if (navController.previousBackStackEntry != null) {
-                        navController.popBackStack()
+            entry<WelcomeRoute> {
+                WelcomeScreen(
+                    onCreateAccount = dropUnlessResumed { stack.add(RegisterRoute) },
+                    onSignIn = dropUnlessResumed { stack.add(SignInRoute()) },
+                    onContinueWithGoogle = dropUnlessResumed { stack.add(SignInRoute(true)) },
+                )
+            }
+            entry<SignInRoute> { key ->
+                SignInScreen(
+                    withGoogle = key.withGoogle,
+                    onBack = dropUnlessResumed { if (stack.size > 1) stack.removeLastOrNull() },
+                    onSignedIn = { replace(it?.route() ?: HomeRoute) },
+                    onRecoverPassword = dropUnlessResumed { stack.add(PasswordRecoveryRoute) },
+                    onRegister = dropUnlessResumed { stack.add(RegisterRoute) },
+                )
+            }
+            entry<PasswordRecoveryRoute> {
+                PasswordRecoveryScreen(
+                    onBack = dropUnlessResumed { if (stack.size > 1) stack.removeLastOrNull() },
+                )
+            }
+            entry<RegisterRoute> {
+                RegisterScreen(
+                    onBack = dropUnlessResumed { if (stack.size > 1) stack.removeLastOrNull() },
+                    onCodeSent = { challenge ->
+                        stack.add(
+                            VerifyCodeRoute(
+                                challengeId = challenge.id,
+                                destination = challenge.destination,
+                                attemptsLeft = challenge.attemptsLeft,
+                                resendAfterSeconds = challenge.resendAfterSeconds,
+                            ),
+                        )
+                    },
+                )
+            }
+            entry<VerifyCodeRoute> { key ->
+                val viewModel = hiltViewModel<VerifyCodeViewModel, VerifyCodeViewModel.Factory>(
+                    creationCallback = { it.create(key) },
+                )
+                VerifyCodeScreen(
+                    onBack = dropUnlessResumed { if (stack.size > 1) stack.removeLastOrNull() },
+                    onVerified = { replace(DistrictRoute) },
+                    onContactSupport = {},
+                    viewModel = viewModel,
+                )
+            }
+            entry<DistrictRoute> {
+                DistrictScreen(
+                    onBack = if (stack.size > 1) {
+                        dropUnlessResumed { stack.removeLastOrNull() }
                     } else {
-                        navController.replaceAll(DistrictRoute)
-                    }
+                        null
+                    },
+                    onChosen = { stack.add(InterestsRoute) },
+                )
+            }
+            entry<InterestsRoute> {
+                InterestsScreen(
+                    onBack = dropUnlessResumed {
+                        if (stack.size > 1) {
+                            stack.removeLastOrNull()
+                        } else {
+                            replace(DistrictRoute)
+                        }
+                    },
+                    onDone = { replace(NotificationsRoute) },
+                )
+            }
+            entry<NotificationsRoute> {
+                NotificationsScreen(onDone = { replace(AllSetRoute) })
+            }
+            entry<AllSetRoute> {
+                AllSetScreen(onGoHome = { replace(HomeRoute) })
+            }
+            // These callbacks run outside any entry, where dropUnlessResumed sees the activity
+            // lifecycle; the stack guards drop the second tap instead.
+            shellEntries(
+                onPublish = { if (stack.lastOrNull() !is PublishRoute) pushOnce(stack, PublishRoute()) },
+                onResumeDraft = { draftId ->
+                    if (stack.lastOrNull() !is PublishRoute) pushOnce(stack, PublishRoute(draftId))
                 },
-                onDone = { navController.replaceAll(NotificationsRoute) },
+                onClose = { popIf(stack) { it is PublishRoute } },
             )
-        }
-        composable<NotificationsRoute> {
-            NotificationsScreen(onDone = { navController.replaceAll(AllSetRoute) })
-        }
-        composable<AllSetRoute> {
-            // 1.21 "lleva a Inicio": onboarding is over, nothing stays behind.
-            AllSetScreen(onGoHome = { navController.replaceAll(HomeRoute) })
-        }
-        composable<HomeRoute> { HomeScreen() }
+        },
+    )
+}
+
+private fun EntryProviderScope<NavKey>.shellEntries(
+    onPublish: () -> Unit,
+    onResumeDraft: (String) -> Unit,
+    onClose: () -> Unit,
+) {
+    entry<HomeRoute> { MinkaShell(onPublish = onPublish, onResumeDraft = onResumeDraft) }
+    publishEntries(onClose)
+}
+
+private fun EntryProviderScope<NavKey>.publishEntries(onClose: () -> Unit) {
+    // There is no listing detail yet, so "Ver publicación" leaves the flow like the close icon does.
+    entry<PublishRoute> { key ->
+        PublishScreen(route = key, onClose = onClose, onViewListing = { onClose() })
     }
 }
 
 /** The route the app starts at for a launch [SplashDestination]. */
-fun SplashDestination.startRoute(): Any = when (this) {
+fun SplashDestination.startRoute(): NavKey = when (this) {
     SplashDestination.Home -> HomeRoute
     SplashDestination.Welcome -> WelcomeRoute
     is SplashDestination.Setup -> step.route()
 }
 
-/** Opens [route] with an empty back stack. */
-private fun NavHostController.replaceAll(route: Any) = navigate(route) {
-    popUpTo(graph.id) { inclusive = true }
-}
-
-private fun SetupStep.route(): Any = when (this) {
+private fun SetupStep.route(): NavKey = when (this) {
     SetupStep.District -> DistrictRoute
     SetupStep.Interests -> InterestsRoute
     SetupStep.Notifications -> NotificationsRoute

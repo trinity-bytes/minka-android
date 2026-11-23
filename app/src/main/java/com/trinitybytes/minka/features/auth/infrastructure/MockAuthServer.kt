@@ -4,6 +4,7 @@ import com.trinitybytes.minka.core.network.MockDocument
 import com.trinitybytes.minka.core.network.MockReply
 import com.trinitybytes.minka.core.network.MockRoute
 import com.trinitybytes.minka.core.network.MockSessions
+import com.trinitybytes.minka.core.network.MockUserNames
 import com.trinitybytes.minka.core.network.MockStorage
 import com.trinitybytes.minka.features.auth.domain.normalizeContact
 import io.ktor.http.HttpMethod
@@ -19,6 +20,9 @@ import kotlinx.serialization.Serializable
 
 /** Seed account of the mock API (README, "Cuenta demo"). */
 const val DEMO_EMAIL = "ana.quispe@gmail.com"
+
+/** User id of the seeded demo account; other mock servers seed its profile and listings. */
+const val DEMO_USER_ID = "user-ana"
 const val DEMO_PHONE = "987654321"
 const val DEMO_PASSWORD = "Minka2026!"
 
@@ -33,7 +37,7 @@ const val DEMO_VERIFICATION_CODE = "482915"
 class MockAuthServer(
     storage: MockStorage,
     private val clock: Clock,
-) : MockSessions {
+) : MockSessions, MockUserNames {
     private val document = MockDocument(storage, STORAGE_KEY, AuthDb.serializer(), AuthDb::migrate) {
         AuthDb.seed()
     }
@@ -207,6 +211,9 @@ class MockAuthServer(
 
     override suspend fun userFor(token: String): String? = document.read { it.sessions[token] }
 
+    override suspend fun nameOf(userId: String): String? =
+        document.read { db -> db.accounts.firstOrNull { it.id == userId }?.name }
+
     /** Runs [block] on a copy of the stored state, one request at a time. */
     private suspend fun transaction(block: (AuthDb) -> MockReply): MockReply = document.update(block)
 
@@ -289,7 +296,7 @@ private data class AuthDb(
         fun seed() = AuthDb(
             accounts = mutableListOf(
                 AccountRecord(
-                    id = "user-ana",
+                    id = DEMO_USER_ID,
                     name = "Ana Quispe",
                     email = DEMO_EMAIL,
                     phone = DEMO_PHONE,

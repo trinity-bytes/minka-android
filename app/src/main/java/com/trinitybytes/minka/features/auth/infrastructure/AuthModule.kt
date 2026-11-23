@@ -5,6 +5,7 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import com.trinitybytes.minka.core.datastore.minkaPreferencesDataStore
 import com.trinitybytes.minka.core.network.MockRoute
 import com.trinitybytes.minka.core.network.MockSessions
+import com.trinitybytes.minka.core.network.MockUserNames
 import com.trinitybytes.minka.core.network.MockStorage
 import com.trinitybytes.minka.features.auth.domain.AuthRepository
 import com.trinitybytes.minka.features.auth.domain.SessionStore
@@ -38,6 +39,9 @@ abstract class AuthModule {
 
         @Provides
         fun provideMockSessions(server: MockAuthServer): MockSessions = server
+
+        @Provides
+        fun provideMockUserNames(server: MockAuthServer): MockUserNames = server
 
         @Provides
         @ElementsIntoSet

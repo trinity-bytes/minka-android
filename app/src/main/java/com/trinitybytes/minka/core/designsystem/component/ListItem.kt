@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,15 +34,27 @@ import com.trinitybytes.minka.core.designsystem.theme.MinkaTheme
 /** Figma Avatar (`296:16`): initials on lavender, 40 dp. */
 @Composable
 fun MinkaAvatar(initials: String, modifier: Modifier = Modifier) {
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .size(40.dp)
             .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Text(initials, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+        // The circle has a fixed size and the name is always shown next to it, so the initials scale
+        // with the circle instead of the user's font scale; at 200 % they would overflow and drift.
+        val fontSize = with(LocalDensity.current) { (maxWidth * INITIALS_RATIO).toSp() }
+        Text(
+            text = initials,
+            style = MaterialTheme.typography.titleSmall.copy(fontSize = fontSize, lineHeight = fontSize),
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            maxLines = 1,
+            softWrap = false,
+        )
     }
 }
+
+/** Initials height relative to the avatar: 14sp in the 40dp Figma avatar. */
+private const val INITIALS_RATIO = 0.35f
 
 /** Up to two initials for [MinkaAvatar]: the first letters of the first and last words of [name]. */
 fun initialsOf(name: String): String {

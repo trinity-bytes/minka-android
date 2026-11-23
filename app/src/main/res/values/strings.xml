@@ -149,4 +149,9 @@
     <!-- Not in Figma: 1.21 when the profile district cannot be read. -->
     <string name="setup_all_set_body_no_district">Ya puedes publicar tu primer objeto o buscar trueques cerca de ti.</string>
     <string name="setup_explore">Explorar Mink\'a</string>
+    <string name="nav_home">Inicio</string>
+    <string name="nav_search">Buscar</string>
+    <string name="nav_profile">Perfil</string>
+    <string name="nav_publish">Publicar</string>
+    <string name="nav_close">Cerrar</string>
 </resources>

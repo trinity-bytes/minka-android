@@ -29,7 +29,7 @@ La app no tiene backend: responde un mock API que corre dentro de ella (Ktor `Mo
 
 | Para | Usa |
 |---|---|
-| Iniciar sesión | `ana.quispe@gmail.com` o `987654321`, contraseña `Minka2026!` |
+| Iniciar sesión | `ana.quispe@gmail.com` o `987654321`, contraseña `Minka2026!`; la cuenta ya completó la configuración en Miraflores (intereses Hogar, Libros y Plantas) |
 | Código de verificación del registro | `482915` (el mock no envía correos ni SMS) |
 | Bloqueo de cuenta | 5 contraseñas incorrectas seguidas bloquean el acceso 15 minutos |
 | Recuperar contraseña | Cualquier correo o teléfono válido recibe la misma respuesta (no revela si la cuenta existe); no se envía ningún enlace real y se puede reenviar a los 60 segundos |

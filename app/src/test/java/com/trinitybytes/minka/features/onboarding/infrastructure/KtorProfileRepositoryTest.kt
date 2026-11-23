@@ -88,19 +88,22 @@ class KtorProfileRepositoryTest {
 
     @Test
     fun `unknown choices are refused`() = runTest {
+        val before = repo.profile().value()
         assertEquals(Outcome.Failure(ProfileError.Unexpected), repo.saveDistrict("atlantida"))
         assertEquals(Outcome.Failure(ProfileError.Unexpected), repo.saveInterests(listOf("libros", "yates")))
-        assertEquals(Profile(null, emptyList()), repo.profile().value())
+        assertEquals(before, repo.profile().value())
     }
 
     @Test
     fun `a failed write leaves the profile as it was on disk`() = runTest {
         repo.saveDistrict("san-isidro")
+        val before = repo.profile().value()
         storage.failWrites = true
 
         assertEquals(Outcome.Failure(ProfileError.Offline), repo.saveDistrict("barranco"))
 
         storage.failWrites = false
-        assertEquals(Profile(District("san-isidro", "San Isidro"), emptyList()), repo.profile().value())
+        assertEquals(District("san-isidro", "San Isidro"), before.district)
+        assertEquals(before, repo.profile().value())
     }
 }

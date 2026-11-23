@@ -25,6 +25,21 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            Camera photos for Publicar (Figma 5.02). Not exported and no blanket grant: the camera app
+            gets write access to one URI per capture through the intent (FLAG_GRANT_WRITE_URI_PERMISSION
+            set by TakePicture), and file_paths.xml limits the provider to the listing photos folder.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

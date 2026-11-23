@@ -1,0 +1,18 @@
+<resources>
+    <string name="feed_greeting">Hola</string>
+    <string name="feed_greeting_name">Hola, %1$s</string>
+    <string name="feed_nearby_count">Hay %1$d trueques cerca de %2$s.</string>
+    <string name="feed_nearby_count_unknown">Hay %1$d trueques cerca de ti.</string>
+    <string name="feed_all">Todo</string>
+    <string name="feed_see_all">Ver todo</string>
+    <string name="feed_nearby_sticker">Cerca de ti</string>
+    <string name="feed_search">Buscar objetos o servicios</string>
+    <string name="feed_nearby">Cerca de ti</string>
+    <string name="feed_interests">Para ti</string>
+    <string name="feed_empty_title">Aún no hay trueques cerca</string>
+    <string name="feed_empty_message">Amplía la distancia o sé la primera persona en publicar en tu barrio.</string>
+    <string name="feed_expand_distance">Ampliar distancia</string>
+    <string name="feed_offline">Sin conexión. Ves lo último guardado.</string>
+    <string name="feed_error">No pudimos cargar las publicaciones.</string>
+    <string name="feed_retry">Reintentar</string>
+</resources>

@@ -141,3 +141,8 @@ class FileMockConnection(private val flag: File) : MockConnection {
 fun interface MockSessions {
     suspend fun userFor(token: String): String?
 }
+
+/** Resolves the display name of a mock account by its user id; null when the account does not exist. */
+fun interface MockUserNames {
+    suspend fun nameOf(userId: String): String?
+}
