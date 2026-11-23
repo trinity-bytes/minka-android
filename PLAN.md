@@ -144,7 +144,7 @@ Fuente de verdad: Figma `uMjLWyytKzdU4AgXuNBRZM`.
 - [x] Fase 0 — Scaffold
 - [x] Fase 1 — Sistema de diseño
 - [x] Fase 2 — Onboarding + IAM
-- [ ] Fase 3 — Items
+- [x] Fase 3 — Items
 - [ ] Fase 4 — Exchanges + chat
 - [ ] Fase 5 — Prueba cerrada
 - [ ] Fase 6 — Post-MVP
