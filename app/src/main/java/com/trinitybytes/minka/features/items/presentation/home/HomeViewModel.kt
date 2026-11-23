@@ -13,6 +13,7 @@ import com.trinitybytes.minka.features.items.domain.ItemsError
 import com.trinitybytes.minka.features.onboarding.application.GetSetupSummary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -69,9 +70,12 @@ class HomeViewModel @Inject constructor(
         mutableState.update { it.copy(selectedCategory = selected) }
     }
 
+    /** The feed request in flight; a refresh or retry while it runs is ignored. */
+    private var feedJob: Job? = null
+
     fun refresh() {
-        if (mutableState.value.refreshing) return
-        viewModelScope.launch {
+        if (feedJob?.isActive == true) return
+        feedJob = viewModelScope.launch {
             mutableState.update { it.copy(refreshing = it.feed != null, error = false) }
             when (val result = getFeed()) {
                 is Outcome.Success -> mutableState.update {

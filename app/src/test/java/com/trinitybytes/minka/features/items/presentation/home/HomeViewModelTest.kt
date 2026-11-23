@@ -32,11 +32,13 @@ import org.junit.Test
 class HomeViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private var result: Any = Outcome.Success(Loaded(Feed(emptyList(), emptyList())))
+    private var feedCalls = 0
     private val repository = Proxy.newProxyInstance(
         ItemsRepository::class.java.classLoader,
         arrayOf(ItemsRepository::class.java),
     ) { _, method, _ ->
         check(method.name == "feed")
+        feedCalls++
         result
     } as ItemsRepository
 
@@ -61,6 +63,13 @@ class HomeViewModelTest {
 
     @Before fun setup() = Dispatchers.setMain(dispatcher)
     @After fun tearDown() = Dispatchers.resetMain()
+
+    @Test fun `a retry during the first load does not start a second request`() = runTest(dispatcher) {
+        val viewModel = model()
+        viewModel.refresh()
+        advanceUntilIdle()
+        assertEquals(1, feedCalls)
+    }
 
     @Test fun `initial loading becomes feed`() = runTest(dispatcher) {
         val viewModel = model()

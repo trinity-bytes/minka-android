@@ -132,7 +132,7 @@ fun MinkaShell(
     )
     val navigator = object : ShellNavigator {
         override fun open(key: NavKey) {
-            stacks.getValue(selected.root).add(key)
+            pushOnce(stacks.getValue(selected.root), key)
         }
 
         override fun back() {

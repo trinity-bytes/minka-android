@@ -3,8 +3,6 @@ package com.trinitybytes.minka.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.EntryProviderScope
@@ -186,13 +184,14 @@ fun MinkaNavHost(launch: SplashUiState) {
             entry<AllSetRoute> {
                 AllSetScreen(onGoHome = { replace(HomeRoute) })
             }
-            val lifecycle = LocalLifecycleOwner.current.lifecycle
+            // These callbacks run outside any entry, where dropUnlessResumed sees the activity
+            // lifecycle; the stack guards drop the second tap instead.
             shellEntries(
-                onPublish = dropUnlessResumed { stack.add(PublishRoute()) },
+                onPublish = { if (stack.lastOrNull() !is PublishRoute) pushOnce(stack, PublishRoute()) },
                 onResumeDraft = { draftId ->
-                    if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) stack.add(PublishRoute(draftId))
+                    if (stack.lastOrNull() !is PublishRoute) pushOnce(stack, PublishRoute(draftId))
                 },
-                onClose = dropUnlessResumed { if (stack.size > 1) stack.removeLastOrNull() },
+                onClose = { popIf(stack) { it is PublishRoute } },
             )
         },
     )

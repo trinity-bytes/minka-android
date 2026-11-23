@@ -158,7 +158,7 @@ class MockItemsServer(
     }
 
     private suspend fun saveDraft(user: String, id: String?, body: SaveDraftRequest): MockReply {
-        val ownerName = names.nameOf(user) ?: return MockReply.error(HttpStatusCode.Unauthorized, "unauthorized")
+        val ownerName = names.nameOf(user) ?: return MockReply.error(HttpStatusCode.Unauthorized, ItemsErrorCodes.UNAUTHORIZED)
         return document.update { db ->
             val old = id?.let { db.draftOf(user, it) ?: return@update notFound() }
             val now = clock.millis()
