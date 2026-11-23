@@ -5,4 +5,16 @@
     <style name="Theme.Minka" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/minka_paper</item>
     </style>
+
+    <!--
+        Figma 1.01 (design A1): the system splash is the only splash. The launcher icon on its
+        brand-green disc over the app surface; MainActivity keeps it on screen until the launch is
+        resolved, then the window switches to Theme.Minka.
+    -->
+    <style name="Theme.Minka.Starting" parent="Theme.SplashScreen.IconBackground">
+        <item name="windowSplashScreenBackground">@color/minka_paper</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/ic_launcher_background</item>
+        <item name="postSplashScreenTheme">@style/Theme.Minka</item>
+    </style>
 </resources>

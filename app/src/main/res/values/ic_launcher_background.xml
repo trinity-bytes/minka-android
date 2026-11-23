@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand green, as on the Figma splash (1.01). -->
+    <color name="ic_launcher_background">#FF2ECC71</color>
+</resources>

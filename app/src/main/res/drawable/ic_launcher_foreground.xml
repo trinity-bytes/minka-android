@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma Logomark (331:2928) in on-brand ink, scaled into the 66 dp adaptive-icon safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.7"
+        android:scaleY="0.7"
+        android:translateX="34.4"
+        android:translateY="31.25">
+        <path
+            android:fillColor="#FF0B0D0C"
+            android:pathData="M14.75 62.7083C-5.33333 51.5417 -5.33334 18.875 27.8333 1.125C38.0833 18.875 33.4167 50.5417 14.75 62.7083ZM55 38.7917C52 51.0417 37.8333 63.2083 24 63.875C24.6667 63.2083 25.4167 62.4583 26 61.7917C28.1667 59.4583 30.25 56.625 31.8333 53.7917C34.75 48.9583 36.9167 43.125 38.25 37.375C43.1667 36.7083 48.8333 37.0417 55 38.7917Z" />
+    </group>
+</vector>

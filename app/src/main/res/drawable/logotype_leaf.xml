@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma Logotype (331:2925): two-leaf apostrophe. Drawn in white so MinkaLogo can tint it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="294dp"
+    android:height="85dp"
+    android:viewportWidth="294"
+    android:viewportHeight="85">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M229.394 38.0031C217.352 31.3076 217.352 11.7209 237.239 1.07818C243.384 11.7209 240.586 30.708 229.394 38.0031ZM253.528 23.6628C251.729 31.0078 243.235 38.3029 234.94 38.7026C235.34 38.3029 235.79 37.8532 236.139 37.4534C237.438 36.0544 238.688 34.3555 239.637 32.6567C241.386 29.7587 242.685 26.261 243.484 22.8134C246.432 22.4137 249.83 22.6135 253.528 23.6628Z" />
+</vector>

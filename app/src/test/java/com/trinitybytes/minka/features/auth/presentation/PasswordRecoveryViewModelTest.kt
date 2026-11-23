@@ -1,0 +1,290 @@
+package com.trinitybytes.minka.features.auth.presentation
+
+import androidx.lifecycle.SavedStateHandle
+import com.trinitybytes.minka.core.domain.Outcome
+import com.trinitybytes.minka.features.auth.application.RequestPasswordReset
+import com.trinitybytes.minka.features.auth.domain.AuthError
+import com.trinitybytes.minka.features.auth.domain.AuthOutcome
+import com.trinitybytes.minka.features.auth.domain.AuthRepository
+import com.trinitybytes.minka.features.auth.domain.ContactKind
+import com.trinitybytes.minka.features.auth.domain.GoogleAccount
+import com.trinitybytes.minka.features.auth.domain.PasswordReset
+import com.trinitybytes.minka.features.auth.domain.Registration
+import com.trinitybytes.minka.features.auth.domain.Session
+import com.trinitybytes.minka.features.auth.domain.VerificationChallenge
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class PasswordRecoveryViewModelTest {
+
+    companion object {
+        private const val KEY_CONTACT = "recovery_contact"
+    }
+
+    private val dispatcher = StandardTestDispatcher()
+    private val repository = FakeRepository()
+
+    private val clock = object : java.time.Clock() {
+        override fun getZone(): java.time.ZoneId = java.time.ZoneId.of("UTC")
+        override fun withZone(zone: java.time.ZoneId): java.time.Clock = this
+        override fun instant(): java.time.Instant = java.time.Instant.ofEpochMilli(dispatcher.scheduler.currentTime)
+    }
+
+    @Before
+    fun setUp() = Dispatchers.setMain(dispatcher)
+
+    @After
+    fun tearDown() = Dispatchers.resetMain()
+
+    private fun viewModel() = PasswordRecoveryViewModel(RequestPasswordReset(repository), SavedStateHandle(), clock)
+
+    private val PasswordRecoveryViewModel.state get() = uiState.value
+
+    @Test
+    fun `contact restores and persists`() {
+        val handle = SavedStateHandle(mapOf(KEY_CONTACT to "ana@example.com"))
+        val model = PasswordRecoveryViewModel(RequestPasswordReset(repository), handle, clock)
+        assertEquals("ana@example.com", model.state.contact)
+        model.onContactChange("luis@example.com")
+        assertEquals("luis@example.com", handle.get<String>(KEY_CONTACT))
+    }
+
+    @Test
+    fun `successful reset saves confirmation and deadline for recreation`() = runTest(dispatcher) {
+        repository.answer = { Outcome.Success(PasswordReset("ana@example.com", 30, 5)) }
+        val handle = SavedStateHandle()
+        val original = PasswordRecoveryViewModel(RequestPasswordReset(repository), handle, clock)
+        original.onContactChange("ana@example.com")
+        original.submit()
+        runCurrent()
+        assertEquals(5_000L, handle.get<Long>("recovery_deadline"))
+        advanceTimeBy(2_000)
+        val restored = PasswordRecoveryViewModel(RequestPasswordReset(repository), handle, clock)
+        assertEquals(RecoverySent("ana@example.com", ContactKind.Email, 30), restored.state.sent)
+        assertEquals(3L, restored.state.resendSecondsLeft)
+    }
+
+    @Test
+    fun `sent confirmation and deadline restore and expire`() = runTest(dispatcher) {
+        val handle = SavedStateHandle(mapOf(
+            "recovery_contact" to "ana@example.com",
+            "recovery_destination" to "ana@example.com",
+            "recovery_kind" to "Email",
+            "recovery_expiry" to 15,
+            "recovery_deadline" to 2_000L,
+        ))
+        val model = PasswordRecoveryViewModel(RequestPasswordReset(repository), handle, clock)
+        assertEquals(RecoverySent("ana@example.com", ContactKind.Email, 15), model.state.sent)
+        assertEquals(2L, model.state.resendSecondsLeft)
+        advanceTimeBy(2_000)
+        runCurrent()
+        assertNull(model.state.resendSecondsLeft)
+        assertTrue(model.state.canResend)
+    }
+
+    @Test
+    fun `enviar enlace stays disabled while the field is invalid`() = runTest(dispatcher) {
+        val viewModel = viewModel()
+        assertFalse(viewModel.state.canSubmit)
+
+        viewModel.onContactChange("ana.quispe@")
+        assertFalse(viewModel.state.canSubmit)
+        viewModel.onContactFocusLost()
+        assertTrue(viewModel.state.contactError)
+
+        viewModel.submit()
+        advanceUntilIdle()
+        assertTrue(repository.resets.isEmpty())
+        assertNull(viewModel.state.sent)
+
+        viewModel.onContactChange("ana.quispe@gmail.com")
+        assertTrue(viewModel.state.canSubmit)
+        assertFalse(viewModel.state.contactError)
+    }
+
+    @Test
+    fun `an email and a phone are both accepted, as in registration`() {
+        val viewModel = viewModel()
+
+        viewModel.onContactChange("ana.quispe@gmail.com")
+        assertTrue(viewModel.state.canSubmit)
+
+        viewModel.onContactChange("+51 987 654 321")
+        assertTrue(viewModel.state.canSubmit)
+        viewModel.onContactFocusLost()
+        assertFalse(viewModel.state.contactError)
+
+        viewModel.onContactChange("12345")
+        assertFalse(viewModel.state.canSubmit)
+    }
+
+    @Test
+    fun `submitting loads, then moves to the sent state with the contact`() = runTest(dispatcher) {
+        val pending = CompletableDeferred<AuthOutcome<PasswordReset>>()
+        repository.answer = { pending.await() }
+        val viewModel = viewModel()
+        viewModel.onContactChange(" ana.quispe@gmail.com ")
+
+        viewModel.submit()
+        runCurrent()
+        assertTrue(viewModel.state.isLoading)
+        assertFalse(viewModel.state.fieldsEnabled)
+        assertFalse(viewModel.state.canSubmit)
+
+        pending.complete(Outcome.Success(PasswordReset("ana.quispe@gmail.com", 30, 60)))
+        runCurrent()
+
+        assertFalse(viewModel.state.isLoading)
+        assertEquals(RecoverySent("ana.quispe@gmail.com", ContactKind.Email, 30), viewModel.state.sent)
+        assertEquals(listOf("ana.quispe@gmail.com"), repository.resets)
+    }
+
+    @Test
+    fun `a phone is sent as a phone`() = runTest(dispatcher) {
+        repository.answer = { Outcome.Success(PasswordReset("987654321", 30, 60)) }
+        val viewModel = viewModel()
+        viewModel.onContactChange("+51 987 654 321")
+
+        viewModel.submit()
+        runCurrent()
+
+        assertEquals(RecoverySent("987654321", ContactKind.Phone, 30), viewModel.state.sent)
+    }
+
+    @Test
+    fun `reenviar stays disabled until the countdown ends, then a resend restarts it`() = runTest(dispatcher) {
+        repository.answer = { Outcome.Success(PasswordReset("ana.quispe@gmail.com", 30, 60)) }
+        val viewModel = viewModel()
+        viewModel.onContactChange("ana.quispe@gmail.com")
+        viewModel.submit()
+        runCurrent()
+
+        assertEquals(60L, viewModel.state.resendSecondsLeft)
+        assertFalse(viewModel.state.canResend)
+        viewModel.resend()
+        runCurrent()
+        assertEquals(1, repository.resets.size)
+
+        advanceTimeBy(15_001)
+        assertEquals(45L, viewModel.state.resendSecondsLeft)
+        assertEquals("0:45", formatCountdown(viewModel.state.resendSecondsLeft!!))
+        assertFalse(viewModel.state.canResend)
+
+        advanceTimeBy(45_000)
+        assertNull(viewModel.state.resendSecondsLeft)
+        assertTrue(viewModel.state.canResend)
+
+        viewModel.resend()
+        runCurrent()
+        assertEquals(listOf("ana.quispe@gmail.com", "ana.quispe@gmail.com"), repository.resets)
+        assertEquals(60L, viewModel.state.resendSecondsLeft)
+        assertFalse(viewModel.state.canResend)
+        assertEquals(RecoverySent("ana.quispe@gmail.com", ContactKind.Email, 30), viewModel.state.sent)
+    }
+
+    @Test
+    fun `an offline answer keeps what was typed and offers reintentar in a snackbar`() = runTest(dispatcher) {
+        repository.answer = { Outcome.Failure(AuthError.Offline) }
+        val viewModel = viewModel()
+        viewModel.onContactChange("ana.quispe@gmail.com")
+
+        viewModel.submit()
+        advanceUntilIdle()
+
+        assertEquals("1.22", RecoveryMessage.Offline, viewModel.state.message)
+        assertEquals("ana.quispe@gmail.com", viewModel.state.contact)
+        assertNull(viewModel.state.sent)
+        assertFalse(viewModel.state.isLoading)
+        assertTrue(viewModel.state.canSubmit)
+    }
+
+    @Test
+    fun `reintentar sends the link to what the field holds now`() = runTest(dispatcher) {
+        repository.answer = { Outcome.Failure(AuthError.Offline) }
+        val viewModel = viewModel()
+        viewModel.onContactChange("987654320")
+        viewModel.submit()
+        advanceUntilIdle()
+
+        viewModel.onContactChange("987654321")
+        repository.answer = { Outcome.Success(PasswordReset("987654321", 30, 60)) }
+        viewModel.retry()
+        runCurrent()
+
+        assertEquals(listOf("987654320", "987654321"), repository.resets)
+        assertNull(viewModel.state.message)
+        assertEquals(RecoverySent("987654321", ContactKind.Phone, 30), viewModel.state.sent)
+    }
+
+    @Test
+    fun `another error is reported and keeps what was typed`() = runTest(dispatcher) {
+        repository.answer = { Outcome.Failure(AuthError.Unexpected) }
+        val viewModel = viewModel()
+        viewModel.onContactChange("987654321")
+
+        viewModel.submit()
+        advanceUntilIdle()
+
+        assertEquals(RecoveryMessage.Unexpected, viewModel.state.message)
+        assertEquals("987654321", viewModel.state.contact)
+        assertTrue(viewModel.state.canSubmit)
+    }
+
+    @Test
+    fun `a failed resend keeps the sent state and lets the user try again`() = runTest(dispatcher) {
+        repository.answer = { Outcome.Success(PasswordReset("ana.quispe@gmail.com", 30, 60)) }
+        val viewModel = viewModel()
+        viewModel.onContactChange("ana.quispe@gmail.com")
+        viewModel.submit()
+        advanceTimeBy(60_001)
+        assertTrue(viewModel.state.canResend)
+
+        repository.answer = { Outcome.Failure(AuthError.Offline) }
+        viewModel.resend()
+        runCurrent()
+
+        assertEquals("1.22", RecoveryMessage.Offline, viewModel.state.message)
+        assertEquals(RecoverySent("ana.quispe@gmail.com", ContactKind.Email, 30), viewModel.state.sent)
+        assertTrue(viewModel.state.canResend)
+
+        repository.answer = { Outcome.Success(PasswordReset("ana.quispe@gmail.com", 30, 60)) }
+        viewModel.retry()
+        runCurrent()
+        assertEquals("reintentar resends to the sent destination", "ana.quispe@gmail.com", repository.resets.last())
+        assertEquals(3, repository.resets.size)
+    }
+
+    private class FakeRepository : AuthRepository {
+        override suspend fun signOut(token: String): com.trinitybytes.minka.features.auth.domain.AuthOutcome<Unit> = com.trinitybytes.minka.core.domain.Outcome.Success(Unit)
+        var answer: suspend () -> AuthOutcome<PasswordReset> = { Outcome.Success(PasswordReset("x", 30, 60)) }
+        val resets = mutableListOf<String>()
+
+        override suspend fun requestPasswordReset(contact: String): AuthOutcome<PasswordReset> {
+            resets += contact
+            return answer()
+        }
+
+        override suspend fun signIn(contact: String, password: String): AuthOutcome<Session> = TODO()
+        override suspend fun googleAccounts(): AuthOutcome<List<GoogleAccount>> = TODO()
+        override suspend fun signInWithGoogle(accountId: String): AuthOutcome<Session> = TODO()
+        override suspend fun register(registration: Registration): AuthOutcome<VerificationChallenge> = TODO()
+        override suspend fun verifyCode(challengeId: String, code: String): AuthOutcome<Session> = TODO()
+        override suspend fun resendCode(challengeId: String): AuthOutcome<VerificationChallenge> = TODO()
+    }
+}

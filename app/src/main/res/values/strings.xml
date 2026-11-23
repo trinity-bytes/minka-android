@@ -2,4 +2,156 @@
     <string name="app_name">Mink’a</string>
     <string name="home_title">Mink’a</string>
     <string name="home_subtitle">Economía circular al alcance de tu comunidad</string>
+
+    <!-- Design system -->
+    <string name="action_back">Volver</string>
+
+    <!-- No connection (Figma 1.22) -->
+    <string name="offline_title">Sin conexión</string>
+    <string name="offline_body">Revisa tu wifi o tus datos móviles.</string>
+    <string name="offline_snackbar">Sin conexión. Lo escrito sigue aquí.</string>
+    <string name="load_error_title">No pudimos cargar esta lista</string>
+    <string name="load_error_body">Algo salió mal. Inténtalo de nuevo.</string>
+    <string name="password_show">Mostrar contraseña</string>
+    <string name="password_hide">Ocultar contraseña</string>
+    <string name="offline_retry">Reintentar</string>
+    <string name="strength_weak">Débil</string>
+    <string name="strength_medium">Media</string>
+    <string name="strength_strong">Fuerte</string>
+
+    <!-- Onboarding: splash and welcome (Figma 1.01–1.04) -->
+    <string name="welcome_skip">Omitir</string>
+    <string name="welcome_next">Siguiente</string>
+    <string name="welcome_create_account">Crear cuenta</string>
+    <string name="welcome_sign_in">Iniciar sesión</string>
+    <string name="welcome_google">Continuar con Google</string>
+    <string name="welcome_step_indicator">Paso %1$d de %2$d</string>
+    <string name="welcome_1_title">Truequea lo que ya no usas, sin dinero</string>
+    <string name="welcome_1_body">Cambia objetos y servicios con tu comunidad. Aquí nadie paga: todo es trueque.</string>
+    <string name="welcome_1_sticker">Sin dinero de por medio</string>
+    <string name="welcome_2_title">Encuentra trueques cerca de ti</string>
+    <string name="welcome_2_body">Mira publicaciones de tu distrito y acuerda la entrega en un punto seguro.</string>
+    <string name="welcome_2_sticker">Directo con vecinos</string>
+    <string name="welcome_3_title">Cuida el planeta con cada trueque</string>
+    <string name="welcome_3_body">Cada trueque le da otra vida a un objeto y suma Eco-Puntos a tu perfil.</string>
+    <string name="welcome_3_sticker">Segunda vida</string>
+
+    <!-- Sign-in (Figma 1.05–1.09) -->
+    <string name="sign_in_title">Iniciar sesión</string>
+    <string name="sign_in_intro">Qué bueno verte de nuevo. Ingresa para seguir truequeando.</string>
+    <string name="sign_in_contact_label">Correo o teléfono</string>
+    <string name="sign_in_contact_placeholder">nombre@correo.com</string>
+    <string name="sign_in_contact_error">Ingresa un correo o teléfono válido</string>
+    <string name="sign_in_password_label">Contraseña</string>
+    <string name="sign_in_password_placeholder">Ingresa tu contraseña</string>
+    <string name="sign_in_password_error">Mínimo 8 caracteres</string>
+    <string name="sign_in_forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="sign_in_submit">Ingresar</string>
+    <string name="sign_in_or">o</string>
+    <string name="sign_in_google">Continuar con Google</string>
+    <string name="sign_in_no_account">¿No tienes cuenta?</string>
+    <string name="sign_in_register">Regístrate</string>
+    <string name="sign_in_locked_title">Cuenta bloqueada</string>
+    <string name="sign_in_locked_text">Por seguridad bloqueamos el acceso tras 5 intentos fallidos. Vuelve a intentarlo en %1$s o recupera tu contraseña.</string>
+    <string name="sign_in_locked_recover">Recuperar</string>
+    <string name="sign_in_locked_ok">Entendido</string>
+    <string name="sign_in_google_title">Elige una cuenta</string>
+    <string name="sign_in_google_add_account">Agregar otra cuenta</string>
+    <!-- Not in Figma: snackbar copy for failed sign-ins (no connection is the 1.22 screen) -->
+    <plurals name="sign_in_wrong_credentials">
+        <item quantity="one">Los datos no coinciden. Te queda %d intento.</item>
+        <item quantity="other">Los datos no coinciden. Te quedan %d intentos.</item>
+    </plurals>
+    <string name="sign_in_unexpected">Algo salió mal. Inténtalo de nuevo.</string>
+
+    <!-- Password recovery (Figma 1.10–1.11) -->
+    <string name="password_recovery_title">Recupera tu contraseña</string>
+    <string name="password_recovery_intro">Te enviaremos un enlace para crear una nueva. Usa el correo o teléfono de tu cuenta.</string>
+    <string name="password_recovery_contact_label">Correo o teléfono</string>
+    <string name="password_recovery_submit">Enviar enlace</string>
+    <string name="password_recovery_sent_email_title">Revisa tu correo</string>
+    <string name="password_recovery_sent_phone_title">Revisa tus mensajes</string>
+    <string name="password_recovery_sent_text">Enviamos un enlace a %1$s. Vence en %2$d minutos.</string>
+    <string name="password_recovery_sent_phone_text">Enviamos un enlace por SMS al %1$s. Vence en %2$d minutos.</string>
+    <string name="password_recovery_open_email">Abrir correo</string>
+    <string name="password_recovery_open_messages">Abrir mensajes</string>
+    <string name="password_recovery_resend">Reenviar</string>
+    <string name="password_recovery_resend_in">Reenviar en %1$s</string>
+
+    <!-- Registration (Figma 1.12–1.13) -->
+    <string name="register_step">Paso 1 de 3 · Cuenta</string>
+    <string name="register_title">Crea tu cuenta</string>
+    <string name="register_name_label">Nombre completo</string>
+    <string name="register_contact_label">Correo o teléfono</string>
+    <string name="register_password_label">Contraseña</string>
+    <string name="register_confirm_password_label">Confirmar contraseña</string>
+    <!-- %1$s is the terms version (TERMS_VERSION): "Acepto los términos y la privacidad (v1.0)" -->
+    <string name="register_terms">Acepto los términos y la privacidad</string>
+    <string name="register_submit">Continuar</string>
+    <string name="register_email_taken">Este correo ya está registrado</string>
+    <!-- Not in Figma: 1.13 only draws the email case. -->
+    <string name="register_phone_taken">Este teléfono ya está registrado</string>
+    <!-- Not in Figma: the meter says "Débil"; this explains why the button waits. -->
+    <string name="register_weak_password">Elige una contraseña más segura</string>
+    <string name="register_password_mismatch">Las contraseñas no coinciden</string>
+    <string name="register_terms_error">Debes aceptar los términos</string>
+
+    <!-- Code verification (Figma 1.14–1.15) -->
+    <string name="verify_title">Ingresa el código</string>
+    <string name="verify_sent_to">Enviamos un código de 6 dígitos a %1$s.</string>
+    <!-- Not in Figma: accessibility label of the code boxes. -->
+    <string name="verify_code_label">Código de verificación</string>
+    <!-- "one" is not in Figma (it draws "Tienes 5 intentos"). -->
+    <plurals name="verify_attempts">
+        <item quantity="one">Tienes %d intento</item>
+        <item quantity="other">Tienes %d intentos</item>
+    </plurals>
+    <!-- "one" is not in Figma (it draws "te quedan 2 intentos"). -->
+    <plurals name="verify_wrong_code">
+        <item quantity="one">Código incorrecto · te queda %d intento</item>
+        <item quantity="other">Código incorrecto · te quedan %d intentos</item>
+    </plurals>
+    <!-- Not in Figma: 1.15 note "Al agotar los 5 intentos se pide un código nuevo." -->
+    <string name="verify_exhausted">Agotaste los intentos · pide un código nuevo</string>
+    <string name="verify_resend">Reenviar código</string>
+    <string name="verify_resend_in">Reenviar código en %1$s</string>
+    <string name="verify_support_question">¿Aún tienes problemas?</string>
+    <string name="verify_support_action">Contáctanos</string>
+    <string name="verify_submit">Verificar</string>
+
+    <!-- Profile setup (Figma 1.16–1.21) -->
+    <string name="setup_continue">Continuar</string>
+    <string name="setup_district_step">Paso 2 de 3 · Ubicación</string>
+    <string name="setup_district_title">¿Dónde intercambias?</string>
+    <string name="setup_district_body">Te mostramos trueques cerca. Solo se ve tu distrito, nunca tu dirección.</string>
+    <string name="setup_use_location">Usar mi ubicación</string>
+    <string name="setup_district_search">Buscar distrito</string>
+    <string name="setup_location_denied">Sin permiso de ubicación. Elige tu distrito.</string>
+    <string name="setup_settings">Ajustes</string>
+    <string name="setup_interests_step">Paso 3 de 3 · Intereses</string>
+    <string name="setup_interests_title">¿Qué te interesa?</string>
+    <string name="setup_interests_body">Elige al menos una categoría para personalizar tu inicio.</string>
+    <plurals name="setup_interests_selected">
+        <item quantity="one">%d seleccionado</item>
+        <item quantity="other">%d seleccionados</item>
+    </plurals>
+    <string name="setup_skip">Omitir</string>
+    <string name="setup_notifications_sticker">Nueva propuesta</string>
+    <string name="setup_notifications_title">Entérate de cada propuesta</string>
+    <string name="setup_notifications_body">Te avisamos cuando alguien quiera tu objeto, responda en el chat o confirme un trueque.</string>
+    <string name="setup_notifications_enable">Activar notificaciones</string>
+    <string name="setup_notifications_not_now">Ahora no</string>
+    <string name="setup_all_set_sticker">¡Bienvenida!</string>
+    <string name="setup_all_set_title">¡Todo listo, %1$s!</string>
+    <!-- Not in Figma: 1.21 without a known first name. -->
+    <string name="setup_all_set_title_no_name">¡Todo listo!</string>
+    <string name="setup_all_set_body">Ya puedes publicar tu primer objeto o buscar trueques en %1$s.</string>
+    <!-- Not in Figma: 1.21 when the profile district cannot be read. -->
+    <string name="setup_all_set_body_no_district">Ya puedes publicar tu primer objeto o buscar trueques cerca de ti.</string>
+    <string name="setup_explore">Explorar Mink\'a</string>
+    <string name="nav_home">Inicio</string>
+    <string name="nav_search">Buscar</string>
+    <string name="nav_profile">Perfil</string>
+    <string name="nav_publish">Publicar</string>
+    <string name="nav_close">Cerrar</string>
 </resources>

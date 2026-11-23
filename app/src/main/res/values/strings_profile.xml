@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 11.01 Perfil -->
+    <string name="profile_title">Perfil</string>
+    <string name="profile_since">desde %1$d</string>
+    <string name="profile_my_listings">Mis publicaciones</string>
+
+    <!-- 11.05 Mis publicaciones -->
+    <string name="my_listings_title">Mis publicaciones</string>
+    <string name="my_listings_publish">Publicar</string>
+    <string name="my_listings_filter_active">Activas</string>
+    <string name="my_listings_filter_paused">Pausadas</string>
+    <string name="my_listings_filter_drafts">Borradores</string>
+    <string name="my_listings_badge_active">Activo</string>
+    <string name="my_listings_badge_paused">Pausado</string>
+    <string name="my_listings_badge_draft">Borrador</string>
+    <string name="my_listings_published_ago">Publicado %1$s</string>
+    <string name="my_listings_paused_since">Pausada desde el %1$s</string>
+    <string name="my_listings_draft_step">Borrador · paso %1$d de 3</string>
+    <string name="my_listings_untitled">Sin título</string>
+    <string name="my_listings_continue">Continuar</string>
+    <string name="my_listings_more_for">Más opciones de %1$s</string>
+    <string name="my_listings_pause">Pausar</string>
+    <string name="my_listings_resume">Reanudar</string>
+    <string name="my_listings_delete">Borrar</string>
+    <string name="my_listings_view">Ver publicación</string>
+    <string name="my_listings_pick_one">Elige una publicación para gestionarla aquí.</string>
+    <string name="my_listings_empty_active_title">Aún no tienes publicaciones activas</string>
+    <string name="my_listings_empty_active_body">Publica algo que ya no uses y empieza a intercambiar.</string>
+    <string name="my_listings_empty_paused_title">No tienes publicaciones pausadas</string>
+    <string name="my_listings_empty_paused_body">Las que pauses aparecerán aquí y puedes reanudarlas cuando quieras.</string>
+    <string name="my_listings_empty_drafts_title">No tienes borradores</string>
+    <string name="my_listings_empty_drafts_body">Lo que dejes a medias al publicar se guarda aquí.</string>
+    <string name="my_listings_offline">Sin conexión. Ves lo último guardado.</string>
+    <string name="my_listings_retry">Reintentar</string>
+
+    <!-- 11.06 and the other feedback of the list -->
+    <string name="my_listings_paused_message">Publicación pausada</string>
+    <string name="my_listings_undo">Deshacer</string>
+    <string name="my_listings_resumed_message">Publicación reanudada</string>
+    <string name="my_listings_deleted_message">Publicación borrada</string>
+    <string name="my_listings_failed_message">No se pudo completar la acción. Inténtalo de nuevo.</string>
+
+    <!-- Confirmation shared with 4.08 -->
+    <string name="my_listings_delete_title">¿Borrar esta publicación?</string>
+    <string name="my_listings_delete_body">Se quita de Mink\'a y no se puede recuperar. Si solo quieres dejar de recibir propuestas, puedes pausarla.</string>
+    <string name="my_listings_delete_cancel">Cancelar</string>
+
+    <!-- 11.02 Perfil de otra persona -->
+    <string name="owner_profile_listings">Publicaciones</string>
+    <string name="owner_profile_empty">%1$s no tiene publicaciones activas.</string>
+    <string name="owner_profile_not_found_title">Este perfil no está disponible</string>
+    <string name="owner_profile_not_found_body">Puede que la persona ya no esté en Mink\'a.</string>
+    <string name="owner_profile_back">Volver</string>
+</resources>
